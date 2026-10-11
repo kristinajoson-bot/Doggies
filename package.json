@@ -1,0 +1,12 @@
+{
+  "name": "walkies",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "mkdir -p app/vendor && cp node_modules/@supabase/supabase-js/dist/umd/supabase.js app/vendor/supabase.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.2"
+  },
+  "engines": { "node": ">=20" }
+}

@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FFD23F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Walkies">
+<title>Walkies</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+:root{--ink:#1B2433;--yellow:#FFD23F;--coral:#FF5A4E;--sky:#E9F1FB;--muted:#4A586E;--line:#9AA8BC;--display:'Bricolage Grotesque',system-ui,sans-serif;--body:'DM Sans',system-ui,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--sky);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.4;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:inherit}
+h1,h2,p{margin:0}
+:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.app{max-width:440px;margin:0 auto;min-height:100vh;padding:0 20px 120px}
+.top{display:flex;align-items:center;justify-content:space-between;padding:calc(20px + env(safe-area-inset-top)) 0 12px}
+.brand{display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:800;font-size:28px;letter-spacing:-.02em}
+.chip{background:#fff;border:2px solid var(--ink);border-radius:999px;padding:6px 12px;font-weight:700;font-size:14px}
+.card{background:#fff;border:2px solid var(--ink);border-radius:22px;padding:16px}
+.hero{background:var(--yellow);border:3px solid var(--ink);border-radius:28px;box-shadow:6px 6px 0 var(--ink);padding:18px 20px 20px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.eyebrow{font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.big{font-family:var(--display);font-weight:800;font-size:56px;line-height:1;letter-spacing:-.03em}
+.h1{font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:-.03em}
+.h2{font-family:var(--display);font-weight:800;font-size:20px}
+.muted{color:var(--muted)}
+.bar{width:100%;height:14px;background:#fff;border:2px solid var(--ink);border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--coral);transition:width .6s}
+.btn{display:flex;align-items:center;justify-content:center;min-height:52px;width:100%;border:2px solid var(--ink);border-radius:18px;background:var(--ink);color:#fff;font-weight:700;font-size:16px;padding:0 16px;text-decoration:none}
+.btn.coral{background:var(--coral);color:var(--ink);font-weight:800}
+.btn.light{background:#fff;color:var(--ink)}
+.btn.small{min-height:44px;width:auto;border-radius:14px;font-size:14px;padding:0 16px}
+.btn:disabled{opacity:.5}
+.stack{display:flex;flex-direction:column;gap:16px}
+.gap8{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;align-items:center;gap:12px}
+.between{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.scoops{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.scoop{aspect-ratio:1/1;border:2px solid var(--line);border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:var(--muted)}
+.scoop.on{background:var(--coral);border-color:var(--ink);color:var(--ink);font-weight:800}
+.scoop.next{border:2px dashed var(--ink);color:var(--ink);font-weight:800}
+label{font-weight:700;font-size:15px}
+input,select{min-height:48px;width:100%;border:2px solid var(--ink);border-radius:14px;padding:0 14px;background:#fff;font-size:16px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0}
+.pill{flex:none;min-height:40px;padding:0 16px;border-radius:999px;border:2px solid var(--ink);background:#fff;font-weight:700;font-size:14px}
+.pill[aria-pressed="true"]{background:var(--ink);color:#fff}
+.lb{display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:center;background:#fff;border:2px solid var(--ink);border-radius:20px;padding:12px 14px}
+.lb.first{background:var(--yellow);border-width:3px;box-shadow:4px 4px 0 var(--ink)}
+.lb.mine{background:var(--coral);border-width:3px;box-shadow:4px 4px 0 var(--ink)}
+.rank{width:36px;height:36px;border-radius:50%;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:800;font-size:18px;background:#fff}
+.lb.first .rank{background:var(--ink);color:#fff}
+.num{font-family:var(--display);font-weight:800;font-size:22px;text-align:right}
+.nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:2px solid var(--ink);padding:8px 10px calc(14px + env(safe-area-inset-bottom));z-index:10}
+.nav-in{max-width:440px;margin:0 auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:48px;border:2px solid transparent;border-radius:14px;background:none;font-weight:700;font-size:12px}
+.tab[aria-selected="true"]{background:var(--yellow);border-color:var(--ink)}
+.tab svg{width:22px;height:22px}
+.overlay{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;gap:16px;padding:calc(24px + env(safe-area-inset-top)) 24px calc(28px + env(safe-area-inset-bottom));overflow:auto;background:var(--coral);animation:rise .35s cubic-bezier(.2,.8,.2,1)}
+@keyframes rise{from{transform:translateY(30px);opacity:0}}
+.sheet-bg{position:fixed;inset:0;z-index:30;background:rgba(27,36,51,.5);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:440px;background:#fff;border:3px solid var(--ink);border-bottom:0;border-radius:28px 28px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,16px);opacity:0;background:var(--ink);color:#fff;padding:11px 16px;border-radius:12px;font-weight:700;font-size:14px;transition:.25s;pointer-events:none;z-index:40;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.welcome{background:var(--yellow);min-height:100vh}
+.welcome .app{display:flex;flex-direction:column;gap:18px;padding-top:calc(28px + env(safe-area-inset-top))}
+.err{color:#9B1C12;font-weight:700;font-size:14px}
+.buddy{display:flex;align-items:center;gap:12px;background:#fff;border:2px solid var(--ink);border-radius:20px;padding:12px 14px}
+.bounce{animation:bounce .5s}
+@keyframes bounce{40%{transform:translateY(-8px) rotate(-6deg)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="/config.js"></script>
+<script src="/vendor/supabase.js"></script>
+<script>
+(function () {
+  "use strict";
+  var cfg = window.WALKIES_CONFIG;
+  var sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, { auth: { persistSession: true, autoRefreshToken: true } });
+  var MILESTONES = [5000, 15000, 30000, 45000, 65000, 85000, 100000, 120000, 135000, 150000];
+  var BOWL_KG = 0.4, TEAM_GOAL_KG = 250;
+  var INDUSTRIES = ["Banking & Finance", "Tech", "Automotive", "Retail", "Health", "Other"];
+  var BRACKETS = [["Pup", "up to 50 staff"], ["Pack", "51 to 250"], ["Big Dog", "251 to 1,000"], ["Top Dog", "1,000+"]];
+  var S = { view: "loading", tab: "today", mode: "signup", user: null, profile: null, challenge: null, days: [], impact: null, board: [], bracket: null, sheet: false, celebrate: null, msg: "", busy: false, bounce: false };
+  var store = { get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+  var $ = function (s) { return document.querySelector(s); };
+  var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+  var fmt = function (n) { return Math.round(Number(n) || 0).toLocaleString("en-AU"); };
+  var today = function () { return new Date().toLocaleDateString("en-CA"); };
+  var toast = function (m) { var t = $("#toast"); t.textContent = m; t.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(function () { t.classList.remove("show"); }, 2600); };
+
+  var PAW = '<svg width="28" height="28" viewBox="0 0 120 120" aria-hidden="true"><g fill="#FF5A4E" stroke="#1B2433" stroke-width="6"><ellipse cx="60" cy="80" rx="25" ry="21"/><ellipse cx="27" cy="52" rx="10" ry="13"/><ellipse cx="47" cy="31" rx="10" ry="13"/><ellipse cx="73" cy="31" rx="10" ry="13"/><ellipse cx="93" cy="52" rx="10" ry="13"/></g></svg>';
+  var ICON = {
+    today: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+    packs: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.6 0 4.5 1.8 4.5 4.5"/>',
+    impact: '<path d="M3 11h18a9 6 0 0 1-18 0zM7 20h10"/>',
+    me: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>'
+  };
+  function bowlSvg(level, big) {
+    var l = Math.max(0, Math.min(1, level)), w = big ? 250 : 220, h = Math.round(w * 0.68);
+    var peak = 76 - 52 * l, mid = 76 - 30 * l;
+    var mound = l > 0.02 ? '<path d="M34 76 Q54 ' + mid + ' 100 ' + peak + ' Q146 ' + mid + ' 166 76 Z" fill="#B9692F" stroke="#1B2433" stroke-width="4" stroke-linejoin="round"/>' +
+      '<g fill="#8A4A1E"><circle cx="70" cy="' + (72 - 14 * l) + '" r="5"/><circle cx="96" cy="' + (70 - 24 * l) + '" r="5"/><circle cx="122" cy="' + (72 - 14 * l) + '" r="5"/><circle cx="146" cy="73" r="4.5"/><circle cx="84" cy="73" r="4.5"/></g>' : "";
+    return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 200 140" role="img" aria-label="A bowl of kibble"><ellipse cx="100" cy="134" rx="70" ry="6" fill="#1B2433" opacity=".18"/>' + mound +
+      '<path d="M18 76 H182 Q182 132 100 132 Q18 132 18 76 Z" fill="#fff" stroke="#1B2433" stroke-width="5" stroke-linejoin="round"/>' +
+      '<g fill="#1B2433"><ellipse cx="100" cy="116" rx="6" ry="5"/><ellipse cx="88" cy="108" rx="2.6" ry="3.4"/><ellipse cx="95" cy="103" rx="2.6" ry="3.4"/><ellipse cx="105" cy="103" rx="2.6" ry="3.4"/><ellipse cx="112" cy="108" rx="2.6" ry="3.4"/></g></svg>';
+  }
+  var DOG = '<svg width="48" height="48" viewBox="0 0 48 48" aria-hidden="true"><ellipse cx="9" cy="20" rx="7" ry="12" fill="#B9692F" stroke="#1B2433" stroke-width="2.5"/><ellipse cx="39" cy="20" rx="7" ry="12" fill="#B9692F" stroke="#1B2433" stroke-width="2.5"/><circle cx="24" cy="26" r="16" fill="#F3D9B1" stroke="#1B2433" stroke-width="2.5"/><circle cx="18" cy="24" r="2.2" fill="#1B2433"/><circle cx="30" cy="24" r="2.2" fill="#1B2433"/><ellipse cx="24" cy="31" rx="4" ry="3" fill="#1B2433"/></svg>';
+
+  // ---- data ----
+  function totalSteps() { return S.days.reduce(function (a, d) { return a + d.steps; }, 0); }
+  function todaySteps() { var t = today(), r = S.days.filter(function (d) { return d.day === t; })[0]; return r ? r.steps : 0; }
+  function bowlsFor(steps) { return MILESTONES.filter(function (m) { return steps >= m; }).length; }
+
+  async function loadAll() {
+    var uid = S.user.id;
+    var ch = await sb.from("challenge").select("*").limit(1).maybeSingle();
+    S.challenge = ch.data;
+    var p = await sb.from("profiles").select("*").eq("user_id", uid).maybeSingle();
+    S.profile = p.data || { display_name: "Walker", buddy_name: "Biscuit", workplace_id: null };
+    if (S.challenge) {
+      var d = await sb.from("step_days").select("day,steps").gte("day", S.challenge.starts_on).lte("day", S.challenge.ends_on);
+      S.days = d.data || [];
+    }
+    await Promise.all([loadImpact(), loadBoard()]);
+  }
+  async function loadImpact() { var r = await sb.rpc("impact"); S.impact = r.data && r.data[0] ? r.data[0] : null; }
+  async function loadBoard() { var r = await sb.rpc("leaderboard", { p_bracket: S.bracket }); S.board = r.data || []; }
+
+  async function boot() {
+    var r = await sb.auth.getSession();
+    S.user = r.data.session ? r.data.session.user : null;
+    if (!S.user) { S.view = "auth"; return render(); }
+    await enter();
+  }
+  async function enter() {
+    S.view = "loading"; render();
+    try { await loadAll(); } catch (e) { toast("Could not load your data. Check your signal."); }
+    var seen = store.get("walkies-onboarded-" + S.user.id);
+    S.view = (!S.profile.workplace_id && !seen) ? "join" : "app";
+    render();
+  }
+
+  // ---- actions ----
+  var actions = {
+    async auth(f) {
+      var email = f.email.value.trim(), password = f.password.value, name = f.name ? f.name.value.trim() : "";
+      S.msg = ""; S.busy = true; render();
+      var res;
+      if (S.mode === "signup") res = await sb.auth.signUp({ email: email, password: password, options: { data: { display_name: name || "Walker" } } });
+      else res = await sb.auth.signInWithPassword({ email: email, password: password });
+      S.busy = false;
+      if (res.error) { S.msg = res.error.message; return render(); }
+      if (!res.data.session) { S.msg = "Almost there! Check your email for a confirmation link, then sign in."; S.mode = "signin"; return render(); }
+      S.user = res.data.session.user; await enter();
+    },
+    async joinCode(f) {
+      var r = await sb.rpc("join_workplace", { p_code: f.code.value });
+      if (r.error) { S.msg = r.error.message; return render(); }
+      store.set("walkies-onboarded-" + S.user.id, "1"); S.msg = ""; toast("Welcome to " + r.data.name + "!"); await finishJoin();
+    },
+    async createTeam(f) {
+      var r = await sb.rpc("create_workplace", { p_name: f.wname.value, p_industry: f.industry.value, p_bracket: f.bracket.value });
+      if (r.error) { S.msg = r.error.message.indexOf("check") > -1 ? "Please use a team name of 2 to 60 characters." : r.error.message; return render(); }
+      store.set("walkies-onboarded-" + S.user.id, "1"); S.msg = ""; toast("Team created. Share code " + r.data.join_code); await finishJoin();
+    },
+    async solo() { store.set("walkies-onboarded-" + S.user.id, "1"); S.view = "app"; render(); },
+    async leave() { await sb.rpc("leave_workplace"); await finishJoin(); toast("You left your team"); },
+    async saveNames(f) {
+      var r = await sb.from("profiles").update({ display_name: f.dname.value.trim() || "Walker", buddy_name: f.bname.value.trim() || "Biscuit" }).eq("user_id", S.user.id);
+      if (r.error) return toast("Names must be 1 to 40 characters");
+      await loadAll(); render(); toast("Saved");
+    },
+    async saveSteps(f) {
+      var n = Math.max(0, Math.min(60000, Math.round(Number(String(f.steps.value).replace(/[^\d.]/g, "")) || 0)));
+      var before = bowlsFor(totalSteps());
+      var r = await sb.from("step_days").upsert({ user_id: S.user.id, day: today(), steps: n }, { onConflict: "user_id,day" });
+      if (r.error) return toast("Could not save steps");
+      S.sheet = false; await loadAll();
+      var after = bowlsFor(totalSteps());
+      if (after > before) S.celebrate = { bowls: after, steps: MILESTONES[after - 1] }; else toast("Steps saved");
+      render();
+    }
+  };
+  async function finishJoin() { await loadAll(); S.view = "app"; S.tab = "today"; render(); }
+
+  // ---- views ----
+  function topbar(chip) { return '<header class="top"><div class="brand">' + PAW + 'Walkies</div>' + (chip ? '<div class="chip">' + chip + '</div>' : "") + '</header>'; }
+  function timeLeft() {
+    if (!S.challenge) return "";
+    var end = new Date(S.challenge.ends_on + "T23:59:59"), ms = end - new Date();
+    if (ms <= 0) return "Finished";
+    var d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5);
+    return d + "d " + String(h).padStart(2, "0") + "h left";
+  }
+  function viewAuth() {
+    var up = S.mode === "signup";
+    return '<div class="welcome"><div class="app">' + topbar("") +
+      '<h1 class="h1" style="font-size:44px;line-height:1.02">Walk. Fill a bowl. Feed a rescue dog.</h1>' +
+      '<p style="font-size:17px">Every scoop you unlock is a bowl of food for a shelter dog. Join your workplace, or walk on your own.</p>' +
+      '<form class="card stack" data-form="auth" style="box-shadow:5px 5px 0 var(--ink);border-width:3px;border-radius:24px">' +
+      (up ? '<div class="gap8"><label for="name">Your first name</label><input id="name" name="name" autocomplete="given-name" maxlength="40" required></div>' : "") +
+      '<div class="gap8"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required></div>' +
+      '<div class="gap8"><label for="password">Password (8 or more characters)</label><input id="password" name="password" type="password" minlength="8" autocomplete="' + (up ? "new-password" : "current-password") + '" required></div>' +
+      (S.msg ? '<p class="err" role="alert">' + esc(S.msg) + '</p>' : "") +
+      '<button class="btn coral" ' + (S.busy ? "disabled" : "") + '>' + (up ? "Create my account" : "Sign in") + '</button></form>' +
+      '<button class="btn" data-act="mode">' + (up ? "I already have an account" : "Create a new account") + '</button>' +
+      '<p style="text-align:center;font-size:13px">Free to join. We only read your step count.</p></div></div>';
+  }
+  function viewJoin() {
+    return '<div class="app">' + topbar("") + '<div class="stack"><div><h1 class="h1">Who are you walking with?</h1><p class="muted">Walk with your workplace to join the league, or walk on your own.</p></div>' +
+      (S.msg ? '<p class="err" role="alert">' + esc(S.msg) + '</p>' : "") +
+      '<form class="card stack" data-form="joinCode"><div class="gap8"><label for="code">Join with a workplace code</label><input id="code" name="code" placeholder="Example: A1B2C3" autocapitalize="characters" required></div><button class="btn coral">Join my team</button></form>' +
+      '<form class="card stack" data-form="createTeam"><div class="h2">Start a team for your workplace</div>' +
+      '<div class="gap8"><label for="wname">Workplace name</label><input id="wname" name="wname" minlength="2" maxlength="60" required></div>' +
+      '<div class="gap8"><label for="industry">Industry</label><select id="industry" name="industry">' + INDUSTRIES.map(function (i) { return "<option>" + esc(i) + "</option>"; }).join("") + '</select></div>' +
+      '<div class="gap8"><label for="bracket">Team size</label><select id="bracket" name="bracket">' + BRACKETS.map(function (b) { return "<option value=\"" + b[0] + "\">" + b[0] + " (" + b[1] + ")</option>"; }).join("") + '</select></div>' +
+      '<button class="btn">Create team</button></form>' +
+      '<button class="btn light" data-act="solo">Walk on my own for now</button></div></div>';
+  }
+  function viewToday() {
+    var steps = totalSteps(), done = bowlsFor(steps), next = MILESTONES.filter(function (m) { return steps < m; })[0];
+    var prev = MILESTONES.filter(function (m) { return steps >= m; }).pop() || 0;
+    var pct = next ? Math.round((steps - prev) / (next - prev) * 100) : 100;
+    var scoops = MILESTONES.map(function (m, i) {
+      var cls = steps >= m ? "on" : (m === next ? "next" : "");
+      return '<div class="scoop ' + cls + '">' + (m >= 1000 ? m / 1000 + "k" : m) + '</div>';
+    }).join("");
+    return topbar(esc(timeLeft())) + '<div class="stack">' +
+      '<div class="hero"><div class="eyebrow">Your bowl this challenge</div>' + bowlSvg(steps / 150000, true) +
+      '<div class="big">' + fmt(steps) + '</div><div style="font-weight:500">steps walked</div>' +
+      '<div class="bar" style="margin-top:8px" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100"><i style="width:' + pct + '%"></i></div>' +
+      '<div style="font-weight:700;margin-top:2px">' + (next ? fmt(next - steps) + " steps to your next scoop" : "All 10 scoops unlocked. Epic walking!") + '</div></div>' +
+      '<button class="btn" data-act="sheet">Add today\'s steps</button>' +
+      '<div class="between"><div class="h2">Scoops</div><div class="muted" style="font-size:14px">' + done + ' of 10 in the bowl</div></div>' +
+      '<div class="scoops">' + scoops + '</div>' +
+      '<div class="buddy"><div class="' + (S.bounce ? "bounce" : "") + '">' + DOG + '</div><div style="flex:1;min-width:0"><div style="font-weight:700">' + esc(S.profile.buddy_name) + ' is ready for a walk</div><div class="muted" style="font-size:14px">Your Buddy cheers every scoop</div></div><button class="btn small" style="background:var(--yellow);color:var(--ink)" data-act="pat">Pat</button></div></div>';
+  }
+  function viewPacks() {
+    var rows = S.board, mine = rows.filter(function (r) { return r.is_mine; })[0], mineIdx = rows.indexOf(mine);
+    var chips = '<button class="pill" aria-pressed="' + (!S.bracket) + '" data-bracket="">All</button>' + BRACKETS.map(function (b) { return '<button class="pill" aria-pressed="' + (S.bracket === b[0]) + '" data-bracket="' + b[0] + '">' + b[0] + '</button>'; }).join("");
+    var list = rows.length ? rows.map(function (r, i) {
+      return '<div class="lb ' + (r.is_mine ? "mine" : (i === 0 ? "first" : "")) + '"><div class="rank">' + (i + 1) + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (r.is_mine ? "Your team: " : "") + esc(r.name) + '</div><div style="font-size:13px">' + r.members + (r.members === 1 ? " walker" : " walkers") + ' · ' + esc(r.industry) + ' · ' + esc(r.size_bracket) + '</div></div><div><div class="num">' + fmt(r.steps_per_member) + '</div><div style="font-size:12px;text-align:right">steps each</div></div></div>';
+    }).join("") : '<div class="card"><b>No teams here yet.</b><p class="muted">Start a team from the Me tab, share the code with your workmates and be the first on the board.</p></div>';
+    var hint = "";
+    if (mine && mineIdx > 0) { var above = rows[mineIdx - 1]; hint = '<div class="card" style="border-style:dashed"><b>Catch ' + esc(above.name) + '</b> and your team moves up a place. Only <b>' + fmt(Math.max(1, above.steps_per_member - mine.steps_per_member + 1)) + '</b> more steps each.</div>'; }
+    return topbar("") + '<div class="stack"><div><h1 class="h1">Packs</h1><p class="muted">Ranked by steps per walker, so every size of team has a shot at the Golden Bowl.</p></div><div class="chips" role="group" aria-label="Team size">' + chips + '</div><div class="stack" style="gap:10px">' + list + '</div>' + hint + '</div>';
+  }
+  function viewImpact() {
+    var i = S.impact || {}, teamKg = (i.team_bowls || 0) * BOWL_KG, commKg = (i.community_bowls || 0) * BOWL_KG, myKg = (i.my_bowls || 0) * BOWL_KG;
+    var pct = Math.min(100, Math.round(teamKg / TEAM_GOAL_KG * 100));
+    var team = i.team_name
+      ? '<div class="card stack" style="gap:10px"><div class="between"><div style="font-weight:800">Goal: ' + TEAM_GOAL_KG + ' kg unlocks a dog visit</div><div class="muted" style="font-size:14px">' + Math.max(0, Math.round(TEAM_GOAL_KG - teamKg)) + ' kg to go</div></div><div class="bar" style="background:var(--sky)"><i style="width:' + pct + '%"></i></div><p class="muted" style="font-size:14px">' + esc(i.team_name) + ' has unlocked ' + (Math.round(teamKg * 10) / 10) + ' kg so far. Reach the goal and a shelter dog and its handler come to your office to say thanks.</p></div>'
+      : '<div class="card"><b>Walking solo</b><p class="muted">Join or start a team from the Me tab to unlock an office dog visit together.</p></div>';
+    return topbar("") + '<div class="stack"><h1 class="h1">Impact</h1>' +
+      '<div class="hero" style="align-items:flex-start;text-align:left"><div class="eyebrow">Food unlocked by the Walkies community</div><div><span class="big" style="font-size:64px">' + (Math.round(commKg * 10) / 10) + '</span> <b style="font-size:20px">kg</b></div><div>' + fmt(i.community_bowls) + ' bowls from ' + fmt(i.community_walkers) + ' walkers. You unlocked ' + (i.my_bowls || 0) + ' (' + (Math.round(myKg * 10) / 10) + ' kg).</div></div>' +
+      team +
+      '<div class="card"><b>Delivery proof</b><p class="muted" style="font-size:14px">Photos and delivery dockets from our rescue partners will show up here once the first food goes out.</p></div>' +
+      '<div class="card row" style="background:var(--ink);color:#fff"><div style="flex:1;font-size:14px"><b>Want to add a bowl?</b> Friends and family will soon be able to sponsor your steps.</div><button class="btn small" style="background:var(--yellow);color:var(--ink)" data-act="sponsor">Tell me</button></div></div>';
+  }
+  function viewMe() {
+    var i = S.impact || {};
+    var team = i.team_name
+      ? '<div class="card stack" style="gap:10px"><div class="h2">' + esc(i.team_name) + '</div><p class="muted">' + i.team_members + (i.team_members === 1 ? " walker" : " walkers") + '. Workmates join with this code:</p><div style="font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:.12em">' + esc(i.team_join_code) + '</div><div class="row"><button class="btn small light" data-act="copy" data-code="' + esc(i.team_join_code) + '">Copy code</button><button class="btn small light" data-act="leave">Leave team</button></div></div>'
+      : '<button class="btn coral" data-act="gojoin">Join or start a team</button>';
+    return topbar("") + '<div class="stack"><h1 class="h1">Me</h1>' +
+      '<form class="card stack" data-form="saveNames"><div class="gap8"><label for="dname">Your name</label><input id="dname" name="dname" value="' + esc(S.profile.display_name) + '" maxlength="40" required></div><div class="gap8"><label for="bname">Your Buddy\'s name</label><input id="bname" name="bname" value="' + esc(S.profile.buddy_name) + '" maxlength="24" required></div><button class="btn">Save</button></form>' +
+      team +
+      '<div class="card"><b>Add to your home screen</b><p class="muted" style="font-size:14px">On iPhone, tap Share then Add to Home Screen. On Android, tap the menu then Install app. Walkies then opens like an app.</p></div>' +
+      '<button class="btn light" data-act="signout">Sign out</button><p class="muted" style="font-size:13px;text-align:center">' + esc(S.user.email) + '</p></div>';
+  }
+  function sheet() {
+    return '<div class="sheet-bg" data-act="closesheet"><form class="sheet" data-form="saveSteps" role="dialog" aria-modal="true" aria-label="Add steps"><div class="h2">Today\'s steps</div>' +
+      '<p class="muted" style="font-size:14px">Copy today\'s total from your Health app. Automatic syncing is coming later.</p>' +
+      '<label for="steps" class="eyebrow">Steps today</label><input id="steps" name="steps" inputmode="numeric" value="' + todaySteps() + '" autocomplete="off">' +
+      '<div class="row">' + [1000, 5000, 10000].map(function (n) { return '<button type="button" class="pill" style="flex:1" data-add="' + n + '">+' + fmt(n) + '</button>'; }).join("") + '</div>' +
+      '<button class="btn coral">Save steps</button><button type="button" class="btn light" data-act="closesheet">Cancel</button></form></div>';
+  }
+  function celebrate() {
+    var c = S.celebrate;
+    return '<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ctitle"><div style="width:100%;display:flex;justify-content:flex-end"><button class="btn small light" data-act="closecel">Close</button></div>' +
+      '<div style="margin-top:24px;font-weight:800;font-size:13px;letter-spacing:.14em;text-transform:uppercase">Scoop ' + c.bowls + ' unlocked</div>' +
+      '<h1 id="ctitle" class="h1" style="font-size:44px;line-height:1.02;text-align:center">Dinner is served!</h1>' +
+      '<div class="card" style="border-width:3px;border-radius:28px;box-shadow:6px 6px 0 var(--ink);display:flex;flex-direction:column;align-items:center;transform:rotate(-2deg);margin-top:6px">' + bowlSvg(0.9, false) + '<div class="h1" style="font-size:32px">1 bowl</div><div class="muted" style="font-size:14px;font-weight:700">about 400 g · at ' + fmt(c.steps) + ' steps</div></div>' +
+      '<p style="text-align:center;font-size:17px;max-width:300px;margin-top:6px">Your steps just paid for a meal for a shelter dog.</p>' +
+      '<div style="margin-top:auto;width:100%" class="gap8"><button class="btn" data-act="celimpact">See the impact</button><button class="btn light" data-act="closecel">Keep walking</button></div></div>';
+  }
+  function nav() {
+    var tabs = [["today", "Today"], ["packs", "Packs"], ["impact", "Impact"], ["me", "Me"]];
+    return '<nav class="nav" aria-label="Walkies"><div class="nav-in" role="tablist">' + tabs.map(function (t) {
+      return '<button class="tab" role="tab" aria-selected="' + (S.tab === t[0]) + '" data-tab="' + t[0] + '"><svg viewBox="0 0 24 24" fill="none" stroke="#1B2433" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[t[0]] + '</svg>' + t[1] + '</button>';
+    }).join("") + '</div></nav>';
+  }
+  function render() {
+    var root = $("#root"), html;
+    if (S.view === "loading") html = '<div class="app">' + topbar("") + '<p class="muted" role="status">Loading your bowl…</p></div>';
+    else if (S.view === "auth") html = viewAuth();
+    else if (S.view === "join") html = viewJoin();
+    else html = '<div class="app">' + ({ today: viewToday, packs: viewPacks, impact: viewImpact, me: viewMe }[S.tab])() + '</div>' + nav() + (S.sheet ? sheet() : "") + (S.celebrate ? celebrate() : "");
+    root.innerHTML = html;
+    if (S.sheet) { var el = $("#steps"); if (el) { el.focus(); el.select(); } }
+  }
+
+  // ---- events ----
+  document.addEventListener("submit", function (e) {
+    var f = e.target.closest("form[data-form]"); if (!f) return;
+    e.preventDefault();
+    var fn = actions[f.dataset.form]; if (fn) fn(f).catch(function () { toast("Something went wrong. Try again."); });
+  });
+  document.addEventListener("click", function (e) {
+    var t = e.target;
+    var add = t.closest("[data-add]");
+    if (add) { var inp = $("#steps"); inp.value = Math.min(60000, (Number(String(inp.value).replace(/[^\d]/g, "")) || 0) + Number(add.dataset.add)); return; }
+    var tab = t.closest("[data-tab]");
+    if (tab) { S.tab = tab.dataset.tab; render(); window.scrollTo(0, 0); if (S.tab === "packs") loadBoard().then(render); if (S.tab === "impact") loadImpact().then(render); return; }
+    var br = t.closest("[data-bracket]");
+    if (br) { S.bracket = br.dataset.bracket || null; loadBoard().then(render); return; }
+    var a = t.closest("[data-act]"); if (!a) return;
+    if (a.classList.contains("sheet-bg") && t !== a) return;
+    var act = a.dataset.act;
+    if (act === "mode") { S.mode = S.mode === "signup" ? "signin" : "signup"; S.msg = ""; render(); }
+    else if (act === "sheet") { S.sheet = true; render(); }
+    else if (act === "closesheet") { S.sheet = false; render(); }
+    else if (act === "closecel") { S.celebrate = null; render(); }
+    else if (act === "celimpact") { S.celebrate = null; S.tab = "impact"; render(); }
+    else if (act === "solo") actions.solo();
+    else if (act === "gojoin") { S.view = "join"; S.msg = ""; render(); }
+    else if (act === "leave") { if (confirm("Leave your team? Your steps stay with you.")) actions.leave(); }
+    else if (act === "copy") { try { navigator.clipboard.writeText(a.dataset.code); toast("Code copied"); } catch (x) { toast("Code: " + a.dataset.code); } }
+    else if (act === "sponsor") toast("Coming soon: friends and family will be able to sponsor your bowls.");
+    else if (act === "pat") { S.bounce = true; render(); toast(S.profile.buddy_name + " wags their tail!"); setTimeout(function () { S.bounce = false; }, 600); }
+    else if (act === "signout") { sb.auth.signOut().then(function () { S.user = null; S.view = "auth"; S.mode = "signin"; S.tab = "today"; render(); }); }
+  });
+  sb.auth.onAuthStateChange(function (ev) { if (ev === "SIGNED_OUT" && S.view !== "auth") { S.user = null; S.view = "auth"; render(); } });
+  if ("serviceWorker" in navigator) window.addEventListener("load", function () { navigator.serviceWorker.register("/sw.js").catch(function () {}); });
+  setInterval(function () { if (S.view === "app" && S.tab === "today" && !S.sheet && !S.celebrate) { var c = document.querySelector(".chip"); if (c) c.textContent = timeLeft(); } }, 30000);
+  boot().catch(function () { S.view = "auth"; render(); });
+})();
+</script>
+</body>
+</html>
