@@ -51,11 +51,11 @@ h1,h2,p{margin:0}
 button.scoop{cursor:pointer}
 button.scoop:active svg{transform:scale(.94)}
 .scoop svg{display:block;width:100%;height:100%;overflow:visible}
-.scoop .paw{fill:var(--surface);stroke:#4a4660;stroke-width:2.5;stroke-linejoin:round}
-.scoop text{fill:var(--muted);font-family:var(--display);font-weight:800;font-size:19px;text-anchor:middle}
-.scoop.on .paw{fill:var(--green);stroke:var(--green);filter:drop-shadow(0 0 5px rgba(59,255,143,.6))}
+.scoop .paw{fill:#0d0c12;stroke:#4a4660;stroke-width:5}
+.scoop text{fill:var(--muted);font-family:var(--display);font-weight:800;font-size:21px;text-anchor:middle}
+.scoop.on .paw{fill:var(--green);stroke:var(--green);filter:drop-shadow(0 0 6px rgba(59,255,143,.6))}
 .scoop.on text{fill:var(--dark)}
-.scoop.next .paw{stroke:var(--pink);stroke-width:3;stroke-dasharray:5 4}
+.scoop.next .paw{stroke:var(--pink);stroke-width:6;filter:drop-shadow(0 0 6px rgba(255,46,154,.65))}
 .scoop.next text{fill:var(--pink)}
 label{font-weight:700;font-size:15px}
 input,select{min-height:48px;width:100%;border:1px solid var(--line);border-radius:14px;padding:0 14px;background:var(--surface);color:var(--fg);font-size:16px}
@@ -155,15 +155,12 @@ option{background:var(--surface);color:var(--fg)}
       '<path d="M18 76 H182 Q182 132 100 132 Q18 132 18 76 Z" fill="#0d0c12" stroke="#f4f2fa" stroke-width="5" stroke-linejoin="round"/>' +
       '<g fill="#ff2e9a"><ellipse cx="100" cy="116" rx="6" ry="5"/><ellipse cx="88" cy="108" rx="2.6" ry="3.4"/><ellipse cx="95" cy="103" rx="2.6" ry="3.4"/><ellipse cx="105" cy="103" rx="2.6" ry="3.4"/><ellipse cx="112" cy="108" rx="2.6" ry="3.4"/></g></svg>';
   }
-  // A paw print with the step count inside the main pad.
+  // A paw print (separate toes and a pad) with the step count inside the pad.
   function pawTile(label) {
-    return '<svg viewBox="0 0 100 100" aria-hidden="true"><g class="paw">' +
-      '<ellipse cx="17" cy="44" rx="8.5" ry="11.5" transform="rotate(-22 17 44)"/>' +
-      '<ellipse cx="36" cy="22" rx="9" ry="12.5" transform="rotate(-8 36 22)"/>' +
-      '<ellipse cx="64" cy="22" rx="9" ry="12.5" transform="rotate(8 64 22)"/>' +
-      '<ellipse cx="83" cy="44" rx="8.5" ry="11.5" transform="rotate(22 83 44)"/>' +
-      '<path d="M50 42 C70 42 84 56 84 72 C84 85 74 93 63 93 C57 93 54 90 50 90 C46 90 43 93 37 93 C26 93 16 85 16 72 C16 56 30 42 50 42 Z"/></g>' +
-      '<text x="50" y="76">' + label + '</text></svg>';
+    return '<svg viewBox="0 0 120 120" aria-hidden="true"><g class="paw">' +
+      '<ellipse cx="25" cy="52" rx="10" ry="13"/><ellipse cx="46" cy="29" rx="10" ry="13"/>' +
+      '<ellipse cx="74" cy="29" rx="10" ry="13"/><ellipse cx="95" cy="52" rx="10" ry="13"/>' +
+      '<ellipse cx="60" cy="84" rx="31" ry="25"/></g><text x="60" y="91">' + label + '</text></svg>';
   }
   var DOG = '<svg width="48" height="48" viewBox="0 0 48 48" aria-hidden="true"><ellipse cx="9" cy="20" rx="7" ry="12" fill="#B9692F" stroke="#f4f2fa" stroke-width="2.5"/><ellipse cx="39" cy="20" rx="7" ry="12" fill="#B9692F" stroke="#f4f2fa" stroke-width="2.5"/><circle cx="24" cy="26" r="16" fill="#F3D9B1" stroke="#f4f2fa" stroke-width="2.5"/><circle cx="18" cy="24" r="2.2" fill="#050507"/><circle cx="30" cy="24" r="2.2" fill="#050507"/><ellipse cx="24" cy="31" rx="4" ry="3" fill="#050507"/></svg>';
 
