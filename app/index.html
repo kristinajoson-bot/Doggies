@@ -102,7 +102,14 @@ input,select{min-height:48px;width:100%;border:2px solid var(--ink);border-radiu
   var today = function () { return new Date().toLocaleDateString("en-CA"); };
   var toast = function (m) { var t = $("#toast"); t.textContent = m; t.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(function () { t.classList.remove("show"); }, 2600); };
 
-  var PAW = '<svg width="28" height="28" viewBox="0 0 120 120" aria-hidden="true"><g fill="#FF5A4E" stroke="#1B2433" stroke-width="6"><ellipse cx="60" cy="80" rx="25" ry="21"/><ellipse cx="27" cy="52" rx="10" ry="13"/><ellipse cx="47" cy="31" rx="10" ry="13"/><ellipse cx="73" cy="31" rx="10" ry="13"/><ellipse cx="93" cy="52" rx="10" ry="13"/></g></svg>';
+  var ORIGIN = location.origin;
+  S.recovery = /type=recovery/.test(location.hash);
+  try {
+    var qj = new URLSearchParams(location.search).get("join");
+    if (qj) { store.set("walkies-pending-join", qj.trim().slice(0, 12).toUpperCase()); history.replaceState(null, "", location.pathname); }
+  } catch (e) {}
+
+  var PAW ='<svg width="28" height="28" viewBox="0 0 120 120" aria-hidden="true"><g fill="#FF5A4E" stroke="#1B2433" stroke-width="6"><ellipse cx="60" cy="80" rx="25" ry="21"/><ellipse cx="27" cy="52" rx="10" ry="13"/><ellipse cx="47" cy="31" rx="10" ry="13"/><ellipse cx="73" cy="31" rx="10" ry="13"/><ellipse cx="93" cy="52" rx="10" ry="13"/></g></svg>';
   var ICON = {
     today: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
     packs: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.6 0 4.5 1.8 4.5 4.5"/>',
@@ -144,11 +151,20 @@ input,select{min-height:48px;width:100%;border:2px solid var(--ink);border-radiu
     var r = await sb.auth.getSession();
     S.user = r.data.session ? r.data.session.user : null;
     if (!S.user) { S.view = "auth"; return render(); }
+    if (S.recovery) { S.view = "reset"; return render(); }
     await enter();
   }
   async function enter() {
     S.view = "loading"; render();
     try { await loadAll(); } catch (e) { toast("Could not load your data. Check your signal."); }
+    var pend = store.get("walkies-pending-join");
+    if (pend) {
+      store.set("walkies-pending-join", "");
+      if (!S.profile.workplace_id) {
+        var jr = await sb.rpc("join_workplace", { p_code: pend });
+        if (jr.error) S.msg = "That invite code did not work. Ask for a new one."; else { store.set("walkies-onboarded-" + S.user.id, "1"); await loadAll(); toast("Welcome to " + jr.data.name + "!"); }
+      }
+    }
     var seen = store.get("walkies-onboarded-" + S.user.id);
     S.view = (!S.profile.workplace_id && !seen) ? "join" : "app";
     render();
@@ -160,12 +176,26 @@ input,select{min-height:48px;width:100%;border:2px solid var(--ink);border-radiu
       var email = f.email.value.trim(), password = f.password.value, name = f.name ? f.name.value.trim() : "";
       S.msg = ""; S.busy = true; render();
       var res;
-      if (S.mode === "signup") res = await sb.auth.signUp({ email: email, password: password, options: { data: { display_name: name || "Walker" } } });
+      if (S.mode === "signup") res = await sb.auth.signUp({ email: email, password: password, options: { emailRedirectTo: ORIGIN + "/", data: { display_name: name || "Walker" } } });
       else res = await sb.auth.signInWithPassword({ email: email, password: password });
       S.busy = false;
-      if (res.error) { S.msg = res.error.message; return render(); }
-      if (!res.data.session) { S.msg = "Almost there! Check your email for a confirmation link, then sign in."; S.mode = "signin"; return render(); }
+      if (res.error) { S.msg = res.error.message; S.confirmEmail = /not confirmed/i.test(res.error.message) ? email : null; return render(); }
+      if (!res.data.session) { S.msg = "Almost there! Check your email for a confirmation link, then sign in."; S.confirmEmail = email; S.mode = "signin"; return render(); }
+      S.confirmEmail = null;
       S.user = res.data.session.user; await enter();
+    },
+    async forgot(f) {
+      S.busy = true; render();
+      var r = await sb.auth.resetPasswordForEmail(f.email.value.trim(), { redirectTo: ORIGIN + "/" });
+      S.busy = false;
+      S.msg = r.error ? r.error.message : "If that email has an account, a reset link is on its way. Check your inbox.";
+      render();
+    },
+    async reset(f) {
+      if (f.password.value !== f.password2.value) { S.msg = "Those passwords do not match."; return render(); }
+      var r = await sb.auth.updateUser({ password: f.password.value });
+      if (r.error) { S.msg = r.error.message; return render(); }
+      S.recovery = false; S.msg = ""; toast("Password updated"); await enter();
     },
     async joinCode(f) {
       var r = await sb.rpc("join_workplace", { p_code: f.code.value });
@@ -197,6 +227,12 @@ input,select{min-height:48px;width:100%;border:2px solid var(--ink);border-radiu
   };
   async function finishJoin() { await loadAll(); S.view = "app"; S.tab = "today"; render(); }
 
+  function inviteLink(code) { return ORIGIN + "/?join=" + encodeURIComponent(code); }
+  function inviteText(team, link) { return "Join my team " + team + " on Walkies! Every step you walk fills a bowl of food for a shelter dog. Tap to join: " + link; }
+  function mailtoInvite(team, code) {
+    return "mailto:?subject=" + encodeURIComponent("Join my team on Walkies") + "&body=" + encodeURIComponent(inviteText(team, inviteLink(code)));
+  }
+
   // ---- views ----
   function topbar(chip) { return '<header class="top"><div class="brand">' + PAW + 'Walkies</div>' + (chip ? '<div class="chip">' + chip + '</div>' : "") + '</header>'; }
   function timeLeft() {
@@ -207,18 +243,28 @@ input,select{min-height:48px;width:100%;border:2px solid var(--ink);border-radiu
     return d + "d " + String(h).padStart(2, "0") + "h left";
   }
   function viewAuth() {
-    var up = S.mode === "signup";
+    var up = S.mode === "signup", fg = S.mode === "forgot", pend = store.get("walkies-pending-join");
+    var label = fg ? "Email me a reset link" : (up ? "Create my account" : "Sign in");
     return '<div class="welcome"><div class="app">' + topbar("") +
       '<h1 class="h1" style="font-size:44px;line-height:1.02">Walk. Fill a bowl. Feed a rescue dog.</h1>' +
-      '<p style="font-size:17px">Every scoop you unlock is a bowl of food for a shelter dog. Join your workplace, or walk on your own.</p>' +
-      '<form class="card stack" data-form="auth" style="box-shadow:5px 5px 0 var(--ink);border-width:3px;border-radius:24px">' +
+      (pend ? '<div class="card" style="border-width:3px"><b>You have been invited to a team!</b> Sign in or create an account and you will join it automatically.</div>' : '<p style="font-size:17px">Every scoop you unlock is a bowl of food for a shelter dog. Join your workplace, or walk on your own.</p>') +
+      '<form class="card stack" data-form="' + (fg ? "forgot" : "auth") + '" style="box-shadow:5px 5px 0 var(--ink);border-width:3px;border-radius:24px">' +
       (up ? '<div class="gap8"><label for="name">Your first name</label><input id="name" name="name" autocomplete="given-name" maxlength="40" required></div>' : "") +
       '<div class="gap8"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required></div>' +
-      '<div class="gap8"><label for="password">Password (8 or more characters)</label><input id="password" name="password" type="password" minlength="8" autocomplete="' + (up ? "new-password" : "current-password") + '" required></div>' +
+      (fg ? '<p class="muted" style="font-size:14px">We will email you a link to choose a new password.</p>' : '<div class="gap8"><label for="password">Password (8 or more characters)</label><input id="password" name="password" type="password" minlength="8" autocomplete="' + (up ? "new-password" : "current-password") + '" required></div>') +
       (S.msg ? '<p class="err" role="alert">' + esc(S.msg) + '</p>' : "") +
-      '<button class="btn coral" ' + (S.busy ? "disabled" : "") + '>' + (up ? "Create my account" : "Sign in") + '</button></form>' +
-      '<button class="btn" data-act="mode">' + (up ? "I already have an account" : "Create a new account") + '</button>' +
+      (S.confirmEmail && !fg ? '<button type="button" class="btn light" data-act="resend">Resend confirmation email</button>' : "") +
+      '<button class="btn coral" ' + (S.busy ? "disabled" : "") + '>' + label + '</button>' +
+      (S.mode === "signin" ? '<button type="button" class="btn light" data-act="forgot">Forgot your password?</button>' : "") + '</form>' +
+      (fg ? '<button class="btn" data-act="signinmode">Back to sign in</button>' : '<button class="btn" data-act="mode">' + (up ? "I already have an account" : "Create a new account") + '</button>') +
       '<p style="text-align:center;font-size:13px">Free to join. We only read your step count.</p></div></div>';
+  }
+  function viewReset() {
+    return '<div class="welcome"><div class="app">' + topbar("") + '<h1 class="h1">Choose a new password</h1>' +
+      '<form class="card stack" data-form="reset" style="box-shadow:5px 5px 0 var(--ink);border-width:3px;border-radius:24px">' +
+      '<div class="gap8"><label for="password">New password (8 or more characters)</label><input id="password" name="password" type="password" minlength="8" autocomplete="new-password" required></div>' +
+      '<div class="gap8"><label for="password2">Type it again</label><input id="password2" name="password2" type="password" minlength="8" autocomplete="new-password" required></div>' +
+      (S.msg ? '<p class="err" role="alert">' + esc(S.msg) + '</p>' : "") + '<button class="btn coral">Save new password</button></form></div></div>';
   }
   function viewJoin() {
     return '<div class="app">' + topbar("") + '<div class="stack"><div><h1 class="h1">Who are you walking with?</h1><p class="muted">Walk with your workplace to join the league, or walk on your own.</p></div>' +
@@ -274,7 +320,7 @@ input,select{min-height:48px;width:100%;border:2px solid var(--ink);border-radiu
   function viewMe() {
     var i = S.impact || {};
     var team = i.team_name
-      ? '<div class="card stack" style="gap:10px"><div class="h2">' + esc(i.team_name) + '</div><p class="muted">' + i.team_members + (i.team_members === 1 ? " walker" : " walkers") + '. Workmates join with this code:</p><div style="font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:.12em">' + esc(i.team_join_code) + '</div><div class="row"><button class="btn small light" data-act="copy" data-code="' + esc(i.team_join_code) + '">Copy code</button><button class="btn small light" data-act="leave">Leave team</button></div></div>'
+      ? '<div class="card stack" style="gap:10px"><div class="h2">' + esc(i.team_name) + '</div><p class="muted">' + i.team_members + (i.team_members === 1 ? " walker" : " walkers") + '. Workmates join with this code:</p><div style="font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:.12em">' + esc(i.team_join_code) + '</div><div class="row" style="flex-wrap:wrap"><button class="btn small" data-act="invite" data-code="' + esc(i.team_join_code) + '" data-team="' + esc(i.team_name) + '">Invite workmates</button><a class="btn small light" href="' + mailtoInvite(i.team_name, i.team_join_code) + '">Email invite</a><button class="btn small light" data-act="copy" data-code="' + esc(i.team_join_code) + '">Copy code</button><button class="btn small light" data-act="leave">Leave team</button></div></div>'
       : '<button class="btn coral" data-act="gojoin">Join or start a team</button>';
     return topbar("") + '<div class="stack"><h1 class="h1">Me</h1>' +
       '<form class="card stack" data-form="saveNames"><div class="gap8"><label for="dname">Your name</label><input id="dname" name="dname" value="' + esc(S.profile.display_name) + '" maxlength="40" required></div><div class="gap8"><label for="bname">Your Buddy\'s name</label><input id="bname" name="bname" value="' + esc(S.profile.buddy_name) + '" maxlength="24" required></div><button class="btn">Save</button></form>' +
@@ -308,6 +354,7 @@ input,select{min-height:48px;width:100%;border:2px solid var(--ink);border-radiu
     var root = $("#root"), html;
     if (S.view === "loading") html = '<div class="app">' + topbar("") + '<p class="muted" role="status">Loading your bowl…</p></div>';
     else if (S.view === "auth") html = viewAuth();
+    else if (S.view === "reset") html = viewReset();
     else if (S.view === "join") html = viewJoin();
     else html = '<div class="app">' + ({ today: viewToday, packs: viewPacks, impact: viewImpact, me: viewMe }[S.tab])() + '</div>' + nav() + (S.sheet ? sheet() : "") + (S.celebrate ? celebrate() : "");
     root.innerHTML = html;
@@ -331,7 +378,17 @@ input,select{min-height:48px;width:100%;border:2px solid var(--ink);border-radiu
     var a = t.closest("[data-act]"); if (!a) return;
     if (a.classList.contains("sheet-bg") && t !== a) return;
     var act = a.dataset.act;
-    if (act === "mode") { S.mode = S.mode === "signup" ? "signin" : "signup"; S.msg = ""; render(); }
+    if (act === "mode") { S.mode = S.mode === "signup" ? "signin" : "signup"; S.msg = ""; S.confirmEmail = null; render(); }
+    else if (act === "forgot") { S.mode = "forgot"; S.msg = ""; render(); }
+    else if (act === "signinmode") { S.mode = "signin"; S.msg = ""; render(); }
+    else if (act === "resend") {
+      sb.auth.resend({ type: "signup", email: S.confirmEmail, options: { emailRedirectTo: ORIGIN + "/" } }).then(function (r) { toast(r.error ? r.error.message : "Confirmation email sent"); });
+    }
+    else if (act === "invite") {
+      var link = inviteLink(a.dataset.code), text = inviteText(a.dataset.team, link);
+      if (navigator.share) navigator.share({ title: "Join my team on Walkies", text: text, url: link }).catch(function () {});
+      else { try { navigator.clipboard.writeText(text); toast("Invite copied. Paste it into a message."); } catch (x) { toast(link); } }
+    }
     else if (act === "sheet") { S.sheet = true; render(); }
     else if (act === "closesheet") { S.sheet = false; render(); }
     else if (act === "closecel") { S.celebrate = null; render(); }
@@ -344,7 +401,10 @@ input,select{min-height:48px;width:100%;border:2px solid var(--ink);border-radiu
     else if (act === "pat") { S.bounce = true; render(); toast(S.profile.buddy_name + " wags their tail!"); setTimeout(function () { S.bounce = false; }, 600); }
     else if (act === "signout") { sb.auth.signOut().then(function () { S.user = null; S.view = "auth"; S.mode = "signin"; S.tab = "today"; render(); }); }
   });
-  sb.auth.onAuthStateChange(function (ev) { if (ev === "SIGNED_OUT" && S.view !== "auth") { S.user = null; S.view = "auth"; render(); } });
+  sb.auth.onAuthStateChange(function (ev, session) {
+    if (ev === "PASSWORD_RECOVERY" && session) { S.user = session.user; S.recovery = true; S.view = "reset"; S.msg = ""; render(); }
+    else if (ev === "SIGNED_OUT" && S.view !== "auth") { S.user = null; S.view = "auth"; render(); }
+  });
   if ("serviceWorker" in navigator) window.addEventListener("load", function () { navigator.serviceWorker.register("/sw.js").catch(function () {}); });
   setInterval(function () { if (S.view === "app" && S.tab === "today" && !S.sheet && !S.celebrate) { var c = document.querySelector(".chip"); if (c) c.textContent = timeLeft(); } }, 30000);
   boot().catch(function () { S.view = "auth"; render(); });
