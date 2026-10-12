@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#FFD23F">
+<meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Walkies">
 <title>Walkies</title>
 <link rel="manifest" href="/manifest.webmanifest">
@@ -14,31 +14,32 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;700&display=swap">
 <style>
-:root{--ink:#1B2433;--yellow:#FFD23F;--coral:#FF5A4E;--sky:#E9F1FB;--muted:#4A586E;--line:#9AA8BC;--display:'Bricolage Grotesque',system-ui,sans-serif;--body:'DM Sans',system-ui,sans-serif}
+:root{--bg:#000;--surface:#0d0c12;--surface2:#16141f;--line:#2a2736;--fg:#f4f2fa;--muted:#9a95ad;--pink:#ff2e9a;--green:#3bff8f;--cyan:#23e5ff;--yellow:#f4ff3a;--dark:#050507;--glow:0 0 28px rgba(255,46,154,.28);--display:'Bricolage Grotesque',system-ui,sans-serif;--body:'DM Sans',system-ui,sans-serif;color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%}
-body{background:var(--sky);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.4;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.4;-webkit-font-smoothing:antialiased}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
 a{color:inherit}
 h1,h2,p{margin:0}
-:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
 .app{max-width:440px;margin:0 auto;min-height:100vh;padding:0 20px 120px}
 .top{display:flex;align-items:center;justify-content:space-between;padding:calc(20px + env(safe-area-inset-top)) 0 12px}
 .brand{display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:800;font-size:28px;letter-spacing:-.02em}
-.chip{background:#fff;border:2px solid var(--ink);border-radius:999px;padding:6px 12px;font-weight:700;font-size:14px}
-.card{background:#fff;border:2px solid var(--ink);border-radius:22px;padding:16px}
-.hero{background:var(--yellow);border:3px solid var(--ink);border-radius:28px;box-shadow:6px 6px 0 var(--ink);padding:18px 20px 20px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
-.eyebrow{font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.brand svg{filter:drop-shadow(0 0 8px rgba(255,46,154,.7))}
+.chip{background:rgba(255,46,154,.08);border:1px solid rgba(255,46,154,.55);border-radius:999px;padding:6px 12px;font-weight:700;font-size:14px;box-shadow:0 0 18px rgba(255,46,154,.25)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:16px}
+.hero{background:radial-gradient(420px 260px at 50% 0%,rgba(255,46,154,.22),transparent 70%),var(--surface);border:2px solid var(--pink);border-radius:28px;box-shadow:var(--glow);padding:18px 20px 20px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.eyebrow{font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--pink)}
 .big{font-family:var(--display);font-weight:800;font-size:56px;line-height:1;letter-spacing:-.03em}
 .h1{font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:-.03em}
 .h2{font-family:var(--display);font-weight:800;font-size:20px}
 .muted{color:var(--muted)}
-.bar{width:100%;height:14px;background:#fff;border:2px solid var(--ink);border-radius:999px;overflow:hidden}
-.bar i{display:block;height:100%;background:var(--coral);transition:width .6s}
-.btn{display:flex;align-items:center;justify-content:center;min-height:52px;width:100%;border:2px solid var(--ink);border-radius:18px;background:var(--ink);color:#fff;font-weight:700;font-size:16px;padding:0 16px;text-decoration:none}
-.btn.coral{background:var(--coral);color:var(--ink);font-weight:800}
-.btn.light{background:#fff;color:var(--ink)}
+.bar{width:100%;height:10px;background:var(--line);border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pink),var(--cyan));box-shadow:0 0 12px rgba(35,229,255,.6);transition:width .6s}
+.btn{display:flex;align-items:center;justify-content:center;min-height:52px;width:100%;border:0;border-radius:16px;background:var(--fg);color:var(--dark);font-weight:700;font-size:16px;padding:0 16px;text-decoration:none}
+.btn.coral{background:var(--pink);color:var(--dark);font-weight:800;box-shadow:0 0 22px rgba(255,46,154,.45)}
+.btn.light{background:transparent;color:var(--fg);border:1px solid var(--line)}
 .btn.small{min-height:44px;width:auto;border-radius:14px;font-size:14px;padding:0 16px}
 .btn:disabled{opacity:.5}
 .stack{display:flex;flex-direction:column;gap:16px}
@@ -46,35 +47,39 @@ h1,h2,p{margin:0}
 .row{display:flex;align-items:center;gap:12px}
 .between{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .scoops{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
-.scoop{aspect-ratio:1/1;border:2px solid var(--line);border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:var(--muted)}
-.scoop.on{background:var(--coral);border-color:var(--ink);color:var(--ink);font-weight:800}
-.scoop.next{border:2px dashed var(--ink);color:var(--ink);font-weight:800}
+.scoop{aspect-ratio:1/1;border:1px solid var(--line);border-radius:16px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:var(--muted)}
+.scoop.on{background:var(--green);border-color:var(--green);color:var(--dark);font-weight:800;box-shadow:0 0 14px rgba(59,255,143,.5)}
+.scoop.next{border:2px dashed var(--pink);color:var(--pink);font-weight:800}
 label{font-weight:700;font-size:15px}
-input,select{min-height:48px;width:100%;border:2px solid var(--ink);border-radius:14px;padding:0 14px;background:#fff;font-size:16px}
+input,select{min-height:48px;width:100%;border:1px solid var(--line);border-radius:14px;padding:0 14px;background:var(--surface);color:var(--fg);font-size:16px}
+input:focus-visible,select:focus-visible{outline:none;border-color:var(--pink);box-shadow:0 0 0 2px rgba(255,46,154,.4)}
+option{background:var(--surface);color:var(--fg)}
 .chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0}
-.pill{flex:none;min-height:40px;padding:0 16px;border-radius:999px;border:2px solid var(--ink);background:#fff;font-weight:700;font-size:14px}
-.pill[aria-pressed="true"]{background:var(--ink);color:#fff}
-.lb{display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:center;background:#fff;border:2px solid var(--ink);border-radius:20px;padding:12px 14px}
-.lb.first{background:var(--yellow);border-width:3px;box-shadow:4px 4px 0 var(--ink)}
-.lb.mine{background:var(--coral);border-width:3px;box-shadow:4px 4px 0 var(--ink)}
-.rank{width:36px;height:36px;border-radius:50%;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:800;font-size:18px;background:#fff}
-.lb.first .rank{background:var(--ink);color:#fff}
+.pill{flex:none;min-height:40px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--muted);font-weight:700;font-size:14px}
+.pill[aria-pressed="true"]{background:var(--fg);color:var(--dark);border-color:var(--fg)}
+.lb{display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:12px 14px}
+.lb.first{border-color:var(--cyan);box-shadow:0 0 18px rgba(35,229,255,.25)}
+.lb.mine{background:rgba(255,46,154,.1);border:2px solid var(--pink);box-shadow:var(--glow)}
+.rank{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:800;font-size:18px;color:var(--muted)}
+.lb.first .rank{background:var(--cyan);border-color:var(--cyan);color:var(--dark)}
+.lb.mine .rank{background:var(--pink);border-color:var(--pink);color:var(--dark)}
 .num{font-family:var(--display);font-weight:800;font-size:22px;text-align:right}
-.nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:2px solid var(--ink);padding:8px 10px calc(14px + env(safe-area-inset-bottom));z-index:10}
+.nav{position:fixed;left:0;right:0;bottom:0;background:rgba(0,0,0,.9);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:8px 10px calc(14px + env(safe-area-inset-bottom));z-index:10}
 .nav-in{max-width:440px;margin:0 auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:48px;border:2px solid transparent;border-radius:14px;background:none;font-weight:700;font-size:12px}
-.tab[aria-selected="true"]{background:var(--yellow);border-color:var(--ink)}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:48px;border:0;border-radius:14px;background:none;color:var(--muted);font-weight:700;font-size:12px}
+.tab[aria-selected="true"]{color:var(--fg)}
 .tab svg{width:22px;height:22px}
-.overlay{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;gap:16px;padding:calc(24px + env(safe-area-inset-top)) 24px calc(28px + env(safe-area-inset-bottom));overflow:auto;background:var(--coral);animation:rise .35s cubic-bezier(.2,.8,.2,1)}
+.tab[aria-selected="true"] svg{color:var(--pink);filter:drop-shadow(0 0 6px rgba(255,46,154,.8))}
+.overlay{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;gap:16px;padding:calc(24px + env(safe-area-inset-top)) 24px calc(28px + env(safe-area-inset-bottom));overflow:auto;background:radial-gradient(520px 420px at 50% 18%,rgba(255,46,154,.30),transparent 70%),radial-gradient(480px 380px at 50% 95%,rgba(35,229,255,.18),transparent 70%),#07060b;animation:rise .35s cubic-bezier(.2,.8,.2,1)}
 @keyframes rise{from{transform:translateY(30px);opacity:0}}
-.sheet-bg{position:fixed;inset:0;z-index:30;background:rgba(27,36,51,.5);display:flex;align-items:flex-end;justify-content:center}
-.sheet{width:100%;max-width:440px;background:#fff;border:3px solid var(--ink);border-bottom:0;border-radius:28px 28px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
-.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,16px);opacity:0;background:var(--ink);color:#fff;padding:11px 16px;border-radius:12px;font-weight:700;font-size:14px;transition:.25s;pointer-events:none;z-index:40;max-width:90vw;text-align:center}
+.sheet-bg{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:28px 28px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,16px);opacity:0;background:var(--fg);color:var(--dark);padding:11px 16px;border-radius:12px;font-weight:700;font-size:14px;transition:.25s;pointer-events:none;z-index:40;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
-.welcome{background:var(--yellow);min-height:100vh}
+.welcome{background:radial-gradient(520px 420px at 50% 8%,rgba(255,46,154,.28),transparent 70%),radial-gradient(480px 380px at 50% 100%,rgba(35,229,255,.16),transparent 70%),var(--bg);min-height:100vh}
 .welcome .app{display:flex;flex-direction:column;gap:18px;padding-top:calc(28px + env(safe-area-inset-top))}
-.err{color:#9B1C12;font-weight:700;font-size:14px}
-.buddy{display:flex;align-items:center;gap:12px;background:#fff;border:2px solid var(--ink);border-radius:20px;padding:12px 14px}
+.err{color:#ff7a9c;font-weight:700;font-size:14px}
+.buddy{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:12px 14px}
 .bounce{animation:bounce .5s}
 @keyframes bounce{40%{transform:translateY(-8px) rotate(-6deg)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -109,7 +114,7 @@ input,select{min-height:48px;width:100%;border:2px solid var(--ink);border-radiu
     if (qj) { store.set("walkies-pending-join", qj.trim().slice(0, 12).toUpperCase()); history.replaceState(null, "", location.pathname); }
   } catch (e) {}
 
-  var PAW ='<svg width="28" height="28" viewBox="0 0 120 120" aria-hidden="true"><g fill="#FF5A4E" stroke="#1B2433" stroke-width="6"><ellipse cx="60" cy="80" rx="25" ry="21"/><ellipse cx="27" cy="52" rx="10" ry="13"/><ellipse cx="47" cy="31" rx="10" ry="13"/><ellipse cx="73" cy="31" rx="10" ry="13"/><ellipse cx="93" cy="52" rx="10" ry="13"/></g></svg>';
+  var PAW ='<svg width="28" height="28" viewBox="0 0 120 120" aria-hidden="true"><g fill="#ff2e9a" stroke="#ff2e9a" stroke-width="6"><ellipse cx="60" cy="80" rx="25" ry="21"/><ellipse cx="27" cy="52" rx="10" ry="13"/><ellipse cx="47" cy="31" rx="10" ry="13"/><ellipse cx="73" cy="31" rx="10" ry="13"/><ellipse cx="93" cy="52" rx="10" ry="13"/></g></svg>';
   var ICON = {
     today: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
     packs: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.6 0 4.5 1.8 4.5 4.5"/>',
@@ -119,13 +124,13 @@ input,select{min-height:48px;width:100%;border:2px solid var(--ink);border-radiu
   function bowlSvg(level, big) {
     var l = Math.max(0, Math.min(1, level)), w = big ? 250 : 220, h = Math.round(w * 0.68);
     var peak = 76 - 52 * l, mid = 76 - 30 * l;
-    var mound = l > 0.02 ? '<path d="M34 76 Q54 ' + mid + ' 100 ' + peak + ' Q146 ' + mid + ' 166 76 Z" fill="#B9692F" stroke="#1B2433" stroke-width="4" stroke-linejoin="round"/>' +
+    var mound = l > 0.02 ? '<path d="M34 76 Q54 ' + mid + ' 100 ' + peak + ' Q146 ' + mid + ' 166 76 Z" fill="#B9692F" stroke="#f4f2fa" stroke-width="4" stroke-linejoin="round"/>' +
       '<g fill="#8A4A1E"><circle cx="70" cy="' + (72 - 14 * l) + '" r="5"/><circle cx="96" cy="' + (70 - 24 * l) + '" r="5"/><circle cx="122" cy="' + (72 - 14 * l) + '" r="5"/><circle cx="146" cy="73" r="4.5"/><circle cx="84" cy="73" r="4.5"/></g>' : "";
-    return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 200 140" role="img" aria-label="A bowl of kibble"><ellipse cx="100" cy="134" rx="70" ry="6" fill="#1B2433" opacity=".18"/>' + mound +
-      '<path d="M18 76 H182 Q182 132 100 132 Q18 132 18 76 Z" fill="#fff" stroke="#1B2433" stroke-width="5" stroke-linejoin="round"/>' +
-      '<g fill="#1B2433"><ellipse cx="100" cy="116" rx="6" ry="5"/><ellipse cx="88" cy="108" rx="2.6" ry="3.4"/><ellipse cx="95" cy="103" rx="2.6" ry="3.4"/><ellipse cx="105" cy="103" rx="2.6" ry="3.4"/><ellipse cx="112" cy="108" rx="2.6" ry="3.4"/></g></svg>';
+    return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 200 140" role="img" aria-label="A bowl of kibble"><ellipse cx="100" cy="134" rx="70" ry="6" fill="#ff2e9a" opacity=".25"/>' + mound +
+      '<path d="M18 76 H182 Q182 132 100 132 Q18 132 18 76 Z" fill="#0d0c12" stroke="#f4f2fa" stroke-width="5" stroke-linejoin="round"/>' +
+      '<g fill="#ff2e9a"><ellipse cx="100" cy="116" rx="6" ry="5"/><ellipse cx="88" cy="108" rx="2.6" ry="3.4"/><ellipse cx="95" cy="103" rx="2.6" ry="3.4"/><ellipse cx="105" cy="103" rx="2.6" ry="3.4"/><ellipse cx="112" cy="108" rx="2.6" ry="3.4"/></g></svg>';
   }
-  var DOG = '<svg width="48" height="48" viewBox="0 0 48 48" aria-hidden="true"><ellipse cx="9" cy="20" rx="7" ry="12" fill="#B9692F" stroke="#1B2433" stroke-width="2.5"/><ellipse cx="39" cy="20" rx="7" ry="12" fill="#B9692F" stroke="#1B2433" stroke-width="2.5"/><circle cx="24" cy="26" r="16" fill="#F3D9B1" stroke="#1B2433" stroke-width="2.5"/><circle cx="18" cy="24" r="2.2" fill="#1B2433"/><circle cx="30" cy="24" r="2.2" fill="#1B2433"/><ellipse cx="24" cy="31" rx="4" ry="3" fill="#1B2433"/></svg>';
+  var DOG = '<svg width="48" height="48" viewBox="0 0 48 48" aria-hidden="true"><ellipse cx="9" cy="20" rx="7" ry="12" fill="#B9692F" stroke="#f4f2fa" stroke-width="2.5"/><ellipse cx="39" cy="20" rx="7" ry="12" fill="#B9692F" stroke="#f4f2fa" stroke-width="2.5"/><circle cx="24" cy="26" r="16" fill="#F3D9B1" stroke="#f4f2fa" stroke-width="2.5"/><circle cx="18" cy="24" r="2.2" fill="#050507"/><circle cx="30" cy="24" r="2.2" fill="#050507"/><ellipse cx="24" cy="31" rx="4" ry="3" fill="#050507"/></svg>';
 
   // ---- data ----
   function totalSteps() { return S.days.reduce(function (a, d) { return a + d.steps; }, 0); }
@@ -247,8 +252,8 @@ input,select{min-height:48px;width:100%;border:2px solid var(--ink);border-radiu
     var label = fg ? "Email me a reset link" : (up ? "Create my account" : "Sign in");
     return '<div class="welcome"><div class="app">' + topbar("") +
       '<h1 class="h1" style="font-size:44px;line-height:1.02">Walk. Fill a bowl. Feed a rescue dog.</h1>' +
-      (pend ? '<div class="card" style="border-width:3px"><b>You have been invited to a team!</b> Sign in or create an account and you will join it automatically.</div>' : '<p style="font-size:17px">Every scoop you unlock is a bowl of food for a shelter dog. Join your workplace, or walk on your own.</p>') +
-      '<form class="card stack" data-form="' + (fg ? "forgot" : "auth") + '" style="box-shadow:5px 5px 0 var(--ink);border-width:3px;border-radius:24px">' +
+      (pend ? '<div class="card" style="border:2px solid var(--cyan)"><b>You have been invited to a team!</b> Sign in or create an account and you will join it automatically.</div>' : '<p style="font-size:17px">Every scoop you unlock is a bowl of food for a shelter dog. Join your workplace, or walk on your own.</p>') +
+      '<form class="card stack" data-form="' + (fg ? "forgot" : "auth") + '" style="border:2px solid var(--pink);box-shadow:var(--glow);border-radius:24px">' +
       (up ? '<div class="gap8"><label for="name">Your first name</label><input id="name" name="name" autocomplete="given-name" maxlength="40" required></div>' : "") +
       '<div class="gap8"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required></div>' +
       (fg ? '<p class="muted" style="font-size:14px">We will email you a link to choose a new password.</p>' : '<div class="gap8"><label for="password">Password (8 or more characters)</label><input id="password" name="password" type="password" minlength="8" autocomplete="' + (up ? "new-password" : "current-password") + '" required></div>') +
@@ -261,7 +266,7 @@ input,select{min-height:48px;width:100%;border:2px solid var(--ink);border-radiu
   }
   function viewReset() {
     return '<div class="welcome"><div class="app">' + topbar("") + '<h1 class="h1">Choose a new password</h1>' +
-      '<form class="card stack" data-form="reset" style="box-shadow:5px 5px 0 var(--ink);border-width:3px;border-radius:24px">' +
+      '<form class="card stack" data-form="reset" style="border:2px solid var(--pink);box-shadow:var(--glow);border-radius:24px">' +
       '<div class="gap8"><label for="password">New password (8 or more characters)</label><input id="password" name="password" type="password" minlength="8" autocomplete="new-password" required></div>' +
       '<div class="gap8"><label for="password2">Type it again</label><input id="password2" name="password2" type="password" minlength="8" autocomplete="new-password" required></div>' +
       (S.msg ? '<p class="err" role="alert">' + esc(S.msg) + '</p>' : "") + '<button class="btn coral">Save new password</button></form></div></div>';
@@ -293,7 +298,7 @@ input,select{min-height:48px;width:100%;border:2px solid var(--ink);border-radiu
       '<button class="btn" data-act="sheet">Add today\'s steps</button>' +
       '<div class="between"><div class="h2">Scoops</div><div class="muted" style="font-size:14px">' + done + ' of 10 in the bowl</div></div>' +
       '<div class="scoops">' + scoops + '</div>' +
-      '<div class="buddy"><div class="' + (S.bounce ? "bounce" : "") + '">' + DOG + '</div><div style="flex:1;min-width:0"><div style="font-weight:700">' + esc(S.profile.buddy_name) + ' is ready for a walk</div><div class="muted" style="font-size:14px">Your Buddy cheers every scoop</div></div><button class="btn small" style="background:var(--yellow);color:var(--ink)" data-act="pat">Pat</button></div></div>';
+      '<div class="buddy"><div class="' + (S.bounce ? "bounce" : "") + '">' + DOG + '</div><div style="flex:1;min-width:0"><div style="font-weight:700">' + esc(S.profile.buddy_name) + ' is ready for a walk</div><div class="muted" style="font-size:14px">Your Buddy cheers every scoop</div></div><button class="btn small" style="background:var(--pink);color:var(--dark)" data-act="pat">Pat</button></div></div>';
   }
   function viewPacks() {
     var rows = S.board, mine = rows.filter(function (r) { return r.is_mine; })[0], mineIdx = rows.indexOf(mine);
@@ -309,13 +314,13 @@ input,select{min-height:48px;width:100%;border:2px solid var(--ink);border-radiu
     var i = S.impact || {}, teamKg = (i.team_bowls || 0) * BOWL_KG, commKg = (i.community_bowls || 0) * BOWL_KG, myKg = (i.my_bowls || 0) * BOWL_KG;
     var pct = Math.min(100, Math.round(teamKg / TEAM_GOAL_KG * 100));
     var team = i.team_name
-      ? '<div class="card stack" style="gap:10px"><div class="between"><div style="font-weight:800">Goal: ' + TEAM_GOAL_KG + ' kg unlocks a dog visit</div><div class="muted" style="font-size:14px">' + Math.max(0, Math.round(TEAM_GOAL_KG - teamKg)) + ' kg to go</div></div><div class="bar" style="background:var(--sky)"><i style="width:' + pct + '%"></i></div><p class="muted" style="font-size:14px">' + esc(i.team_name) + ' has unlocked ' + (Math.round(teamKg * 10) / 10) + ' kg so far. Reach the goal and a shelter dog and its handler come to your office to say thanks.</p></div>'
+      ? '<div class="card stack" style="gap:10px"><div class="between"><div style="font-weight:800">Goal: ' + TEAM_GOAL_KG + ' kg unlocks a dog visit</div><div class="muted" style="font-size:14px">' + Math.max(0, Math.round(TEAM_GOAL_KG - teamKg)) + ' kg to go</div></div><div class="bar"><i style="width:' + pct + '%"></i></div><p class="muted" style="font-size:14px">' + esc(i.team_name) + ' has unlocked ' + (Math.round(teamKg * 10) / 10) + ' kg so far. Reach the goal and a shelter dog and its handler come to your office to say thanks.</p></div>'
       : '<div class="card"><b>Walking solo</b><p class="muted">Join or start a team from the Me tab to unlock an office dog visit together.</p></div>';
     return topbar("") + '<div class="stack"><h1 class="h1">Impact</h1>' +
       '<div class="hero" style="align-items:flex-start;text-align:left"><div class="eyebrow">Food unlocked by the Walkies community</div><div><span class="big" style="font-size:64px">' + (Math.round(commKg * 10) / 10) + '</span> <b style="font-size:20px">kg</b></div><div>' + fmt(i.community_bowls) + ' bowls from ' + fmt(i.community_walkers) + ' walkers. You unlocked ' + (i.my_bowls || 0) + ' (' + (Math.round(myKg * 10) / 10) + ' kg).</div></div>' +
       team +
       '<div class="card"><b>Delivery proof</b><p class="muted" style="font-size:14px">Photos and delivery dockets from our rescue partners will show up here once the first food goes out.</p></div>' +
-      '<div class="card row" style="background:var(--ink);color:#fff"><div style="flex:1;font-size:14px"><b>Want to add a bowl?</b> Friends and family will soon be able to sponsor your steps.</div><button class="btn small" style="background:var(--yellow);color:var(--ink)" data-act="sponsor">Tell me</button></div></div>';
+      '<div class="card row" style="border-color:var(--cyan)"><div style="flex:1;font-size:14px"><b>Want to add a bowl?</b> Friends and family will soon be able to sponsor your steps.</div><button class="btn small" style="background:var(--pink);color:var(--dark)" data-act="sponsor">Tell me</button></div></div>';
   }
   function viewMe() {
     var i = S.impact || {};
@@ -338,16 +343,16 @@ input,select{min-height:48px;width:100%;border:2px solid var(--ink);border-radiu
   function celebrate() {
     var c = S.celebrate;
     return '<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ctitle"><div style="width:100%;display:flex;justify-content:flex-end"><button class="btn small light" data-act="closecel">Close</button></div>' +
-      '<div style="margin-top:24px;font-weight:800;font-size:13px;letter-spacing:.14em;text-transform:uppercase">Scoop ' + c.bowls + ' unlocked</div>' +
+      '<div class="eyebrow" style="margin-top:24px">Scoop ' + c.bowls + ' unlocked</div>' +
       '<h1 id="ctitle" class="h1" style="font-size:44px;line-height:1.02;text-align:center">Dinner is served!</h1>' +
-      '<div class="card" style="border-width:3px;border-radius:28px;box-shadow:6px 6px 0 var(--ink);display:flex;flex-direction:column;align-items:center;transform:rotate(-2deg);margin-top:6px">' + bowlSvg(0.9, false) + '<div class="h1" style="font-size:32px">1 bowl</div><div class="muted" style="font-size:14px;font-weight:700">about 400 g · at ' + fmt(c.steps) + ' steps</div></div>' +
+      '<div class="card" style="border:2px solid var(--pink);border-radius:28px;box-shadow:var(--glow);display:flex;flex-direction:column;align-items:center;transform:rotate(-2deg);margin-top:6px">' + bowlSvg(0.9, false) + '<div class="h1" style="font-size:32px">1 bowl</div><div class="muted" style="font-size:14px;font-weight:700">about 400 g · at ' + fmt(c.steps) + ' steps</div></div>' +
       '<p style="text-align:center;font-size:17px;max-width:300px;margin-top:6px">Your steps just paid for a meal for a shelter dog.</p>' +
       '<div style="margin-top:auto;width:100%" class="gap8"><button class="btn" data-act="celimpact">See the impact</button><button class="btn light" data-act="closecel">Keep walking</button></div></div>';
   }
   function nav() {
     var tabs = [["today", "Today"], ["packs", "Packs"], ["impact", "Impact"], ["me", "Me"]];
     return '<nav class="nav" aria-label="Walkies"><div class="nav-in" role="tablist">' + tabs.map(function (t) {
-      return '<button class="tab" role="tab" aria-selected="' + (S.tab === t[0]) + '" data-tab="' + t[0] + '"><svg viewBox="0 0 24 24" fill="none" stroke="#1B2433" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[t[0]] + '</svg>' + t[1] + '</button>';
+      return '<button class="tab" role="tab" aria-selected="' + (S.tab === t[0]) + '" data-tab="' + t[0] + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[t[0]] + '</svg>' + t[1] + '</button>';
     }).join("") + '</div></nav>';
   }
   function render() {
