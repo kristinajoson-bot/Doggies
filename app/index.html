@@ -128,6 +128,11 @@ option{background:var(--surface);color:var(--fg)}
 .tag{display:inline-block;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan)}
 .champ{border:2px solid var(--yellow);border-radius:22px;padding:16px;text-align:center;box-shadow:0 0 28px rgba(244,255,58,.2);background:var(--surface)}
 .linkbtn{background:none;border:0;color:var(--cyan);font-weight:700;padding:0;min-height:44px;text-align:left}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.stats>div{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:16px;padding:12px 6px;text-align:center}
+.stats>div:last-child{border-color:rgba(255,46,154,.55)}
+.stat-n{font-family:var(--display);font-weight:800;font-size:34px;line-height:1;letter-spacing:-.03em}
+.stat-l{font-size:13px;color:var(--muted);margin-top:4px}
 .bounce{animation:bounce .5s}
 @keyframes bounce{40%{transform:translateY(-8px) rotate(-6deg)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -165,7 +170,7 @@ option{background:var(--surface);color:var(--fg)}
   var STATES = ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"];
   var KINDS = [["person", "Person"], ["team", "Team"], ["state", "State"], ["city", "City"]];
   var KIND_LABEL = { person: "Person", team: "Team", state: "State", city: "City" };
-  S.duels = []; S.cups = []; S.wiz = null; S.cupform = false; S.tview = null; S.wizMsg = ""; S.cupMsg = "";
+  S.stepVal = ""; S.stepMsg = ""; S.duels = []; S.cups = []; S.wiz = null; S.cupform = false; S.tview = null; S.wizMsg = ""; S.cupMsg = "";
   try {
     var qr = new URLSearchParams(location.search).get("rival");
     if (qr) { store.set("walkies-pending-rival", qr.trim().slice(0, 12).toUpperCase()); history.replaceState(null, "", location.pathname); }
@@ -198,6 +203,20 @@ option{background:var(--surface);color:var(--fg)}
   var DOG = '<svg width="48" height="48" viewBox="0 0 48 48" aria-hidden="true"><ellipse cx="9" cy="20" rx="7" ry="12" fill="#B9692F" stroke="#f4f2fa" stroke-width="2.5"/><ellipse cx="39" cy="20" rx="7" ry="12" fill="#B9692F" stroke="#f4f2fa" stroke-width="2.5"/><circle cx="24" cy="26" r="16" fill="#F3D9B1" stroke="#f4f2fa" stroke-width="2.5"/><circle cx="18" cy="24" r="2.2" fill="#050507"/><circle cx="30" cy="24" r="2.2" fill="#050507"/><ellipse cx="24" cy="31" rx="4" ry="3" fill="#050507"/></svg>';
 
   // ---- data ----
+  // "8,432", "8 432" and "10.000" all mean what you would expect. Anything else is rejected, never guessed.
+  function parseSteps(str) {
+    var t = String(str == null ? "" : str).trim().replace(/[\s\u00a0,']/g, "");
+    if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, "");
+    if (!/^\d+(\.\d+)?$/.test(t)) return NaN;
+    return Math.round(Number(t));
+  }
+  function daysBetween(a, b) { return Math.round((new Date(b + "T00:00:00") - new Date(a + "T00:00:00")) / 864e5); }
+  function challengeInfo() {
+    var c = S.challenge; if (!c) return null;
+    var len = daysBetween(c.starts_on, c.ends_on) + 1, t = today();
+    var state = t < c.starts_on ? "before" : (t > c.ends_on ? "after" : "on");
+    return { len: len, state: state, dayN: state === "on" ? daysBetween(c.starts_on, t) + 1 : (state === "after" ? len : 0) };
+  }
   function totalSteps() { return S.days.reduce(function (a, d) { return a + d.steps; }, 0); }
   function todaySteps() { var t = today(), r = S.days.filter(function (d) { return d.day === t; })[0]; return r ? r.steps : 0; }
   function bowlsFor(steps) { return MILESTONES.filter(function (m) { return steps >= m; }).length; }
@@ -312,14 +331,20 @@ option{background:var(--surface);color:var(--fg)}
       if (r.error) return toast("Names must be 1 to 40 characters");
       await loadAll(); render(); toast("Saved");
     },
-    async saveSteps(f) {
-      var n = Math.max(0, Math.min(60000, Math.round(Number(String(f.steps.value).replace(/[^\d.]/g, "")) || 0)));
+    async saveSteps(f, mode) {
+      mode = mode || "set"; S.stepVal = f.steps.value; S.stepMsg = "";
+      var ci = challengeInfo();
+      if (ci && ci.state !== "on") { S.stepMsg = ci.state === "before" ? "The challenge has not started yet, so steps are not counted." : "This challenge has finished, so new steps are not counted."; return render(); }
+      var n = parseSteps(f.steps.value);
+      if (isNaN(n)) { S.stepMsg = "Type a number of steps, like 8,432."; return render(); }
+      var cur = todaySteps(), val = mode === "add" ? cur + n : n;
+      if (val > 60000) { S.stepMsg = mode === "add" ? "Adding " + fmt(n) + " would take today past the 60,000 daily limit. You have " + fmt(cur) + " so far." : "That is more than the 60,000 daily limit. Check the number and try again."; return render(); }
       var before = bowlsFor(totalSteps());
-      var r = await sb.from("step_days").upsert({ user_id: S.user.id, day: today(), steps: n }, { onConflict: "user_id,day" });
-      if (r.error) return toast("Could not save steps");
-      S.sheet = false; await loadAll();
+      var r = await sb.from("step_days").upsert({ user_id: S.user.id, day: today(), steps: val }, { onConflict: "user_id,day" });
+      if (r.error) { S.stepMsg = "We could not save that. Check your signal and try again."; return render(); }
+      S.sheet = false; S.stepVal = ""; await loadAll();
       var after = bowlsFor(totalSteps());
-      if (after > before) S.celebrate = { bowls: after, count: after - before, steps: MILESTONES[after - 1] }; else toast("Steps saved");
+      if (after > before) S.celebrate = { bowls: after, count: after - before, steps: MILESTONES[after - 1] }; else toast("Today is now " + fmt(val) + " steps");
       render();
     }
   };
@@ -375,6 +400,15 @@ option{background:var(--surface);color:var(--fg)}
       '<button class="btn">Create team</button></form>' +
       '<button class="btn light" data-act="solo">Walk on my own for now</button></div></div>';
   }
+  function dayLine() {
+    var ci = challengeInfo(); if (!ci || ci.state !== "on") return "";
+    var avg = Math.round(totalSteps() / ci.dayN);
+    return '<div class="muted" style="font-size:13px">Day ' + ci.dayN + ' of ' + ci.len + ' · ' + fmt(avg) + ' a day on average</div>';
+  }
+  function challengeBanner() {
+    var ci = challengeInfo(), c = S.challenge; if (!ci || ci.state === "on") return "";
+    return '<div class="card" style="border-color:var(--yellow)" role="status"><b>' + (ci.state === "before" ? "The challenge has not started" : "This challenge has finished") + '</b><p class="muted" style="font-size:14px">' + (ci.state === "before" ? "It starts on " + fmtDay(c.starts_on) + ". Steps you add before then are not counted." : "It ended on " + fmtDay(c.ends_on) + ". New steps are not counted.") + '</p></div>';
+  }
   function viewToday() {
     var steps = totalSteps(), done = bowlsFor(steps), next = MILESTONES.filter(function (m) { return steps < m; })[0];
     var prev = MILESTONES.filter(function (m) { return steps >= m; }).pop() || 0;
@@ -387,10 +421,10 @@ option{background:var(--surface);color:var(--fg)}
     }).join("");
     return topbar(esc(timeLeft())) + '<div class="stack">' +
       todayTug() + '<div class="hero"><div class="eyebrow">Your bowl this challenge</div>' + bowlSvg(steps / 150000, true) +
-      '<div class="big">' + fmt(steps) + '</div><div style="font-weight:500">steps walked</div>' +
+      '<div class="stats"><div><div class="stat-n">' + fmt(todaySteps()) + '</div><div class="stat-l">Steps today</div></div><div><div class="stat-n">' + fmt(steps) + '</div><div class="stat-l">This challenge</div></div></div>' + dayLine() +
       '<div class="bar" style="margin-top:8px" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100"><i style="width:' + pct + '%"></i></div>' +
       '<div style="font-weight:700;margin-top:2px">' + (next ? fmt(next - steps) + " steps to your next scoop" : "All 10 scoops unlocked. Epic walking!") + '</div></div>' +
-      '<button class="btn" data-act="sheet">Add today\'s steps</button>' +
+      challengeBanner() + '<button class="btn" data-act="sheet">Update today\'s steps</button>' +
       '<div class="between"><div class="h2">Scoops</div><div class="muted" style="font-size:14px">' + done + ' of 10 in the bowl</div></div>' +
       '<div class="scoops">' + scoops + '</div>' +
       '<div class="buddy"><div class="' + (S.bounce ? "bounce" : "") + '">' + DOG + '</div><div style="flex:1;min-width:0"><div style="font-weight:700">' + esc(S.profile.buddy_name) + ' is ready for a walk</div><div class="muted" style="font-size:14px">Your Buddy cheers every scoop</div></div><button class="btn small" style="background:var(--pink);color:var(--dark)" data-act="pat">Pat</button></div></div>';
@@ -429,11 +463,20 @@ option{background:var(--surface);color:var(--fg)}
       '<button class="btn light" data-act="signout">Sign out</button><p class="muted" style="font-size:13px;text-align:center">' + esc(S.user.email) + '</p></div>';
   }
   function sheet() {
-    return '<div class="sheet-bg" data-act="closesheet"><form class="sheet" data-form="saveSteps" role="dialog" aria-modal="true" aria-label="Add steps"><div class="h2">Today\'s steps</div>' +
-      '<p class="muted" style="font-size:14px">Copy today\'s total from your Health app. Automatic syncing is coming later.</p>' +
-      '<label for="steps" class="eyebrow">Steps today</label><input id="steps" name="steps" inputmode="numeric" value="' + todaySteps() + '" autocomplete="off">' +
-      '<div class="row">' + [1000, 5000, 10000].map(function (n) { return '<button type="button" class="pill" style="flex:1" data-add="' + n + '">+' + fmt(n) + '</button>'; }).join("") + '</div>' +
-      '<button class="btn coral">Save steps</button><button type="button" class="btn light" data-act="closesheet">Cancel</button></form></div>';
+    return '<div class="sheet-bg" data-act="closesheet"><form class="sheet" data-form="saveSteps" role="dialog" aria-modal="true" aria-label="Update steps" style="max-height:92vh;overflow:auto"><div class="h2">Update your steps</div>' +
+      '<div class="stats"><div><div class="stat-n">' + fmt(todaySteps()) + '</div><div class="stat-l">Today so far</div></div><div><div class="stat-n">' + fmt(totalSteps()) + '</div><div class="stat-l">This challenge</div></div></div>' +
+      '<p class="muted" style="font-size:14px">Type the steps from your Health app. <b>Set today\'s total</b> replaces today\'s number. <b>Add to today</b> puts extra steps on top of it.</p>' +
+      '<label for="steps" class="eyebrow">Steps</label><input id="steps" name="steps" inputmode="numeric" enterkeyhint="done" placeholder="Example: 8,432" autocomplete="off" value="' + esc(S.stepVal || "") + '">' +
+      '<p class="tug-sub" id="steps-prev" aria-live="polite"></p>' +
+      (S.stepMsg ? '<p class="err" role="alert">' + esc(S.stepMsg) + '</p>' : "") +
+      '<button class="btn coral">Set today\'s total</button><button type="button" class="btn light" data-act="addsteps">Add to today</button><button type="button" class="btn light" data-act="closesheet">Cancel</button></form></div>';
+  }
+  function updatePreview() {
+    var el = $("#steps"), out = $("#steps-prev"); if (!el || !out) return;
+    var n = parseSteps(el.value), cur = todaySteps(), tot = totalSteps();
+    if (!el.value.trim()) { out.textContent = ""; return; }
+    if (isNaN(n)) { out.textContent = "That does not look like a number of steps."; return; }
+    out.innerHTML = "Set: today <b>" + fmt(n) + "</b>, challenge <b>" + fmt(tot - cur + n) + "</b><br>Add: today <b>" + fmt(cur + n) + "</b>, challenge <b>" + fmt(tot + n) + "</b>";
   }
   function celebrate() {
     var c = S.celebrate, n = c.count || 1;
@@ -586,7 +629,7 @@ option{background:var(--surface);color:var(--fg)}
     else if (S.view === "join") html = viewJoin();
     else html = '<div class="app">' + (S.tab === "rivals" ? (S.tview ? viewCup : viewRivals) : ({ today: viewToday, packs: viewPacks, impact: viewImpact, me: viewMe }[S.tab]))() + '</div>' + nav() + (S.sheet ? sheet() : "") + (S.wiz ? wizSheet() : "") + (S.cupform ? cupSheet() : "") + (S.celebrate ? celebrate() : "");
     root.innerHTML = html;
-    if (S.sheet) { var el = $("#steps"); if (el) { el.focus(); el.select(); } }
+    if (S.sheet) { var el = $("#steps"); if (el) { el.focus(); updatePreview(); } }
     if (S.celebrate) { confetti(); var d = $(".cel-done"); if (d) d.focus(); }
   }
 
@@ -596,10 +639,9 @@ option{background:var(--surface);color:var(--fg)}
     e.preventDefault();
     var fn = actions[f.dataset.form]; if (fn) fn(f).catch(function () { toast("Something went wrong. Try again."); });
   });
+  document.addEventListener("input", function (e) { if (e.target && e.target.id === "steps") updatePreview(); });
   document.addEventListener("click", function (e) {
     var t = e.target;
-    var add = t.closest("[data-add]");
-    if (add) { var inp = $("#steps"); inp.value = Math.min(60000, (Number(String(inp.value).replace(/[^\d]/g, "")) || 0) + Number(add.dataset.add)); return; }
     var tab = t.closest("[data-tab]");
     if (tab) { S.tab = tab.dataset.tab; render(); window.scrollTo(0, 0); if (S.tab === "packs") loadBoard().then(render); if (S.tab === "impact") loadImpact().then(render); if (S.tab === "rivals") loadRivals().then(render); return; }
     var cel = t.closest("[data-cel]");
@@ -638,7 +680,8 @@ option{background:var(--surface);color:var(--fg)}
       if (navigator.share) navigator.share({ title: "Join my team on Walkies", text: text, url: link }).catch(function () {});
       else { try { navigator.clipboard.writeText(text); toast("Invite copied. Paste it into a message."); } catch (x) { toast(link); } }
     }
-    else if (act === "sheet") { S.sheet = true; render(); }
+    else if (act === "sheet") { S.sheet = true; S.stepMsg = ""; S.stepVal = ""; render(); }
+    else if (act === "addsteps") { var sf = $("form[data-form=saveSteps]"); if (sf) actions.saveSteps(sf, "add").catch(function () { toast("Something went wrong. Try again."); }); }
     else if (act === "wiz") { S.wiz = { kind: "team", opp: "", random: false, days: 7, options: [], loading: true }; S.wizMsg = ""; sb.rpc("duel_options", { p_kind: "team" }).then(function (r) { if (S.wiz) { S.wiz.options = r.data || []; S.wiz.loading = false; render(); } }); render(); }
     else if (act === "closewiz") { S.wiz = null; render(); }
     else if (act === "cupnew") { S.cupform = true; S.cupMsg = ""; render(); }
