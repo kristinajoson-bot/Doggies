@@ -163,7 +163,8 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   var MILESTONES = [5000, 15000, 30000, 45000, 65000, 85000, 100000, 120000, 135000, 150000];
   var BOWL_KG = 0.4, TEAM_GOAL_KG = 250;
   var INDUSTRIES = ["Banking & Finance", "Tech", "Automotive", "Retail", "Health", "Other"];
-  var BRACKETS = [["Pup", "up to 50 staff"], ["Pack", "51 to 250"], ["Big Dog", "251 to 1,000"], ["Top Dog", "1,000+"]];
+  var BRACKETS = [["Pack", "up to 250 staff"], ["Big Dog", "251 to 1,000"], ["Top Dog", "1,000+"]];
+  var BOARD_TABS = [["Pup", "Walkers"], ["Pack", "Teams"], ["Big Dog", "Bigger teams"], ["Top Dog", "Biggest teams"]];
   var S = { view: "loading", tab: "today", mode: "signup", user: null, profile: null, challenge: null, days: [], impact: null, board: [], bracket: null, sheet: false, celebrate: null, msg: "", busy: false, bounce: false };
   var store = { get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
   var $ = function (s) { return document.querySelector(s); };
@@ -288,7 +289,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     if (r[0].error || !r[0].data || !r[0].data[0]) return toast("Could not open that World Cup");
     S.tview = { id: id, info: r[0].data[0], matches: r[1].data || [] }; render(); window.scrollTo(0, 0);
   }
-  async function loadBoard() { var r = await sb.rpc("leaderboard", { p_bracket: S.bracket }); S.board = r.data || []; }
+  async function loadBoard() { var r = await sb.rpc("leaderboard", { p_bracket: null }), w = await sb.rpc("walker_board"); S.allTeams = r.data || []; S.walkers = w.data || []; S.board = S.allTeams; }
 
   async function boot() {
     var r = await sb.auth.getSession();
@@ -392,7 +393,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       S.cupform = false; await loadRivals(); render(); toast("World Cup created. Invite others to join!");
     },
     async savePrivacy(f) {
-      var r = await sb.from("profiles").update({ marketing_opt_in: f.marketing.checked }).eq("user_id", S.user.id);
+      var r = await sb.from("profiles").update({ marketing_opt_in: f.marketing.checked, show_on_leaderboard: f.board.checked }).eq("user_id", S.user.id);
       if (r.error) return toast("Could not save that");
       S.privOpen = true; await loadAll(); render(); toast(f.marketing.checked ? "Saved. We may send you Walkies news." : "Saved. No marketing emails.");
     },
@@ -539,18 +540,26 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       '<div class="scoops">' + scoops + '</div>' +
       (myDog() ? '<div class="buddy"><div class="' + (S.bounce ? "bounce" : "") + '">' + DOG + '</div><div style="flex:1;min-width:0"><div style="font-weight:700">' + esc(myDog().name) + ' is ready for a walk</div><div class="muted" style="font-size:14px">' + esc(myDog().name) + ' cheers every scoop</div></div><button class="btn small" style="background:var(--pink);color:var(--dark)" data-act="pat">Pat</button></div>' : "") + '</div>';
   }
-  function packKey() {
-    return '<div class="card" style="gap:6px"><b>What the names mean</b><p class="muted" style="font-size:14px;margin:4px 0 0"><b style="color:var(--text,inherit)">Pack</b> is your team on Walkies. The size tags group packs by company size, so a small team races other small teams: <b>Pup</b> up to 50 staff, <b>Pack</b> 51 to 250, <b>Big Dog</b> 251 to 1,000, <b>Top Dog</b> 1,000+. Tap a tag to see only that size.</p></div>';
-  }
+  function teamTier(r) { return r.size_bracket === "Pup" ? "Pack" : r.size_bracket; }
   function viewPacks() {
-    var rows = S.board, mine = rows.filter(function (r) { return r.is_mine; })[0], mineIdx = rows.indexOf(mine);
-    var chips = '<button class="pill" aria-pressed="' + (!S.bracket) + '" data-bracket="">All</button>' + BRACKETS.map(function (b) { return '<button class="pill" aria-pressed="' + (S.bracket === b[0]) + '" data-bracket="' + b[0] + '">' + b[0] + '</button>'; }).join("");
-    var list = rows.length ? rows.map(function (r, i) {
-      return '<div class="lb ' + (r.is_mine ? "mine" : (i === 0 ? "first" : "")) + '"><div class="rank">' + (i + 1) + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (r.is_mine ? "Your team: " : "") + esc(r.name) + '</div><div style="font-size:13px">' + r.members + (r.members === 1 ? " walker" : " walkers") + ' · ' + esc(r.industry) + ' · ' + esc(r.size_bracket) + '</div></div><div><div class="num">' + fmt(r.steps_per_member) + '</div><div style="font-size:12px;text-align:right">steps each</div></div></div>';
-    }).join("") : '<div class="card"><b>No teams here yet.</b><p class="muted">Start a team from the Me tab, share the code with your workmates and be the first on the board.</p></div>';
-    var hint = "";
-    if (mine && mineIdx > 0) { var above = rows[mineIdx - 1]; hint = '<div class="card" style="border-style:dashed"><b>Catch ' + esc(above.name) + '</b> and your team moves up a place. Only <b>' + fmt(Math.max(1, above.steps_per_member - mine.steps_per_member + 1)) + '</b> more steps each.</div>'; }
-    return topbar("") + '<div class="stack"><div><h1 class="h1">Packs</h1><p class="muted">Every pack on Walkies, ranked by average steps per walker this month. You do not need a challenge to be on it.</p></div>' + packKey() + '<div class="chips" role="group" aria-label="Team size">' + chips + '</div><div class="stack" style="gap:10px">' + list + '</div>' + hint + '</div>';
+    var tab = S.bracket || "Pup";
+    var chips = BOARD_TABS.map(function (b) { return '<button class="pill" aria-pressed="' + (tab === b[0]) + '" data-bracket="' + b[0] + '">' + b[0] + '</button>'; }).join("");
+    var body = "";
+    if (tab === "Pup") {
+      var ws = S.walkers || [], meIn = ws.some(function (w) { return w.is_me; });
+      body = (meIn ? "" : '<div class="card row" style="border-color:var(--cyan)"><div style="flex:1;font-size:14px"><b>Join the walker leaderboard?</b> Your name and monthly steps will show to other walkers. You can leave any time.</div><button class="btn small" data-act="joinboard">Show me</button></div>') +
+        (ws.length ? ws.map(function (w, i) {
+          return '<div class="lb ' + (w.is_me ? "mine" : (i === 0 ? "first" : "")) + '"><div class="rank">' + (i + 1) + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (w.is_me ? "You: " : "") + esc(w.display_name) + '</div><div style="font-size:13px">' + w.bowls + (w.bowls === 1 ? " bowl" : " bowls") + '</div></div><div><div class="num">' + fmt(w.steps) + '</div><div style="font-size:12px;text-align:right">steps</div></div></div>';
+        }).join("") : '<div class="card"><b>No walkers here yet.</b><p class="muted">Be the first. Tap Show me to join the leaderboard.</p></div>') +
+        (meIn ? '<button class="linkbtn" data-act="leaveboard">Remove me from the leaderboard</button>' : "");
+    } else {
+      var rows = (S.allTeams || []).filter(function (r) { return teamTier(r) === tab; }), mine = rows.filter(function (r) { return r.is_mine; })[0], mineIdx = rows.indexOf(mine);
+      body = (rows.length ? rows.map(function (r, i) {
+        return '<div class="lb ' + (r.is_mine ? "mine" : (i === 0 ? "first" : "")) + '"><div class="rank">' + (i + 1) + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (r.is_mine ? "Your team: " : "") + esc(r.name) + '</div><div style="font-size:13px">' + r.members + (r.members === 1 ? " walker" : " walkers") + ' \u00b7 ' + esc(r.industry) + '</div></div><div><div class="num">' + fmt(r.steps_per_member) + '</div><div style="font-size:12px;text-align:right">steps each</div></div></div>';
+      }).join("") : '<div class="card"><b>No teams here yet.</b><p class="muted">Start a team in Rivals, share the code with your workmates and be the first on the board.</p></div>');
+      if (mine && mineIdx > 0) { var above = rows[mineIdx - 1]; body += '<div class="card" style="border-style:dashed"><b>Catch ' + esc(above.name) + '</b> and your team moves up a place. Only <b>' + fmt(Math.max(1, above.steps_per_member - mine.steps_per_member + 1)) + '</b> more steps each.</div>'; }
+    }
+    return topbar("") + '<div class="stack"><h1 class="h1">Leaderboard</h1><div class="chips" role="group" aria-label="Leaderboard">' + chips + '</div><div class="stack" style="gap:10px">' + body + '</div></div>';
   }
   function viewImpact() {
     var i = S.impact || {}, teamKg = (i.team_bowls || 0) * BOWL_KG, commKg = (i.community_bowls || 0) * BOWL_KG, myKg = (i.my_bowls || 0) * BOWL_KG;
@@ -578,7 +587,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       '<p><b>Last updated:</b> October 2026. This is a plain-English summary of how Walkies handles your information. It follows the Australian Privacy Principles in the <i>Privacy Act 1988</i> (Cth).</p>' +
       '<h4>What we collect</h4><ul><li>Your email address and password (the password is stored securely by our sign-in provider and we cannot read it).</li><li>Your display name, your team and the shelter dog you choose.</li><li>The step counts you type in, by day. We do not collect your location, contacts or health records.</li><li>Your challenges (who you challenged and the results).</li></ul>' +
       '<h4>Why we collect it</h4><p>To run the app: count your steps, work out your bowls, show team leaderboards and run tug of wars. We only use it for that unless you agree to something else.</p>' +
-      '<h4>Who can see it</h4><ul><li>Your teammates can see your display name.</li><li>A rival in a tug of war sees your name and your step total for that challenge, not your daily steps.</li><li>Leaderboards show team totals, not individual steps.</li><li>We do not sell your information or show ads.</li></ul>' +
+      '<h4>Who can see it</h4><ul><li>Your teammates can see your display name.</li><li>A rival in a tug of war sees your name and your step total for that challenge, not your daily steps.</li><li>Team leaderboards show team averages, not individual steps. The walker leaderboard (Pup) shows your name and monthly step total only if you choose to join it, and you can leave any time.</li><li>We do not sell your information or show ads.</li></ul>' +
       '<h4>Marketing</h4><p>We only send marketing messages if you tick the box in Privacy settings. Every message will have a working unsubscribe link, in line with the <i>Spam Act 2003</i> (Cth). You can turn it off at any time in Me, then Privacy settings. Messages about your account (like a password reset) are not marketing.</p>' +
       '<h4>Where it is stored</h4><p>Your data is stored with Supabase in Sydney, Australia. The app is delivered through Vercel. Both only handle data to provide the service to us.</p>' +
       '<h4>Keeping it safe</h4><p>Information is sent over an encrypted connection, and each person can only read their own step records. We keep your information while you have an account.</p>' +
@@ -591,6 +600,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     return '<div class="h2">Privacy</div>' +
       '<details class="drop"' + (S.privOpen ? " open" : "") + '><summary>Privacy settings</summary><form class="stack" data-form="savePrivacy" style="gap:12px;margin-top:10px">' +
       '<label class="check"><input type="checkbox" name="marketing"' + (p.marketing_opt_in ? " checked" : "") + '> Send me Walkies news and offers by email. You can turn this off any time.</label>' +
+      '<label class="check"><input type="checkbox" name="board"' + (p.show_on_leaderboard ? " checked" : "") + '> Show my name and monthly steps on the walker leaderboard (Pup).</label>' +
       '<p class="muted" style="font-size:13px;margin:0">We only email about your account unless you tick this. Right now you are ' + (p.marketing_opt_in ? "opted in" : "not opted in") + (p.marketing_opt_in && p.marketing_opt_in_at ? " (since " + fmtDay(String(p.marketing_opt_in_at).slice(0, 10)) + ")" : "") + '.</p>' +
       '<p class="muted" style="font-size:13px;margin:0">Random challenges and your rival code are controlled in the For rivals card above.</p><button class="btn small">Save privacy settings</button></form></details>' +
       '<details class="drop"><summary>Privacy policy</summary>' + policyHtml() + '</details>';
@@ -843,7 +853,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       '<button class="btn light" data-act="dogs">See all dogs</button></div>';
   }
   function nav() {
-    var tabs = [["today", "Today"], ["packs", "Packs"], ["rivals", "Rivals"], ["impact", "Impact"], ["me", "Me"]];
+    var tabs = [["today", "Today"], ["packs", "Leaderboard"], ["rivals", "Rivals"], ["impact", "Impact"], ["me", "Me"]];
     return '<nav class="nav" aria-label="Walkies"><div class="nav-in" role="tablist">' + tabs.map(function (t) {
       return '<button class="tab" role="tab" aria-selected="' + (S.tab === t[0]) + '" data-tab="' + t[0] + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[t[0]] + '</svg>' + t[1] + '</button>';
     }).join("") + '</div></nav>';
@@ -904,7 +914,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var cn = t.closest("[data-cancel]");
     if (cn) { sb.rpc("cancel_duel", { p_id: cn.dataset.cancel }).then(function () { return loadRivals(); }).then(render); return; }
     var br = t.closest("[data-bracket]");
-    if (br) { S.bracket = br.dataset.bracket || null; loadBoard().then(render); return; }
+    if (br) { S.bracket = br.dataset.bracket || "Pup"; render(); return; }
     var a = t.closest("[data-act]"); if (!a) return;
     if (a.classList.contains("sheet-bg") && t !== a) return;
     var act = a.dataset.act;
@@ -946,6 +956,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     else if (act === "copy") { try { navigator.clipboard.writeText(a.dataset.code); toast("Code copied"); } catch (x) { toast("Code: " + a.dataset.code); } }
     else if (act === "sponsor") toast("Coming soon: friends and family will be able to sponsor your bowls.");
     else if (act === "pat") { S.bounce = true; render(); toast((myDog() ? myDog().name : "Your dog") + " wags their tail!"); setTimeout(function () { S.bounce = false; }, 600); }
+    else if (act === "joinboard" || act === "leaveboard") { sb.from("profiles").update({ show_on_leaderboard: act === "joinboard" }).eq("user_id", S.user.id).then(function (r) { if (r.error) return toast("Could not save that"); S.profile.show_on_leaderboard = act === "joinboard"; return loadBoard().then(render); }); }
     else if (act === "resetmail") { sb.auth.resetPasswordForEmail(S.user.email, { redirectTo: ORIGIN + "/" }).then(function (r) { toast(r.error ? r.error.message : "Reset link sent to " + S.user.email); }); }
     else if (act === "signout") { sb.auth.signOut().then(function () { S.user = null; S.view = "auth"; S.mode = "signin"; S.tab = "today"; render(); }); }
   });
