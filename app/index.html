@@ -104,6 +104,9 @@ option{background:var(--surface);color:var(--fg)}
 .welcome{background:radial-gradient(520px 420px at 50% 8%,rgba(255,46,154,.28),transparent 70%),radial-gradient(480px 380px at 50% 100%,rgba(35,229,255,.16),transparent 70%),var(--bg);min-height:100vh}
 .welcome .app{display:flex;flex-direction:column;gap:18px;padding-top:calc(28px + env(safe-area-inset-top))}
 .err{color:#ff7a9c;font-weight:700;font-size:14px}
+.mates{list-style:none;margin:0;padding:0;display:grid;gap:6px}.mates li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--line);border-radius:12px}
+details.drop{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px 16px}details.drop summary{font-weight:800;cursor:pointer;list-style:none;display:flex;justify-content:space-between}details.drop summary::after{content:"\203a";transform:rotate(90deg);color:var(--muted,#9a95ad)}details.drop[open] summary::after{transform:rotate(-90deg)}
+.policy{font-size:14px;line-height:1.5;margin-top:10px}.policy h4{margin:14px 0 4px;font-size:15px}.policy ul{margin:4px 0;padding-left:20px}.policy p{margin:4px 0}
 .buddy{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:12px 14px}
 .tug{background:linear-gradient(160deg,rgba(255,46,154,.12),rgba(35,229,255,.06)),var(--surface);border:1px solid rgba(244,255,58,.4);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:10px}
 .tug-tag{white-space:nowrap;display:inline-flex;align-items:center;gap:6px;font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--yellow)}
@@ -250,8 +253,9 @@ option{background:var(--surface);color:var(--fg)}
       var d = await sb.from("step_days").select("day,steps").gte("day", S.challenge.starts_on).lte("day", S.challenge.ends_on);
       S.days = d.data || [];
     }
-    await Promise.all([loadImpact(), loadBoard(), loadRivals(), loadDogs()]);
+    await Promise.all([loadImpact(), loadBoard(), loadRivals(), loadDogs(), loadMates()]);
   }
+  async function loadMates() { var r = await sb.rpc("team_mates"); S.mates = r.data || []; }
   async function loadImpact() { var r = await sb.rpc("impact"); S.impact = r.data && r.data[0] ? r.data[0] : null; }
   async function loadDogs() {
     var a = await sb.from("dogs").select("*").order("name"), b = await sb.from("shelters").select("id,name,city,state,is_demo");
@@ -380,6 +384,11 @@ option{background:var(--surface);color:var(--fg)}
       if (r.error) { S.cupMsg = r.error.message; return render(); }
       S.cupform = false; await loadRivals(); render(); toast("World Cup created. Invite others to join!");
     },
+    async savePrivacy(f) {
+      var r = await sb.from("profiles").update({ marketing_opt_in: f.marketing.checked }).eq("user_id", S.user.id);
+      if (r.error) return toast("Could not save that");
+      S.privOpen = true; await loadAll(); render(); toast(f.marketing.checked ? "Saved. We may send you Walkies news." : "Saved. No marketing emails.");
+    },
     async saveRival(f) {
       var r = await sb.from("profiles").update({ open_to_rivals: f.open.checked }).eq("user_id", S.user.id);
       if (r.error) return toast("Could not save that");
@@ -398,8 +407,8 @@ option{background:var(--surface);color:var(--fg)}
     async solo() { store.set("walkies-onboarded-" + S.user.id, "1"); S.view = "app"; render(); },
     async leave() { await sb.rpc("leave_workplace"); await finishJoin(); toast("You left your team"); },
     async saveNames(f) {
-      var r = await sb.from("profiles").update({ display_name: f.dname.value.trim() || "Walker", buddy_name: f.bname.value.trim() || "Biscuit" }).eq("user_id", S.user.id);
-      if (r.error) return toast("Names must be 1 to 40 characters");
+      var r = await sb.from("profiles").update({ display_name: f.dname.value.trim() || "Walker" }).eq("user_id", S.user.id);
+      if (r.error) return toast("Your name must be 1 to 40 characters");
       await loadAll(); render(); toast("Saved");
     },
     async saveSteps(f, mode) {
@@ -513,7 +522,7 @@ option{background:var(--surface);color:var(--fg)}
       challengeBanner() + '<button class="btn" data-act="sheet">Add today\'s steps</button>' +
       dogCard() + '<div class="between"><div class="h2">Scoops</div><div class="muted" style="font-size:14px">' + done + ' of 10 in the bowl</div></div>' +
       '<div class="scoops">' + scoops + '</div>' +
-      '<div class="buddy"><div class="' + (S.bounce ? "bounce" : "") + '">' + DOG + '</div><div style="flex:1;min-width:0"><div style="font-weight:700">' + esc(S.profile.buddy_name) + ' is ready for a walk</div><div class="muted" style="font-size:14px">Your Buddy cheers every scoop</div></div><button class="btn small" style="background:var(--pink);color:var(--dark)" data-act="pat">Pat</button></div></div>';
+      (myDog() ? '<div class="buddy"><div class="' + (S.bounce ? "bounce" : "") + '">' + DOG + '</div><div style="flex:1;min-width:0"><div style="font-weight:700">' + esc(myDog().name) + ' is ready for a walk</div><div class="muted" style="font-size:14px">' + esc(myDog().name) + ' cheers every scoop</div></div><button class="btn small" style="background:var(--pink);color:var(--dark)" data-act="pat">Pat</button></div>' : "") + '</div>';
   }
   function packKey() {
     return '<div class="card" style="gap:6px"><b>What the names mean</b><p class="muted" style="font-size:14px;margin:4px 0 0"><b style="color:var(--text,inherit)">Pack</b> is your team on Walkies. The size tags group packs by company size, so a small team races other small teams: <b>Pup</b> up to 50 staff, <b>Pack</b> 51 to 250, <b>Big Dog</b> 251 to 1,000, <b>Top Dog</b> 1,000+. Tap a tag to see only that size.</p></div>';
@@ -540,16 +549,42 @@ option{background:var(--surface);color:var(--fg)}
       dogImpactCard() + '<div class="card"><b>Delivery proof</b><p class="muted" style="font-size:14px">Photos and delivery dockets from our rescue partners will show up here once the first food goes out.</p></div>' +
       '<div class="card row" style="border-color:var(--cyan)"><div style="flex:1;font-size:14px"><b>Want to add a bowl?</b> Friends and family will soon be able to sponsor your steps.</div><button class="btn small" style="background:var(--pink);color:var(--dark)" data-act="sponsor">Tell me</button></div></div>';
   }
+  function myTeams() {
+    var i = S.impact || {}, mates = S.mates || [];
+    if (!i.team_name) return '<div class="h2">My teams</div><div class="card stack" style="gap:10px"><p class="muted" style="font-size:14px">You are not in a team yet. Walk with your workplace to join the league.</p><button class="btn coral" data-act="gojoin">Join or start a team</button></div>';
+    var list = mates.length ? '<div class="h2" style="font-size:15px;margin-top:4px">Teammates</div><ul class="mates">' + mates.map(function (m) { return '<li><span>' + esc(m.display_name) + (m.is_me ? " (you)" : "") + '</span>' + (m.is_captain ? '<span class="tag">Captain</span>' : "") + '</li>'; }).join("") + '</ul>' : "";
+    return '<div class="h2">My teams</div><div class="card stack" style="gap:10px"><div class="between"><div class="h2" style="margin:0">' + esc(i.team_name) + '</div><span class="muted" style="font-size:14px">' + i.team_members + (i.team_members === 1 ? " walker" : " walkers") + '</span></div>' + renameForm(i.team_name) + list +
+      '<p class="muted" style="font-size:14px">Workmates join with this code:</p><div style="font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:.12em">' + esc(i.team_join_code) + '</div><div class="row" style="flex-wrap:wrap"><button class="btn small" data-act="invite" data-code="' + esc(i.team_join_code) + '" data-team="' + esc(i.team_name) + '">Invite workmates</button><a class="btn small light" href="' + mailtoInvite(i.team_name, i.team_join_code) + '">Email invite</a><button class="btn small light" data-act="copy" data-code="' + esc(i.team_join_code) + '">Copy code</button><button class="btn small light" data-act="leave">Leave team</button></div></div>';
+  }
+  var PRIVACY_CONTACT = "";
+  function privacySection() {
+    var p = S.profile || {};
+    var contact = PRIVACY_CONTACT ? '<a href="mailto:' + esc(PRIVACY_CONTACT) + '">' + esc(PRIVACY_CONTACT) + '</a>' : "the Walkies team";
+    var policy = '<div class="policy">' +
+      '<p><b>Last updated:</b> October 2026. This is a plain-English summary of how Walkies handles your information. It follows the Australian Privacy Principles in the <i>Privacy Act 1988</i> (Cth).</p>' +
+      '<h4>What we collect</h4><ul><li>Your email address and password (the password is stored securely by our sign-in provider and we cannot read it).</li><li>Your display name, your team and the shelter dog you choose.</li><li>The step counts you type in, by day. We do not collect your location, contacts or health records.</li><li>Your challenges (who you challenged and the results).</li></ul>' +
+      '<h4>Why we collect it</h4><p>To run the app: count your steps, work out your bowls, show team leaderboards and run tug of wars. We only use it for that unless you agree to something else.</p>' +
+      '<h4>Who can see it</h4><ul><li>Your teammates can see your display name.</li><li>A rival in a tug of war sees your name and your step total for that challenge, not your daily steps.</li><li>Leaderboards show team totals, not individual steps.</li><li>We do not sell your information or show ads.</li></ul>' +
+      '<h4>Marketing</h4><p>We only send marketing messages if you tick the box in Privacy settings. Every message will have a working unsubscribe link, in line with the <i>Spam Act 2003</i> (Cth). You can turn it off here at any time. Messages about your account (like a password reset) are not marketing.</p>' +
+      '<h4>Where it is stored</h4><p>Your data is stored with Supabase in Sydney, Australia. The app is delivered through Vercel. Both only handle data to provide the service to us.</p>' +
+      '<h4>Keeping it safe</h4><p>Information is sent over an encrypted connection, and each person can only read their own step records. We keep your information while you have an account.</p>' +
+      '<h4>Food and donation claims</h4><p>We aim to be accurate about what your steps do. Bowl counts show what is unlocked by walking. Where a partner or sponsor funds the food, we will say so clearly. Public fundraising rules differ by state and territory and we will comply with the ones that apply.</p>' +
+      '<h4>Your rights</h4><p>You can ask to see, correct or delete your information, or ask how we handled it, by contacting ' + contact + '. If you are not happy with our response you can complain to the Office of the Australian Information Commissioner at oaic.gov.au.</p>' +
+      '</div>';
+    return '<div class="h2">Privacy</div>' +
+      '<details class="drop"' + (S.privOpen ? " open" : "") + '><summary>Privacy settings</summary><form class="stack" data-form="savePrivacy" style="gap:12px;margin-top:10px">' +
+      '<label class="check"><input type="checkbox" name="marketing"' + (p.marketing_opt_in ? " checked" : "") + '> Send me Walkies news and offers by email. You can turn this off any time.</label>' +
+      '<p class="muted" style="font-size:13px;margin:0">We only email about your account unless you tick this. Right now you are ' + (p.marketing_opt_in ? "opted in" : "not opted in") + (p.marketing_opt_in && p.marketing_opt_in_at ? " (since " + fmtDay(String(p.marketing_opt_in_at).slice(0, 10)) + ")" : "") + '.</p>' +
+      '<p class="muted" style="font-size:13px;margin:0">Random challenges and your rival code are controlled in the For rivals card above.</p><button class="btn small">Save privacy settings</button></form></details>' +
+      '<details class="drop"><summary>Privacy policy</summary>' + policy + '</details>';
+  }
   function viewMe() {
-    var i = S.impact || {};
-    var team = i.team_name
-      ? '<div class="card stack" style="gap:10px"><div class="h2">' + esc(i.team_name) + '</div>' + renameForm(i.team_name) + '<p class="muted">' + i.team_members + (i.team_members === 1 ? " walker" : " walkers") + '. Workmates join with this code:</p><div style="font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:.12em">' + esc(i.team_join_code) + '</div><div class="row" style="flex-wrap:wrap"><button class="btn small" data-act="invite" data-code="' + esc(i.team_join_code) + '" data-team="' + esc(i.team_name) + '">Invite workmates</button><a class="btn small light" href="' + mailtoInvite(i.team_name, i.team_join_code) + '">Email invite</a><button class="btn small light" data-act="copy" data-code="' + esc(i.team_join_code) + '">Copy code</button><button class="btn small light" data-act="leave">Leave team</button></div></div>'
-      : '<button class="btn coral" data-act="gojoin">Join or start a team</button>';
     return topbar("") + '<div class="stack"><h1 class="h1">Me</h1>' +
-      '<form class="card stack" data-form="saveNames"><div class="gap8"><label for="dname">Your name</label><input id="dname" name="dname" value="' + esc(S.profile.display_name) + '" maxlength="40" required></div><div class="gap8"><label for="bname">Your Buddy\'s name</label><input id="bname" name="bname" value="' + esc(S.profile.buddy_name) + '" maxlength="24" required></div><button class="btn">Save</button></form>' +
-      team +
-      rivalForm() + '<div class="card"><b>Add to your home screen</b><p class="muted" style="font-size:14px">On iPhone, tap Share then Add to Home Screen. On Android, tap the menu then Install app. Walkies then opens like an app.</p></div>' +
-      '<button class="btn light" data-act="signout">Sign out</button><p class="muted" style="font-size:13px;text-align:center">' + esc(S.user.email) + ' · version ' + esc(window.WALKIES_VERSION || "dev") + '</p></div>';
+      '<form class="card stack" data-form="saveNames"><div class="gap8"><label for="dname">Your name</label><input id="dname" name="dname" value="' + esc(S.profile.display_name) + '" maxlength="40" required></div><button class="btn">Save</button></form>' +
+      myTeams() + rivalForm() +
+      '<div class="h2">Account</div><div class="card stack" style="gap:10px"><div class="muted" style="font-size:14px">Signed in as ' + esc(S.user.email) + '</div><button class="btn light" data-act="resetmail">Reset my password</button><p class="muted" style="font-size:13px;margin:0">We will email a link to set a new password.</p></div>' +
+      privacySection() +
+      '<button class="btn light" data-act="signout">Sign out</button><p class="muted" style="font-size:13px;text-align:center">version ' + esc(window.WALKIES_VERSION || "dev") + '</p></div>';
   }
   function sheet() {
     return '<div class="sheet-bg" data-act="closesheet"><form class="sheet" data-form="saveSteps" role="dialog" aria-modal="true" aria-label="Update steps" style="max-height:92vh;overflow:auto"><div class="h2">Add your steps</div>' +
@@ -893,7 +928,8 @@ option{background:var(--surface);color:var(--fg)}
     else if (act === "leave") { if (confirm("Leave your team? Your steps stay with you.")) actions.leave(); }
     else if (act === "copy") { try { navigator.clipboard.writeText(a.dataset.code); toast("Code copied"); } catch (x) { toast("Code: " + a.dataset.code); } }
     else if (act === "sponsor") toast("Coming soon: friends and family will be able to sponsor your bowls.");
-    else if (act === "pat") { S.bounce = true; render(); toast(S.profile.buddy_name + " wags their tail!"); setTimeout(function () { S.bounce = false; }, 600); }
+    else if (act === "pat") { S.bounce = true; render(); toast((myDog() ? myDog().name : "Your dog") + " wags their tail!"); setTimeout(function () { S.bounce = false; }, 600); }
+    else if (act === "resetmail") { sb.auth.resetPasswordForEmail(S.user.email, { redirectTo: ORIGIN + "/" }).then(function (r) { toast(r.error ? r.error.message : "Reset link sent to " + S.user.email); }); }
     else if (act === "signout") { sb.auth.signOut().then(function () { S.user = null; S.view = "auth"; S.mode = "signin"; S.tab = "today"; render(); }); }
   });
   sb.auth.onAuthStateChange(function (ev, session) {
