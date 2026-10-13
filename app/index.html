@@ -614,6 +614,13 @@ option{background:var(--surface);color:var(--fg)}
       (d.incoming ? '<div class="row"><button class="btn coral small" data-duel="' + d.id + '" data-ans="1">Accept</button><button class="btn light small" data-duel="' + d.id + '" data-ans="0">Decline</button></div>' : "") +
       (d.status === "pending" && !d.incoming ? '<div class="row" style="flex-wrap:wrap">' + (d.invite_token ? '<button class="btn small coral" data-share="' + d.invite_token + '" data-days="' + d.days_left + '">Share link</button>' : "") + '<button class="btn small light" data-cancel="' + d.id + '">Cancel</button></div>' : "") + '</div>';
   }
+  var MAX_CHALLENGES = 3;
+  // A person challenge, a team challenge and a World Cup each count as one. Requests waiting for you do not count.
+  function challengeCount() {
+    var d = (S.duels || []).filter(function (x) { return !x.finished && (x.status === "active" || (x.status === "pending" && !x.incoming)); }).length;
+    var c = (S.cups || []).filter(function (x) { return x.i_am_in && x.status !== "finished"; }).length;
+    return d + c;
+  }
   function todayTug() {
     var act = (S.duels || []).filter(function (x) { return x.status === "active" && !x.finished; });
     if (!act.length) return '<div class="card row"><div style="flex:1"><b>Pick a rival</b><p class="muted" style="font-size:14px">Take on a person or a team in a tug of war.</p></div><button class="btn small" data-tab="rivals">Rivals</button></div>';
@@ -633,7 +640,8 @@ option{background:var(--surface);color:var(--fg)}
     var duels = S.duels || [], inc = duels.filter(function (d) { return d.incoming; }), mine = duels.filter(function (d) { return !d.incoming; });
     var cups = S.cups || [];
     return topbar("") + '<div class="stack"><div><h1 class="h1">Rivals</h1><p class="muted">Pick a rival and pull the bone your way.</p></div>' +
-      '<button class="btn coral" data-act="wiz">Challenge a rival</button>' +
+      '<div class="between"><span class="tag">Challenges ' + challengeCount() + ' of ' + MAX_CHALLENGES + '</span><span class="muted" style="font-size:13px">A person, a team or a World Cup each count as one</span></div>' +
+      (challengeCount() >= MAX_CHALLENGES ? '<button class="btn" disabled>You have 3 challenges. Finish one to start another.</button>' : '<button class="btn coral" data-act="wiz">Challenge a rival</button>') +
       (inc.length ? '<div class="h2">Challenges for you</div>' + inc.map(tugCard).join("") : "") +
       '<div class="h2">Your tug of wars</div>' +
       (mine.length ? mine.map(tugCard).join("") : '<div class="card"><b>No tug of wars yet.</b><p class="muted" style="font-size:14px">Challenge a person or a team. Everyone starts from zero when it begins.</p></div>') +
@@ -859,6 +867,7 @@ option{background:var(--surface);color:var(--fg)}
     else if (act === "sheet") { S.sheet = true; S.stepMsg = ""; S.stepVal = ""; render(); }
     else if (act === "dogs") { S.dogview = { list: true }; render(); window.scrollTo(0, 0); }
     else if (act === "dogback") { S.dogview = null; render(); }
+    else if ((act === "wiz" || act === "wizlink" || act === "cupnew") && challengeCount() >= MAX_CHALLENGES) { toast("You already have 3 challenges. Finish one before starting another."); }
     else if (act === "wiz") { S.wiz = { kind: "team", opp: "", random: false, days: 7, options: [], loading: true }; S.wizMsg = ""; sb.rpc("duel_options", { p_kind: "team" }).then(function (r) { if (S.wiz) { S.wiz.options = r.data || []; S.wiz.loading = false; render(); } }); render(); }
     else if (act === "closewiz") { S.wiz = null; render(); }
     else if (act === "cupnew") { S.cupform = true; S.cupMsg = ""; render(); }
