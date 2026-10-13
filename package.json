@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "mkdir -p app/vendor && cp node_modules/@supabase/supabase-js/dist/umd/supabase.js app/vendor/supabase.js"
+    "build": "mkdir -p app/vendor && cp node_modules/@supabase/supabase-js/dist/umd/supabase.js app/vendor/supabase.js && node --input-type=commonjs -e \"require('fs').writeFileSync('app/version.js', 'window.WALKIES_VERSION=\\\"' + (process.env.VERCEL_GIT_COMMIT_SHA || 'dev').slice(0, 7) + '\\\";')\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2"

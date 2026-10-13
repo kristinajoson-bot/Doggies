@@ -1,6 +1,6 @@
 // Minimal service worker so the app installs. Network first; the shell is cached for flaky signal.
-const CACHE = "walkies-v1";
-const SHELL = ["/", "/config.js", "/manifest.webmanifest", "/vendor/supabase.js"];
+const CACHE = "walkies-v2";
+const SHELL = ["/", "/config.js", "/version.js", "/manifest.webmanifest", "/vendor/supabase.js"];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });

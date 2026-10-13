@@ -2,3 +2,4 @@ node_modules/
 app/vendor/
 .vercel/
 .env*
+app/version.js

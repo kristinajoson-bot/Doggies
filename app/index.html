@@ -149,6 +149,7 @@ option{background:var(--surface);color:var(--fg)}
 <div id="root"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="/config.js"></script>
+<script src="/version.js"></script>
 <script src="/vendor/supabase.js"></script>
 <script>
 (function () {
@@ -288,6 +289,7 @@ option{background:var(--surface);color:var(--fg)}
     }
     var seen = store.get("walkies-onboarded-" + S.user.id);
     S.view = (!S.profile.workplace_id && !seen) ? "join" : "app";
+    if (S.view === "app" && !S.profile.dog_id && !store.get("walkies-dog-seen-" + S.user.id) && (S.dogs || []).length) { store.set("walkies-dog-seen-" + S.user.id, "1"); S.dogview = { list: true }; }
     var pr = store.get("walkies-pending-rival");
     if (pr) { store.set("walkies-pending-rival", ""); S.view = "app"; S.tab = "rivals"; S.wiz = { kind: "person", opp: pr, random: false, days: 7, options: [], loading: false }; S.wizMsg = ""; }
     render();
@@ -483,7 +485,7 @@ option{background:var(--surface);color:var(--fg)}
       '<form class="card stack" data-form="saveNames"><div class="gap8"><label for="dname">Your name</label><input id="dname" name="dname" value="' + esc(S.profile.display_name) + '" maxlength="40" required></div><div class="gap8"><label for="bname">Your Buddy\'s name</label><input id="bname" name="bname" value="' + esc(S.profile.buddy_name) + '" maxlength="24" required></div><button class="btn">Save</button></form>' +
       team +
       rivalForm() + '<div class="card"><b>Add to your home screen</b><p class="muted" style="font-size:14px">On iPhone, tap Share then Add to Home Screen. On Android, tap the menu then Install app. Walkies then opens like an app.</p></div>' +
-      '<button class="btn light" data-act="signout">Sign out</button><p class="muted" style="font-size:13px;text-align:center">' + esc(S.user.email) + '</p></div>';
+      '<button class="btn light" data-act="signout">Sign out</button><p class="muted" style="font-size:13px;text-align:center">' + esc(S.user.email) + ' · version ' + esc(window.WALKIES_VERSION || "dev") + '</p></div>';
   }
   function sheet() {
     return '<div class="sheet-bg" data-act="closesheet"><form class="sheet" data-form="saveSteps" role="dialog" aria-modal="true" aria-label="Update steps" style="max-height:92vh;overflow:auto"><div class="h2">Add your steps</div>' +
@@ -787,7 +789,11 @@ option{background:var(--surface);color:var(--fg)}
     if (ev === "PASSWORD_RECOVERY" && session) { S.user = session.user; S.recovery = true; S.view = "reset"; S.msg = ""; render(); }
     else if (ev === "SIGNED_OUT" && S.view !== "auth") { S.user = null; S.view = "auth"; render(); }
   });
-  if ("serviceWorker" in navigator) window.addEventListener("load", function () { navigator.serviceWorker.register("/sw.js").catch(function () {}); });
+  if ("serviceWorker" in navigator) {
+    var hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener("controllerchange", function () { if (hadController && !S.sheet && !S.wiz && !S.cupform) location.reload(); });
+    window.addEventListener("load", function () { navigator.serviceWorker.register("/sw.js").then(function (reg) { reg.update().catch(function () {}); }).catch(function () {}); });
+  }
   setInterval(function () { if (S.view === "app" && S.tab === "today" && !S.sheet && !S.celebrate) { var c = document.querySelector(".chip"); if (c) c.textContent = timeLeft(); } }, 30000);
   boot().catch(function () { S.view = "auth"; render(); });
 })();
