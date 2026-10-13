@@ -177,7 +177,7 @@ option{background:var(--surface);color:var(--fg)}
   } catch (e) {}
 
   var STATES = ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"];
-  var KINDS = [["person", "Person"], ["team", "Team"], ["state", "State"], ["city", "City"]];
+  var KINDS = [["person", "Person"], ["team", "Team"]];
   var KIND_LABEL = { person: "Person", team: "Team", state: "State", city: "City" };
   S.pubInvite = null; S.pubClosed = false; S.draft = { name: "", email: "" }; S.invite = null; S.inviteMsg = ""; S.dogs = []; S.shelters = {}; S.dogTotals = {}; S.dogview = null; S.stepVal = ""; S.stepMsg = ""; S.duels = []; S.cups = []; S.wiz = null; S.cupform = false; S.tview = null; S.wizMsg = ""; S.cupMsg = "";
   try {
@@ -362,12 +362,12 @@ option{background:var(--surface);color:var(--fg)}
     },
     async makeCup(f) {
       S.cupMsg = "";
-      var r = await sb.rpc("create_tournament", { p_name: f.cname.value, p_kind: f.ckind.value, p_size: Number(f.csize.value), p_round_days: Number(f.cdays.value) });
+      var r = await sb.rpc("create_tournament", { p_name: f.cname.value, p_kind: "team", p_size: Number(f.csize.value), p_round_days: Number(f.cdays.value) });
       if (r.error) { S.cupMsg = r.error.message; return render(); }
       S.cupform = false; await loadRivals(); render(); toast("World Cup created. Invite others to join!");
     },
     async saveRival(f) {
-      var r = await sb.from("profiles").update({ state: f.state.value || null, city: f.city.value.trim() || null, open_to_rivals: f.open.checked }).eq("user_id", S.user.id);
+      var r = await sb.from("profiles").update({ open_to_rivals: f.open.checked }).eq("user_id", S.user.id);
       if (r.error) return toast("Could not save that");
       await loadAll(); render(); toast("Saved");
     },
@@ -602,9 +602,9 @@ option{background:var(--surface);color:var(--fg)}
       (d.status === "pending" && !d.incoming ? '<div class="row" style="flex-wrap:wrap">' + (d.invite_token ? '<button class="btn small coral" data-share="' + d.invite_token + '" data-days="' + d.days_left + '">Share link</button>' : "") + '<button class="btn small light" data-cancel="' + d.id + '">Cancel</button></div>' : "") + '</div>';
   }
   function todayTug() {
-    var d = (S.duels || []).filter(function (x) { return x.status === "active" && !x.finished; })[0];
-    if (d) return tugCard(d);
-    return '<div class="card row"><div style="flex:1"><b>Pick a rival</b><p class="muted" style="font-size:14px">Take on a person, team, state or city in a tug of war.</p></div><button class="btn small" data-tab="rivals">Rivals</button></div>';
+    var act = (S.duels || []).filter(function (x) { return x.status === "active" && !x.finished; });
+    if (!act.length) return '<div class="card row"><div style="flex:1"><b>Pick a rival</b><p class="muted" style="font-size:14px">Take on a person or a team in a tug of war.</p></div><button class="btn small" data-tab="rivals">Rivals</button></div>';
+    return act.slice(0, 2).map(tugCard).join("") + (act.length > 2 ? '<button class="linkbtn" data-tab="rivals">See all ' + act.length + ' tug of wars \u203a</button>' : "");
   }
   function cupCard(c) {
     var state = c.status === "open" ? c.entries + " of " + c.size + " sides in" : c.status === "running" ? "In play" : "Finished";
@@ -623,10 +623,10 @@ option{background:var(--surface);color:var(--fg)}
       '<button class="btn coral" data-act="wiz">Challenge a rival</button>' +
       (inc.length ? '<div class="h2">Challenges for you</div>' + inc.map(tugCard).join("") : "") +
       '<div class="h2">Your tug of wars</div>' +
-      (mine.length ? mine.map(tugCard).join("") : '<div class="card"><b>No tug of wars yet.</b><p class="muted" style="font-size:14px">Challenge a person, a team, a state or a city. Everyone starts from zero when it begins.</p></div>') +
+      (mine.length ? mine.map(tugCard).join("") : '<div class="card"><b>No tug of wars yet.</b><p class="muted" style="font-size:14px">Challenge a person or a team. Everyone starts from zero when it begins.</p></div>') +
       '<div class="between" style="margin-top:8px"><div class="h2">World Cup</div><button class="btn small light" data-act="cupnew">Start one</button></div>' +
       '<p class="muted" style="font-size:14px;margin-top:-8px">Knockout rounds. Win your match with the most steps per walker and move on to the next round.</p>' +
-      (cups.length ? cups.map(cupCard).join("") : '<div class="card"><b>No World Cups yet.</b><p class="muted" style="font-size:14px">Start one for teams, states or cities and invite others to join.</p></div>') + '</div>';
+      (cups.length ? cups.map(cupCard).join("") : '<div class="card"><b>No World Cups yet.</b><p class="muted" style="font-size:14px">Start one for teams and invite others to join.</p></div>') + '</div>';
   }
   function roundName(r, total) { var left = total - r; return left === 0 ? "Final" : left === 1 ? "Semi-finals" : left === 2 ? "Quarter-finals" : "Round " + r; }
   function viewCup() {
@@ -687,20 +687,16 @@ option{background:var(--surface);color:var(--fg)}
     return '<div class="sheet-bg" data-act="closecup"><form class="sheet" data-form="makeCup" role="dialog" aria-modal="true" aria-label="Start a World Cup" style="max-height:92vh;overflow:auto"><div class="h2">Start a World Cup</div>' +
       '<p class="muted" style="font-size:14px">Sides join until it is full, then the knockout draw is made at random. Winners are decided by steps per walker.</p>' +
       '<div class="gap8"><label for="cname">Name</label><input id="cname" name="cname" maxlength="40" placeholder="Example: Spring Dog Bowl" required></div>' +
-      '<div class="gap8"><label for="ckind">Who competes?</label><select id="ckind" name="ckind"><option value="team">Teams</option><option value="state">States</option><option value="city">Cities</option></select></div>' +
       '<div class="gap8"><label for="csize">How many sides?</label><select id="csize" name="csize"><option value="4">4</option><option value="8" selected>8</option><option value="16">16</option></select></div>' +
       '<div class="gap8"><label for="cdays">Days per round</label><select id="cdays" name="cdays"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="5">5</option><option value="7">7</option></select></div>' +
       (S.cupMsg ? '<p class="err" role="alert">' + esc(S.cupMsg) + '</p>' : "") +
       '<button class="btn coral">Create World Cup</button><button type="button" class="btn light" data-act="closecup">Cancel</button></form></div>';
   }
   function rivalForm() {
-    var p = S.profile, link = p.rival_code ? ORIGIN + "/?rival=" + encodeURIComponent(p.rival_code) : "";
-    return '<form class="card stack" data-form="saveRival"><div class="h2">For rivals</div><p class="muted" style="font-size:14px">Set where you walk from so you can take on other states and cities.</p>' +
-      '<div class="gap8"><label for="state">State</label><select id="state" name="state"><option value="">Not set</option>' + STATES.map(function (x) { return '<option' + (p.state === x ? " selected" : "") + '>' + x + '</option>'; }).join("") + '</select></div>' +
-      '<div class="gap8"><label for="city">City or town</label><input id="city" name="city" maxlength="40" value="' + esc(p.city || "") + '" placeholder="Example: Sydney"></div>' +
-      '<label class="check"><input type="checkbox" name="open"' + (p.open_to_rivals ? " checked" : "") + '> Let random walkers challenge me (you can still say no)</label>' +
-      '<button class="btn">Save</button>' +
-      (p.rival_code ? '<div class="gap8"><div class="muted" style="font-size:14px">Your rival code. Friends use it to challenge you.</div><div style="font-family:var(--display);font-weight:800;font-size:28px;letter-spacing:.12em">' + esc(p.rival_code) + '</div><div class="row" style="flex-wrap:wrap"><button type="button" class="btn small light" data-act="wizlink">Create a challenge link</button></div></div>' : "") + '</form>';
+    var p = S.profile;
+    return '<form class="card stack" data-form="saveRival"><div class="h2">For rivals</div>' +
+      '<label class="check"><input type="checkbox" name="open"' + (p.open_to_rivals ? " checked" : "") + '> Let random walkers challenge me (you can still say no)</label><button class="btn">Save</button>' +
+      (p.rival_code ? '<div class="gap8"><div class="muted" style="font-size:14px">Your rival code. Friends can use it to challenge you.</div><div style="font-family:var(--display);font-weight:800;font-size:28px;letter-spacing:.12em">' + esc(p.rival_code) + '</div><div class="row" style="flex-wrap:wrap"><button type="button" class="btn small light" data-act="wizlink">Create a challenge link</button></div></div>' : "") + '</form>';
   }
   // ---- shelter dogs ----
   function dogById(id) { return (S.dogs || []).filter(function (d) { return d.id === id; })[0] || null; }
@@ -708,7 +704,7 @@ option{background:var(--surface);color:var(--fg)}
   function dogStat(id) { var t = S.dogTotals[id || "pool"] || {}; return { walkers: t.walkers || 0, bowls: t.bowls || 0 }; }
   function dogAvatar(d, size) {
     var coat = d ? d.coat : "#9a95ad", ear = d ? d.ear : "#6b6680", ring = Math.round(size * 1.25);
-    var face = d ? '<svg width="' + size + '" height="' + size + '" viewBox="0 0 48 48" aria-hidden="true"><ellipse cx="9" cy="20" rx="7" ry="12" fill="' + ear + '" stroke="#f4f2fa" stroke-width="2"/><ellipse cx="39" cy="20" rx="7" ry="12" fill="' + ear + '" stroke="#f4f2fa" stroke-width="2"/><circle cx="24" cy="26" r="16" fill="' + coat + '" stroke="#f4f2fa" stroke-width="2"/><circle cx="18" cy="24" r="2.2" fill="#050507"/><circle cx="30" cy="24" r="2.2" fill="#050507"/><ellipse cx="24" cy="31" rx="4" ry="3" fill="#050507"/></svg>'
+    var face = d && d.photo_url ? '<img src="' + esc(d.photo_url) + '" alt="' + esc(d.name) + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block">' : d ? '<svg width="' + size + '" height="' + size + '" viewBox="0 0 48 48" aria-hidden="true"><ellipse cx="9" cy="20" rx="7" ry="12" fill="' + ear + '" stroke="#f4f2fa" stroke-width="2"/><ellipse cx="39" cy="20" rx="7" ry="12" fill="' + ear + '" stroke="#f4f2fa" stroke-width="2"/><circle cx="24" cy="26" r="16" fill="' + coat + '" stroke="#f4f2fa" stroke-width="2"/><circle cx="18" cy="24" r="2.2" fill="#050507"/><circle cx="30" cy="24" r="2.2" fill="#050507"/><ellipse cx="24" cy="31" rx="4" ry="3" fill="#050507"/></svg>'
       : '<svg width="' + size + '" height="' + size + '" viewBox="0 0 120 120" aria-hidden="true"><g fill="#ff2e9a"><ellipse cx="60" cy="80" rx="25" ry="21"/><ellipse cx="27" cy="52" rx="10" ry="13"/><ellipse cx="47" cy="31" rx="10" ry="13"/><ellipse cx="73" cy="31" rx="10" ry="13"/><ellipse cx="93" cy="52" rx="10" ry="13"/></g></svg>';
     return '<div class="avatar-ring" style="width:' + ring + 'px;height:' + ring + 'px">' + face + '</div>';
   }

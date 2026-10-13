@@ -24,3 +24,8 @@ alter table public.duels add column if not exists a_base bigint not null default
 create or replace function public.duel_set_base() returns trigger language plpgsql security definer set search_path = public as $fn$ begin if new.status = 'active' and new.starts_on is not null and new.b_ref is not null and (tg_op = 'INSERT' or old.status is distinct from 'active') then new.a_base := coalesce((select s.total from public.side_stats(new.kind, new.a_ref, new.starts_on, new.starts_on) s), 0); new.b_base := coalesce((select s.total from public.side_stats(new.kind, new.b_ref, new.starts_on, new.starts_on) s), 0); end if; return new; end $fn$; revoke execute on function public.duel_set_base() from public, anon, authenticated;
 create or replace trigger duel_base before insert or update on public.duels for each row execute function public.duel_set_base();
 -- my_duels() now returns each side's score minus its starting amount (same columns as before). World Cup round 1 starts the day after kick-off.
+
+-- Up to 5 tug of wars at a time (create_duel and create_link_duel were redefined with the limit raised from 3 to 5).
+-- started_at records the exact moment a tug of war begins, for use by automatic step syncing later.
+alter table public.duels add column if not exists started_at timestamptz;
+-- duel_set_base() also sets started_at := now() when a duel becomes active.
