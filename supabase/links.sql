@@ -1,0 +1,17 @@
+-- Walkies: challenge links. A link carries the sender's challenge; the person who opens it accepts.
+-- Each statement is on one line because the SQL tool used to apply it stalls on multi-line function bodies.
+-- Note: my_duels() is unchanged. my_links() returns the link token to the person who made a waiting challenge.
+
+alter table public.duels alter column b_ref drop not null; alter table public.duels add column if not exists invite_token text unique;
+
+create or replace function public.create_link_duel(p_days int) returns text language plpgsql security definer set search_path = public as $fn$ declare me uuid := auth.uid(); n int := greatest(1, least(coalesce(p_days, 7), 30)); tok text; begin if me is null then raise exception 'Sign in first'; end if; if (select count(*) from public.duels du where du.kind = 'person' and du.status in ('pending','active') and (du.ends_on is null or du.ends_on >= current_date) and (du.a_ref = me::text or du.b_ref = me::text)) >= 3 then raise exception 'You already have 3 tug of wars going. Wait for one to finish.'; end if; tok := lower(substr(md5(random()::text || clock_timestamp()::text || me::text), 1, 10)); insert into public.duels (kind, a_ref, b_ref, created_by, status, days, invite_token) values ('person', me::text, null, me, 'pending', n, tok); return tok; end $fn$;
+
+create or replace function public.link_duel_preview(p_token text) returns table (challenger text, days int, mine boolean, available boolean) language sql stable security definer set search_path = public as $fn$ select public.side_label('person', d.a_ref), d.days, d.a_ref = auth.uid()::text, (d.b_ref is null and d.status = 'pending') from public.duels d where d.invite_token = lower(trim(p_token)) $fn$;
+
+create or replace function public.accept_link_duel(p_token text) returns uuid language plpgsql security definer set search_path = public as $fn$ declare me uuid := auth.uid(); d public.duels; begin if me is null then raise exception 'Sign in first'; end if; select * into d from public.duels where invite_token = lower(trim(p_token)) for update; if not found or d.b_ref is not null or d.status <> 'pending' then raise exception 'This challenge link has already been used or was cancelled'; end if; if d.a_ref = me::text then raise exception 'This is your own challenge link. Send it to someone else.'; end if; update public.duels set b_ref = me::text, status = 'active', starts_on = current_date, ends_on = current_date + d.days - 1, invite_token = null where id = d.id; return d.id; end $fn$;
+
+create or replace function public.cancel_duel(p_id uuid) returns void language sql security definer set search_path = public as $fn$ update public.duels set status = 'declined', invite_token = null where id = p_id and created_by = auth.uid() and status = 'pending' $fn$;
+
+create or replace function public.my_links() returns table (id uuid, invite_token text) language sql stable security definer set search_path = public as $fn$ select d.id, d.invite_token from public.duels d where d.created_by = auth.uid() and d.status = 'pending' and d.b_ref is null and d.invite_token is not null $fn$;
+
+revoke execute on function public.create_link_duel(int), public.link_duel_preview(text), public.accept_link_duel(text), public.cancel_duel(uuid), public.my_links() from public, anon; grant execute on function public.create_link_duel(int), public.link_duel_preview(text), public.accept_link_duel(text), public.cancel_duel(uuid), public.my_links() to authenticated;
