@@ -249,6 +249,11 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     S.challenge = ch.data;
     var p = await sb.from("profiles").select("*").eq("user_id", uid).maybeSingle();
     S.profile = p.data || { display_name: "Walker", buddy_name: "Biscuit", workplace_id: null };
+    var um = (S.user && S.user.user_metadata) || {};
+    if (um.marketing_opt_in === true && p.data && !p.data.marketing_opt_in && !p.data.marketing_opt_in_at) {
+      var mo = await sb.from("profiles").update({ marketing_opt_in: true }).eq("user_id", uid);
+      if (!mo.error) S.profile.marketing_opt_in = true;
+    }
     if (S.challenge) {
       var d = await sb.from("step_days").select("day,steps").gte("day", S.challenge.starts_on).lte("day", S.challenge.ends_on);
       S.days = d.data || [];
@@ -328,11 +333,13 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   var actions = {
     async auth(f) {
       var email = f.email.value.trim(), password = f.password.value, name = f.name ? f.name.value.trim() : "";
-      S.draft = { name: name, email: email };
+      var agreed = !!(f.agree && f.agree.checked), mkt = !!(f.marketing && f.marketing.checked);
+      S.draft = { name: name, email: email, agree: agreed, marketing: mkt };
+      if (S.mode === "signup" && !agreed) { S.msg = "Please tick the box to agree to the privacy policy."; return render(); }
       if (popupOn()) store.set("walkies-auto-accept", "1");
       S.msg = ""; S.busy = true; render();
       var res;
-      if (S.mode === "signup") res = await sb.auth.signUp({ email: email, password: password, options: { emailRedirectTo: ORIGIN + "/", data: { display_name: name || "Walker" } } });
+      if (S.mode === "signup") res = await sb.auth.signUp({ email: email, password: password, options: { emailRedirectTo: ORIGIN + "/", data: { display_name: name || "Walker", privacy_accepted_at: new Date().toISOString(), marketing_opt_in: mkt } } });
       else res = await sb.auth.signInWithPassword({ email: email, password: password });
       S.busy = false;
       if (res.error) { S.msg = res.error.message; S.confirmEmail = /not confirmed/i.test(res.error.message) ? email : null; return render(); }
@@ -445,6 +452,12 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5);
     return d + "d " + String(h).padStart(2, "0") + "h left";
   }
+  function consentBlock() {
+    var d = S.draft || {};
+    return '<label class="check"><input type="checkbox" name="agree"' + (d.agree ? " checked" : "") + ' required> I have read and agree to the Walkies privacy policy.</label>' +
+      '<details class="drop"><summary>Read the privacy policy</summary>' + policyHtml() + '</details>' +
+      '<label class="check"><input type="checkbox" name="marketing"' + (d.marketing ? " checked" : "") + '> Optional: send me Walkies news and offers by email. I can unsubscribe any time.</label>';
+  }
   function viewAuth() {
     var up = S.mode === "signup", fg = S.mode === "forgot", pend = store.get("walkies-pending-join");
     var label = fg ? "Email me a reset link" : (up ? "Create my account" : "Sign in");
@@ -455,6 +468,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       (up ? '<div class="gap8"><label for="name">Your first name</label><input id="name" name="name" autocomplete="given-name" maxlength="40" required></div>' : "") +
       '<div class="gap8"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required></div>' +
       (fg ? '<p class="muted" style="font-size:14px">We will email you a link to choose a new password.</p>' : '<div class="gap8"><label for="password">Password (8 or more characters)</label><input id="password" name="password" type="password" minlength="8" autocomplete="' + (up ? "new-password" : "current-password") + '" required></div>') +
+      (up ? consentBlock() : "") +
       (S.msg ? '<p class="err" role="alert">' + esc(S.msg) + '</p>' : "") +
       (S.confirmEmail && !fg ? '<button type="button" class="btn light" data-act="resend">Resend confirmation email</button>' : "") +
       '<button class="btn coral" ' + (S.busy ? "disabled" : "") + '>' + label + '</button>' +
@@ -472,6 +486,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       (up ? '<div class="gap8"><label for="pn-name">Your first name</label><input id="pn-name" name="name" autocomplete="given-name" maxlength="40" required value="' + esc(d.name) + '"></div>' : "") +
       '<div class="gap8"><label for="pn-email">Email</label><input id="pn-email" name="email" type="email" autocomplete="email" required value="' + esc(d.email) + '"></div>' +
       '<div class="gap8"><label for="pn-pass">Password (8 or more characters)</label><input id="pn-pass" name="password" type="password" minlength="8" autocomplete="' + (up ? "new-password" : "current-password") + '" required></div>' +
+      (up ? consentBlock() : "") +
       (S.msg ? '<p class="err" role="alert">' + esc(S.msg) + '</p>' : "") +
       (S.confirmEmail ? '<button type="button" class="btn light" data-act="resend">Resend confirmation email</button>' : "") +
       '<button class="btn coral" ' + (S.busy ? "disabled" : "") + '>' + (up ? "Create account and accept" : "Sign in and accept") + '</button><button type="button" class="btn light" data-act="closepub">Not now</button>' +
@@ -557,26 +572,28 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       '<p class="muted" style="font-size:14px">Workmates join with this code:</p><div style="font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:.12em">' + esc(i.team_join_code) + '</div><div class="row" style="flex-wrap:wrap"><button class="btn small" data-act="invite" data-code="' + esc(i.team_join_code) + '" data-team="' + esc(i.team_name) + '">Invite workmates</button><a class="btn small light" href="' + mailtoInvite(i.team_name, i.team_join_code) + '">Email invite</a><button class="btn small light" data-act="copy" data-code="' + esc(i.team_join_code) + '">Copy code</button><button class="btn small light" data-act="leave">Leave team</button></div></div>';
   }
   var PRIVACY_CONTACT = "";
-  function privacySection() {
-    var p = S.profile || {};
+  function policyHtml() {
     var contact = PRIVACY_CONTACT ? '<a href="mailto:' + esc(PRIVACY_CONTACT) + '">' + esc(PRIVACY_CONTACT) + '</a>' : "the Walkies team";
-    var policy = '<div class="policy">' +
+    return '<div class="policy">' +
       '<p><b>Last updated:</b> October 2026. This is a plain-English summary of how Walkies handles your information. It follows the Australian Privacy Principles in the <i>Privacy Act 1988</i> (Cth).</p>' +
       '<h4>What we collect</h4><ul><li>Your email address and password (the password is stored securely by our sign-in provider and we cannot read it).</li><li>Your display name, your team and the shelter dog you choose.</li><li>The step counts you type in, by day. We do not collect your location, contacts or health records.</li><li>Your challenges (who you challenged and the results).</li></ul>' +
       '<h4>Why we collect it</h4><p>To run the app: count your steps, work out your bowls, show team leaderboards and run tug of wars. We only use it for that unless you agree to something else.</p>' +
       '<h4>Who can see it</h4><ul><li>Your teammates can see your display name.</li><li>A rival in a tug of war sees your name and your step total for that challenge, not your daily steps.</li><li>Leaderboards show team totals, not individual steps.</li><li>We do not sell your information or show ads.</li></ul>' +
-      '<h4>Marketing</h4><p>We only send marketing messages if you tick the box in Privacy settings. Every message will have a working unsubscribe link, in line with the <i>Spam Act 2003</i> (Cth). You can turn it off here at any time. Messages about your account (like a password reset) are not marketing.</p>' +
+      '<h4>Marketing</h4><p>We only send marketing messages if you tick the box in Privacy settings. Every message will have a working unsubscribe link, in line with the <i>Spam Act 2003</i> (Cth). You can turn it off at any time in Me, then Privacy settings. Messages about your account (like a password reset) are not marketing.</p>' +
       '<h4>Where it is stored</h4><p>Your data is stored with Supabase in Sydney, Australia. The app is delivered through Vercel. Both only handle data to provide the service to us.</p>' +
       '<h4>Keeping it safe</h4><p>Information is sent over an encrypted connection, and each person can only read their own step records. We keep your information while you have an account.</p>' +
       '<h4>Food and donation claims</h4><p>We aim to be accurate about what your steps do. Bowl counts show what is unlocked by walking. Where a partner or sponsor funds the food, we will say so clearly. Public fundraising rules differ by state and territory and we will comply with the ones that apply.</p>' +
       '<h4>Your rights</h4><p>You can ask to see, correct or delete your information, or ask how we handled it, by contacting ' + contact + '. If you are not happy with our response you can complain to the Office of the Australian Information Commissioner at oaic.gov.au.</p>' +
       '</div>';
+  }
+  function privacySection() {
+    var p = S.profile || {};
     return '<div class="h2">Privacy</div>' +
       '<details class="drop"' + (S.privOpen ? " open" : "") + '><summary>Privacy settings</summary><form class="stack" data-form="savePrivacy" style="gap:12px;margin-top:10px">' +
       '<label class="check"><input type="checkbox" name="marketing"' + (p.marketing_opt_in ? " checked" : "") + '> Send me Walkies news and offers by email. You can turn this off any time.</label>' +
       '<p class="muted" style="font-size:13px;margin:0">We only email about your account unless you tick this. Right now you are ' + (p.marketing_opt_in ? "opted in" : "not opted in") + (p.marketing_opt_in && p.marketing_opt_in_at ? " (since " + fmtDay(String(p.marketing_opt_in_at).slice(0, 10)) + ")" : "") + '.</p>' +
       '<p class="muted" style="font-size:13px;margin:0">Random challenges and your rival code are controlled in the For rivals card above.</p><button class="btn small">Save privacy settings</button></form></details>' +
-      '<details class="drop"><summary>Privacy policy</summary>' + policy + '</details>';
+      '<details class="drop"><summary>Privacy policy</summary>' + policyHtml() + '</details>';
   }
   function viewMe() {
     return topbar("") + '<div class="stack"><h1 class="h1">Me</h1>' +
