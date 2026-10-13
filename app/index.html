@@ -178,10 +178,12 @@ option{background:var(--surface);color:var(--fg)}
   var STATES = ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"];
   var KINDS = [["person", "Person"], ["team", "Team"], ["state", "State"], ["city", "City"]];
   var KIND_LABEL = { person: "Person", team: "Team", state: "State", city: "City" };
-  S.dogs = []; S.shelters = {}; S.dogTotals = {}; S.dogview = null; S.stepVal = ""; S.stepMsg = ""; S.duels = []; S.cups = []; S.wiz = null; S.cupform = false; S.tview = null; S.wizMsg = ""; S.cupMsg = "";
+  S.invite = null; S.inviteMsg = ""; S.dogs = []; S.shelters = {}; S.dogTotals = {}; S.dogview = null; S.stepVal = ""; S.stepMsg = ""; S.duels = []; S.cups = []; S.wiz = null; S.cupform = false; S.tview = null; S.wizMsg = ""; S.cupMsg = "";
   try {
     var qr = new URLSearchParams(location.search).get("rival");
     if (qr) { store.set("walkies-pending-rival", qr.trim().slice(0, 12).toUpperCase()); history.replaceState(null, "", location.pathname); }
+    var qd = new URLSearchParams(location.search).get("duel");
+    if (qd) { store.set("walkies-pending-duel", qd.trim().toLowerCase().slice(0, 16)); history.replaceState(null, "", location.pathname); }
   } catch (e) {}
 
   var PAW = '<svg width="28" height="28" viewBox="0 0 120 120" aria-hidden="true"><g fill="#ff2e9a" stroke="#ff2e9a" stroke-width="6"><ellipse cx="60" cy="80" rx="25" ry="21"/><ellipse cx="27" cy="52" rx="10" ry="13"/><ellipse cx="47" cy="31" rx="10" ry="13"/><ellipse cx="73" cy="31" rx="10" ry="13"/><ellipse cx="93" cy="52" rx="10" ry="13"/></g></svg>';
@@ -259,8 +261,9 @@ option{background:var(--surface);color:var(--fg)}
     toast(d ? "You are walking for " + d.name + "!" : "Your bowls will feed the Walkies pool");
   }
   async function loadRivals() {
-    var a = await sb.rpc("my_duels"), b = await sb.rpc("list_tournaments");
-    S.duels = a.data || []; S.cups = b.data || [];
+    var a = await sb.rpc("my_duels"), b = await sb.rpc("list_tournaments"), l = await sb.rpc("my_links");
+    var tk = {}; (l.data || []).forEach(function (x) { tk[x.id] = x.invite_token; });
+    S.duels = (a.data || []).map(function (d) { d.invite_token = tk[d.id] || null; return d; }); S.cups = b.data || [];
   }
   async function openCup(id) {
     var r = await Promise.all([sb.rpc("tournament_info", { p_id: id }), sb.rpc("tournament_view", { p_id: id })]);
@@ -290,6 +293,13 @@ option{background:var(--surface);color:var(--fg)}
     var seen = store.get("walkies-onboarded-" + S.user.id);
     S.view = (!S.profile.workplace_id && !seen) ? "join" : "app";
     if (S.view === "app" && !S.profile.dog_id && !store.get("walkies-dog-seen-" + S.user.id) && (S.dogs || []).length) { store.set("walkies-dog-seen-" + S.user.id, "1"); S.dogview = { list: true }; }
+    var pdl = store.get("walkies-pending-duel");
+    if (pdl) {
+      store.set("walkies-pending-duel", "");
+      var pv = await sb.rpc("link_duel_preview", { p_token: pdl }), prow = pv.data && pv.data[0];
+      S.view = "app"; S.tab = "rivals"; S.dogview = null; S.inviteMsg = "";
+      S.invite = prow ? { token: pdl, challenger: prow.challenger, days: prow.days, mine: prow.mine, available: prow.available } : { token: pdl, missing: true };
+    }
     var pr = store.get("walkies-pending-rival");
     if (pr) { store.set("walkies-pending-rival", ""); S.view = "app"; S.tab = "rivals"; S.wiz = { kind: "person", opp: pr, random: false, days: 7, options: [], loading: false }; S.wizMsg = ""; }
     render();
@@ -323,7 +333,13 @@ option{background:var(--surface);color:var(--fg)}
       S.recovery = false; S.msg = ""; toast("Password updated"); await enter();
     },
     async makeDuel(f) {
-      var w = S.wiz; w.opp = f.opp.value; w.random = f.random.checked; S.wizMsg = "";
+      var w = S.wiz; S.wizMsg = "";
+      if (w.kind === "person" && w.mode === "link") {
+        var lr = await sb.rpc("create_link_duel", { p_days: w.days });
+        if (lr.error) { S.wizMsg = lr.error.message; return render(); }
+        S.wiz = null; await loadRivals(); render(); toast("Link ready. Tap Share link on your challenge."); return;
+      }
+      w.opp = f.opp.value; w.random = f.random.checked;
       var r = await sb.rpc("create_duel", { p_kind: w.kind, p_opponent: w.opp || "", p_days: w.days, p_random: w.random });
       if (r.error) { S.wizMsg = r.error.message; return render(); }
       var person = w.kind === "person"; S.wiz = null; await loadRivals(); render(); toast(person ? "Challenge sent!" : "Tug of war started!");
@@ -395,7 +411,7 @@ option{background:var(--surface);color:var(--fg)}
     var label = fg ? "Email me a reset link" : (up ? "Create my account" : "Sign in");
     return '<div class="welcome"><div class="app">' + topbar("") +
       '<h1 class="h1" style="font-size:44px;line-height:1.02">Walk. Fill a bowl. Feed a rescue dog.</h1>' +
-      (pend ? '<div class="card" style="border:2px solid var(--cyan)"><b>You have been invited to a team!</b> Sign in or create an account and you will join it automatically.</div>' : '<p style="font-size:17px">Every scoop you unlock is a bowl of food for a shelter dog. Join your workplace, or walk on your own.</p>') +
+      (store.get("walkies-pending-duel") ? '<div class="card" style="border:2px solid var(--yellow)"><b>You have been challenged to a tug of war!</b> Sign in or create an account to take it on.</div>' : "") + (pend ? '<div class="card" style="border:2px solid var(--cyan)"><b>You have been invited to a team!</b> Sign in or create an account and you will join it automatically.</div>' : '<p style="font-size:17px">Every scoop you unlock is a bowl of food for a shelter dog. Join your workplace, or walk on your own.</p>') +
       '<form class="card stack" data-form="' + (fg ? "forgot" : "auth") + '" style="border:2px solid var(--pink);box-shadow:var(--glow);border-radius:24px">' +
       (up ? '<div class="gap8"><label for="name">Your first name</label><input id="name" name="name" autocomplete="given-name" maxlength="40" required></div>' : "") +
       '<div class="gap8"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required></div>' +
@@ -540,7 +556,7 @@ option{background:var(--surface);color:var(--fg)}
     var my = person ? Number(d.my_total) : avgOf(d.my_total, d.my_members), rv = person ? Number(d.rival_total) : avgOf(d.rival_total, d.rival_members), tot = my + rv;
     var share = tot > 0 ? Math.max(6, Math.min(94, Math.round(my / tot * 100))) : 50;
     var line;
-    if (d.status === "pending") line = d.incoming ? esc(d.rival_label) + " wants a tug of war with you. Most steps wins the bone." : "Waiting for " + esc(d.rival_label) + " to accept.";
+    if (d.status === "pending") line = d.incoming ? esc(d.rival_label) + " wants a tug of war with you. Most steps wins the bone." : (d.invite_token ? "Waiting for someone to open your link and accept." : "Waiting for " + esc(d.rival_label) + " to accept.");
     else if (d.finished) line = my > rv ? "You won this tug of war!" : my < rv ? esc(d.rival_label) + " won this one." : "It ended in a draw.";
     else line = my > rv ? "You are winning the tug of war!" : my < rv ? esc(d.rival_label) + " is pulling ahead. Time to walk!" : "All square. Every step counts.";
     var when = d.status === "pending" ? "Not started" : d.finished ? "Finished" : d.days_left + (d.days_left === 1 ? " day left" : " days left");
@@ -548,10 +564,11 @@ option{background:var(--surface);color:var(--fg)}
     return '<div class="tug"><div class="between"><span class="tug-tag">' + TROPHY + ' Tug of war · ' + KIND_LABEL[d.kind] + '</span><span class="muted" style="font-size:13px;white-space:nowrap">' + when + '</span></div>' +
       '<div class="tug-names"><div><div class="tug-n me">' + esc(person ? "You" : d.my_label) + '</div>' + (person ? "" : '<div class="tug-sub">' + walkers(d.my_members) + '</div>') + '<div class="mono">' + fmt(my) + '</div><div class="tug-sub" style="font-size:12px">' + unit + '</div></div>' +
       '<div class="tug-vs">vs</div>' +
-      '<div class="tug-r"><div class="tug-n">' + esc(d.rival_label) + '</div>' + (person ? "" : '<div class="tug-sub">' + walkers(d.rival_members) + '</div>') + '<div class="mono">' + fmt(rv) + '</div><div class="tug-sub" style="font-size:12px">' + unit + '</div></div></div>' +
+      '<div class="tug-r"><div class="tug-n">' + esc(d.rival_label || "Waiting\u2026") + '</div>' + (person ? "" : '<div class="tug-sub">' + walkers(d.rival_members) + '</div>') + '<div class="mono">' + fmt(rv) + '</div><div class="tug-sub" style="font-size:12px">' + unit + '</div></div></div>' +
       '<div class="tug-bar" role="img" aria-label="You hold ' + share + ' percent of the rope"><i style="width:' + share + '%"></i><span class="bone" style="left:calc(' + share + '% - 17px)">' + BONE + '</span></div>' +
       '<p class="tug-line">' + (d.is_random ? '<span class="muted">Random rival. </span>' : "") + line + '</p>' +
-      (d.incoming ? '<div class="row"><button class="btn coral small" data-duel="' + d.id + '" data-ans="1">Accept</button><button class="btn light small" data-duel="' + d.id + '" data-ans="0">Decline</button></div>' : "") + '</div>';
+      (d.incoming ? '<div class="row"><button class="btn coral small" data-duel="' + d.id + '" data-ans="1">Accept</button><button class="btn light small" data-duel="' + d.id + '" data-ans="0">Decline</button></div>' : "") +
+      (d.status === "pending" && !d.incoming ? '<div class="row" style="flex-wrap:wrap">' + (d.invite_token ? '<button class="btn small coral" data-share="' + d.invite_token + '" data-days="' + d.days_left + '">Share link</button>' : "") + '<button class="btn small light" data-cancel="' + d.id + '">Cancel</button></div>' : "") + '</div>';
   }
   function todayTug() {
     var d = (S.duels || []).filter(function (x) { return x.status === "active" && !x.finished; })[0];
@@ -608,18 +625,32 @@ option{background:var(--surface);color:var(--fg)}
     return topbar("") + '<div class="stack">' + head + body + '</div>';
   }
   function wizSheet() {
-    var w = S.wiz, person = w.kind === "person";
+    var w = S.wiz, person = w.kind === "person", link = person && w.mode === "link";
     var kinds = KINDS.map(function (k) { return '<button type="button" class="pill" aria-pressed="' + (w.kind === k[0]) + '" data-wkind="' + k[0] + '">' + k[1] + '</button>'; }).join("");
     var days = [3, 7, 14].map(function (n) { return '<button type="button" class="pill" aria-pressed="' + (w.days === n) + '" data-wdays="' + n + '">' + n + ' days</button>'; }).join("");
-    var who = person
-      ? '<div class="gap8"><label for="opp">Their rival code</label><input id="opp" name="opp" value="' + esc(w.opp) + '" placeholder="Example: K3P9XZ" autocapitalize="characters" autocomplete="off"></div><p class="muted" style="font-size:13px">Ask for the code on their Me tab, or send them your invite link. They must accept before it starts.</p>'
+    var modes = person ? '<div class="chips" role="group" aria-label="How to reach them"><button type="button" class="pill" aria-pressed="' + (!link) + '" data-wmode="code">Use a rival code</button><button type="button" class="pill" aria-pressed="' + link + '" data-wmode="link">Send a link</button></div>' : "";
+    var who = link ? '<p class="muted" style="font-size:14px">We make a link with your challenge inside. Send it to anyone. When they open it and accept, the tug of war starts.</p>' : person
+      ? '<div class="gap8"><label for="opp">Their rival code</label><input id="opp" name="opp" value="' + esc(w.opp) + '" placeholder="Example: K3P9XZ" autocapitalize="characters" autocomplete="off"></div><p class="muted" style="font-size:13px">Ask for the code on their Me tab. They must accept before it starts.</p>'
       : '<div class="gap8"><label for="opp">Who do you want to take on?</label><select id="opp" name="opp"><option value="">' + (w.loading ? "Loading…" : (w.options.length ? "Choose one" : "No one to challenge yet")) + '</option>' + w.options.map(function (o) { return '<option value="' + esc(o.ref) + '"' + (o.ref === w.opp ? " selected" : "") + '>' + esc(o.label) + ' (' + o.members + ')</option>'; }).join("") + '</select></div>';
-    var rnd = '<label class="check"><input type="checkbox" name="random"' + (w.random ? " checked" : "") + '> ' + (person ? "Pick a random walker for me (only people who opted in)" : "Surprise me with a random rival") + '</label>';
+    var rnd = link ? "" : '<label class="check"><input type="checkbox" name="random"' + (w.random ? " checked" : "") + '> ' + (person ? "Pick a random walker for me (only people who opted in)" : "Surprise me with a random rival") + '</label>';
     return '<div class="sheet-bg" data-act="closewiz"><form class="sheet" data-form="makeDuel" role="dialog" aria-modal="true" aria-label="Challenge a rival" style="max-height:92vh;overflow:auto"><div class="h2">Challenge a rival</div>' +
-      '<div class="chips" role="group" aria-label="Who to challenge">' + kinds + '</div>' + who + rnd +
+      '<div class="chips" role="group" aria-label="Who to challenge">' + kinds + '</div>' + modes + who + rnd +
       '<div class="gap8"><label>How long?</label><div class="chips">' + days + '</div></div>' +
       (S.wizMsg ? '<p class="err" role="alert">' + esc(S.wizMsg) + '</p>' : "") +
-      '<button class="btn coral">' + (person ? "Send challenge" : "Start tug of war") + '</button><button type="button" class="btn light" data-act="closewiz">Cancel</button></form></div>';
+      '<button class="btn coral">' + (link ? "Create challenge link" : person ? "Send challenge" : "Start tug of war") + '</button><button type="button" class="btn light" data-act="closewiz">Cancel</button></form></div>';
+  }
+  function duelLink(tok) { return ORIGIN + "/?duel=" + encodeURIComponent(tok); }
+  function shareDuel(tok, days) {
+    var link = duelLink(tok), text = "Take me on in a Walkies tug of war! Most steps in " + days + " days wins the bone. Tap to accept:";
+    if (navigator.share) navigator.share({ title: "Walkies challenge", text: text, url: link }).catch(function () {});
+    else { try { navigator.clipboard.writeText(text + " " + link); toast("Challenge link copied. Paste it into a message."); } catch (x) { toast(link); } }
+  }
+  function inviteSheet() {
+    var v = S.invite, body;
+    if (v.missing || (!v.available && !v.mine)) body = '<p>This challenge link has already been used, was cancelled, or is not valid.</p><button class="btn" data-act="closeinvite">Close</button>';
+    else if (v.mine) body = '<p>This is your own challenge link. Send it to someone else.</p><button class="btn" data-act="closeinvite">Close</button>';
+    else body = '<p><b>' + esc(v.challenger) + '</b> challenged you to a <b>' + v.days + '-day</b> tug of war. Whoever walks the most steps wins the bone.</p>' + (S.inviteMsg ? '<p class="err" role="alert">' + esc(S.inviteMsg) + '</p>' : "") + '<button class="btn coral" data-act="acceptinvite">Accept the challenge</button><button class="btn light" data-act="closeinvite">Not now</button>';
+    return '<div class="sheet-bg" data-act="closeinvite"><div class="sheet" role="dialog" aria-modal="true" aria-label="Challenge"><div class="h2">You have been challenged!</div>' + body + '</div></div>';
   }
   function cupSheet() {
     return '<div class="sheet-bg" data-act="closecup"><form class="sheet" data-form="makeCup" role="dialog" aria-modal="true" aria-label="Start a World Cup" style="max-height:92vh;overflow:auto"><div class="h2">Start a World Cup</div>' +
@@ -638,7 +669,7 @@ option{background:var(--surface);color:var(--fg)}
       '<div class="gap8"><label for="city">City or town</label><input id="city" name="city" maxlength="40" value="' + esc(p.city || "") + '" placeholder="Example: Sydney"></div>' +
       '<label class="check"><input type="checkbox" name="open"' + (p.open_to_rivals ? " checked" : "") + '> Let random walkers challenge me (you can still say no)</label>' +
       '<button class="btn">Save</button>' +
-      (p.rival_code ? '<div class="gap8"><div class="muted" style="font-size:14px">Your rival code. Friends use it to challenge you.</div><div style="font-family:var(--display);font-weight:800;font-size:28px;letter-spacing:.12em">' + esc(p.rival_code) + '</div><div class="row" style="flex-wrap:wrap"><button type="button" class="btn small light" data-act="rivalshare" data-link="' + esc(link) + '">Share challenge link</button></div></div>' : "") + '</form>';
+      (p.rival_code ? '<div class="gap8"><div class="muted" style="font-size:14px">Your rival code. Friends use it to challenge you.</div><div style="font-family:var(--display);font-weight:800;font-size:28px;letter-spacing:.12em">' + esc(p.rival_code) + '</div><div class="row" style="flex-wrap:wrap"><button type="button" class="btn small light" data-act="wizlink">Create a challenge link</button></div></div>' : "") + '</form>';
   }
   // ---- shelter dogs ----
   function dogById(id) { return (S.dogs || []).filter(function (d) { return d.id === id; })[0] || null; }
@@ -704,7 +735,7 @@ option{background:var(--surface);color:var(--fg)}
     else if (S.view === "auth") html = viewAuth();
     else if (S.view === "reset") html = viewReset();
     else if (S.view === "join") html = viewJoin();
-    else html = '<div class="app">' + (S.dogview ? (S.dogview.id ? viewDog : viewDogs) : S.tab === "rivals" ? (S.tview ? viewCup : viewRivals) : ({ today: viewToday, packs: viewPacks, impact: viewImpact, me: viewMe }[S.tab]))() + '</div>' + nav() + (S.sheet ? sheet() : "") + (S.wiz ? wizSheet() : "") + (S.cupform ? cupSheet() : "") + (S.celebrate ? celebrate() : "");
+    else html = '<div class="app">' + (S.dogview ? (S.dogview.id ? viewDog : viewDogs) : S.tab === "rivals" ? (S.tview ? viewCup : viewRivals) : ({ today: viewToday, packs: viewPacks, impact: viewImpact, me: viewMe }[S.tab]))() + '</div>' + nav() + (S.sheet ? sheet() : "") + (S.wiz ? wizSheet() : "") + (S.invite ? inviteSheet() : "") + (S.cupform ? cupSheet() : "") + (S.celebrate ? celebrate() : "");
     root.innerHTML = html;
     if (S.sheet) { var el = $("#steps"); if (el) { el.focus(); updatePreview(); } }
     if (S.celebrate) { confetti(); var d = $(".cel-done"); if (d) d.focus(); }
@@ -726,13 +757,15 @@ option{background:var(--surface);color:var(--fg)}
     var wk = t.closest("[data-wkind]");
     if (wk && S.wiz) {
       var w = S.wiz, wf = $("form[data-form=makeDuel]");
-      if (wf) w.random = wf.random.checked;
-      w.kind = wk.dataset.wkind; w.opp = ""; w.options = []; S.wizMsg = "";
+      if (wf && wf.random) w.random = wf.random.checked;
+      w.kind = wk.dataset.wkind; w.mode = w.kind === "person" ? "link" : "code"; w.opp = ""; w.options = []; S.wizMsg = "";
       if (w.kind !== "person") { w.loading = true; sb.rpc("duel_options", { p_kind: w.kind }).then(function (r) { w.options = r.data || []; w.loading = false; render(); }); } else w.loading = false;
       render(); return;
     }
+    var wm = t.closest("[data-wmode]");
+    if (wm && S.wiz) { S.wiz.mode = wm.dataset.wmode; S.wizMsg = ""; render(); return; }
     var wd = t.closest("[data-wdays]");
-    if (wd && S.wiz) { var wf2 = $("form[data-form=makeDuel]"); if (wf2) { S.wiz.opp = wf2.opp.value; S.wiz.random = wf2.random.checked; } S.wiz.days = Number(wd.dataset.wdays); render(); return; }
+    if (wd && S.wiz) { var wf2 = $("form[data-form=makeDuel]"); if (wf2 && wf2.opp) { S.wiz.opp = wf2.opp.value; S.wiz.random = wf2.random.checked; } S.wiz.days = Number(wd.dataset.wdays); render(); return; }
     var da = t.closest("[data-duel]");
     if (da) { sb.rpc("respond_duel", { p_id: da.dataset.duel, p_accept: da.dataset.ans === "1" }).then(function (r) { if (r.error) toast(r.error.message); return loadRivals(); }).then(render); return; }
     var cj = t.closest("[data-cup-join]");
@@ -745,6 +778,10 @@ option{background:var(--surface);color:var(--fg)}
     if (dg) { openDog(dg.dataset.dog); return; }
     var pd = t.closest("[data-pickdog]");
     if (pd) { pickDog(pd.dataset.pickdog); return; }
+    var sh = t.closest("[data-share]");
+    if (sh) { shareDuel(sh.dataset.share, sh.dataset.days || 7); return; }
+    var cn = t.closest("[data-cancel]");
+    if (cn) { sb.rpc("cancel_duel", { p_id: cn.dataset.cancel }).then(function () { return loadRivals(); }).then(render); return; }
     var br = t.closest("[data-bracket]");
     if (br) { S.bracket = br.dataset.bracket || null; loadBoard().then(render); return; }
     var a = t.closest("[data-act]"); if (!a) return;
@@ -769,11 +806,14 @@ option{background:var(--surface);color:var(--fg)}
     else if (act === "cupnew") { S.cupform = true; S.cupMsg = ""; render(); }
     else if (act === "closecup") { S.cupform = false; render(); }
     else if (act === "cupback") { S.tview = null; render(); }
-    else if (act === "rivalshare") {
-      var rl = a.dataset.link, rt = "Take me on in a Walkies tug of war! Most steps wins the bone: " + rl;
-      if (navigator.share) navigator.share({ title: "Walkies challenge", text: rt, url: rl }).catch(function () {});
-      else { try { navigator.clipboard.writeText(rt); toast("Challenge link copied"); } catch (x) { toast(rl); } }
+    else if (act === "wizlink") { S.tab = "rivals"; S.dogview = null; S.tview = null; S.wiz = { kind: "person", mode: "link", opp: "", random: false, days: 7, options: [], loading: false }; S.wizMsg = ""; render(); window.scrollTo(0, 0); }
+    else if (act === "acceptinvite") {
+      sb.rpc("accept_link_duel", { p_token: S.invite.token }).then(function (r) {
+        if (r.error) { S.inviteMsg = r.error.message; render(); return; }
+        S.invite = null; S.inviteMsg = ""; toast("Tug of war started! Get walking."); return loadRivals().then(render);
+      });
     }
+    else if (act === "closeinvite") { S.invite = null; S.inviteMsg = ""; render(); }
     else if (act === "closesheet") { S.sheet = false; render(); }
     else if (act === "closecel") { S.celebrate = null; render(); }
     else if (act === "celimpact") { S.celebrate = null; S.tab = "impact"; render(); }
