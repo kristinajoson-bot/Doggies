@@ -270,7 +270,8 @@ option{background:var(--surface);color:var(--fg)}
     toast(d ? "You are walking for " + d.name + "!" : "Your bowls will feed the Walkies pool");
   }
   async function loadRivals() {
-    var a = await sb.rpc("my_duels"), b = await sb.rpc("list_tournaments"), l = await sb.rpc("my_links");
+    var a = await sb.rpc("my_duels"), b = await sb.rpc("list_tournaments"), l = await sb.rpc("my_links"), cp = await sb.rpc("am_captain");
+    S.captain = cp.data === true;
     var tk = {}; (l.data || []).forEach(function (x) { tk[x.id] = x.invite_token; });
     S.duels = (a.data || []).map(function (d) { d.invite_token = tk[d.id] || null; return d; }); S.cups = b.data || [];
   }
@@ -372,7 +373,7 @@ option{background:var(--surface);color:var(--fg)}
       w.opp = f.opp.value; w.random = f.random.checked;
       var r = await sb.rpc("create_duel", { p_kind: w.kind, p_opponent: w.opp || "", p_days: w.days, p_random: w.random });
       if (r.error) { S.wizMsg = r.error.message; return render(); }
-      var person = w.kind === "person"; S.wiz = null; await loadRivals(); render(); toast(person ? "Challenge sent!" : "Tug of war started!");
+      var person = w.kind === "person"; S.wiz = null; await loadRivals(); render(); toast(person ? "Challenge sent!" : "Challenge sent! Their team captain needs to accept.");
     },
     async makeCup(f) {
       S.cupMsg = "";
@@ -601,7 +602,7 @@ option{background:var(--surface);color:var(--fg)}
     var my = person ? Number(d.my_total) : avgOf(d.my_total, d.my_members), rv = person ? Number(d.rival_total) : avgOf(d.rival_total, d.rival_members), tot = my + rv;
     var share = tot > 0 ? Math.max(6, Math.min(94, Math.round(my / tot * 100))) : 50;
     var line;
-    if (d.status === "pending") line = d.incoming ? esc(d.rival_label) + " wants a tug of war with you. Most steps wins the bone." : (d.invite_token ? "Waiting for someone to open your link and accept." : "Waiting for " + esc(d.rival_label) + " to accept.");
+    if (d.status === "pending") line = d.incoming ? (d.kind === "team" && !S.captain ? esc(d.rival_label) + " challenged your team. Your team captain needs to accept." : esc(d.rival_label) + " wants a tug of war with you. Most steps wins the bone.") : (d.invite_token ? "Waiting for someone to open your link and accept." : "Waiting for " + esc(d.rival_label) + (d.kind === "team" ? "'s captain to accept." : " to accept."));
     else if (d.finished) line = my > rv ? "You won this tug of war!" : my < rv ? esc(d.rival_label) + " won this one." : "It ended in a draw.";
     else line = my > rv ? "You are winning the tug of war!" : my < rv ? esc(d.rival_label) + " is pulling ahead. Time to walk!" : "";
     var when = d.status === "pending" ? "Not started" : d.finished ? "Finished" : d.days_left + (d.days_left === 1 ? " day left" : " days left");
@@ -612,7 +613,7 @@ option{background:var(--surface);color:var(--fg)}
       '<div class="tug-r"><div class="tug-n">' + esc(d.rival_label || "Waiting\u2026") + '</div>' + (person ? "" : '<div class="tug-sub">' + walkers(d.rival_members) + '</div>') + '<div class="mono">' + fmt(rv) + '</div><div class="tug-sub" style="font-size:12px">' + unit + '</div></div></div>' +
       '<div class="tug-bar" role="img" aria-label="You hold ' + share + ' percent of the rope"><i style="width:' + share + '%"></i><span class="bone" style="left:calc(' + share + '% - 17px)">' + BONE + '</span></div>' +
       ((d.is_random || line) ? '<p class="tug-line">' + (d.is_random ? '<span class="muted">Random rival. </span>' : "") + line + '</p>' : "") +
-      (d.incoming ? '<div class="row"><button class="btn coral small" data-duel="' + d.id + '" data-ans="1">Accept</button><button class="btn light small" data-duel="' + d.id + '" data-ans="0">Decline</button></div>' : "") +
+      (d.incoming && (d.kind !== "team" || S.captain) ? '<div class="row"><button class="btn coral small" data-duel="' + d.id + '" data-ans="1">Accept</button><button class="btn light small" data-duel="' + d.id + '" data-ans="0">Decline</button></div>' : "") +
       (d.status === "pending" && !d.incoming ? '<div class="row" style="flex-wrap:wrap">' + (d.invite_token ? '<button class="btn small coral" data-share="' + d.invite_token + '" data-days="' + d.days_left + '">Share link</button>' : "") + '<button class="btn small light" data-cancel="' + d.id + '">Cancel</button></div>' : "") + '</div>';
   }
   var MAX_CHALLENGES = 3;
