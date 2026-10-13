@@ -129,7 +129,6 @@ option{background:var(--surface);color:var(--fg)}
 .champ{border:2px solid var(--yellow);border-radius:22px;padding:16px;text-align:center;box-shadow:0 0 28px rgba(244,255,58,.2);background:var(--surface)}
 .linkbtn{background:none;border:0;color:var(--cyan);font-weight:700;padding:0;min-height:44px;text-align:left}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
-.stats.three{grid-template-columns:.7fr 1.15fr 1.15fr}.stats.three .stat-n{font-size:28px}
 .stats>div{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:16px;padding:12px 6px;text-align:center}
 .stats>div:last-child{border-color:rgba(255,46,154,.55)}
 .stat-n{font-family:var(--display);font-weight:800;font-size:34px;line-height:1;letter-spacing:-.03em}
@@ -507,8 +506,8 @@ option{background:var(--surface);color:var(--fg)}
       return '<div class="scoop ' + cls + '" role="img" aria-label="' + fmt(m) + ' steps, ' + (m === next ? "next scoop" : "locked") + '">' + pawTile(label) + '</div>';
     }).join("");
     return topbar(esc(timeLeft())) + '<div class="stack">' +
-      todayTug() + '<div class="hero"><div class="eyebrow">Dog bowls this month</div>' + bowlSvg(steps / 150000, true) +
-      '<div class="stats three"><div><div class="stat-n">' + done + '</div><div class="stat-l">' + (done === 1 ? "Dog bowl" : "Dog bowls") + '</div></div><div><div class="stat-n">' + fmt(todaySteps()) + '</div><div class="stat-l">Steps today</div></div><div><div class="stat-n">' + fmt(steps) + '</div><div class="stat-l">Steps this month</div></div></div>' + dayLine() +
+      todayTug() + '<div class="hero"><div class="eyebrow">Dog bowls this month</div><div style="margin-bottom:-34px;position:relative"><span class="big" style="font-size:64px">' + done + '</span></div>' + bowlSvg(steps / 150000, true) +
+      '<div class="stats"><div><div class="stat-n">' + fmt(todaySteps()) + '</div><div class="stat-l">Steps today</div></div><div><div class="stat-n">' + fmt(steps) + '</div><div class="stat-l">Steps this month</div></div></div>' + dayLine() +
       '<div class="bar" style="margin-top:8px" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100"><i style="width:' + pct + '%"></i></div>' +
       '<div style="font-weight:700;margin-top:2px">' + (next ? fmt(next - steps) + " steps to your next scoop" : "All 10 scoops unlocked. Epic walking!") + '</div></div>' +
       challengeBanner() + '<button class="btn" data-act="sheet">Add today\'s steps</button>' +
