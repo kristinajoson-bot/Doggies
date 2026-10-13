@@ -589,15 +589,15 @@ option{background:var(--surface);color:var(--fg)}
     var line;
     if (d.status === "pending") line = d.incoming ? esc(d.rival_label) + " wants a tug of war with you. Most steps wins the bone." : (d.invite_token ? "Waiting for someone to open your link and accept." : "Waiting for " + esc(d.rival_label) + " to accept.");
     else if (d.finished) line = my > rv ? "You won this tug of war!" : my < rv ? esc(d.rival_label) + " won this one." : "It ended in a draw.";
-    else line = my > rv ? "You are winning the tug of war!" : my < rv ? esc(d.rival_label) + " is pulling ahead. Time to walk!" : "All square. Every step counts.";
+    else line = my > rv ? "You are winning the tug of war!" : my < rv ? esc(d.rival_label) + " is pulling ahead. Time to walk!" : "";
     var when = d.status === "pending" ? "Not started" : d.finished ? "Finished" : d.days_left + (d.days_left === 1 ? " day left" : " days left");
     var unit = person ? "steps" : "steps each";
-    return '<div class="tug"><div class="between"><span class="tug-tag">' + TROPHY + ' Tug of war · ' + KIND_LABEL[d.kind] + '</span><span class="muted" style="font-size:13px;white-space:nowrap">' + when + '</span></div>' +
+    return '<div class="tug"><div class="between"><span class="tug-tag">' + TROPHY + ' Tug of war</span><span class="muted" style="font-size:13px;white-space:nowrap">' + when + '</span></div>' +
       '<div class="tug-names"><div><div class="tug-n me">' + esc(person ? "You" : d.my_label) + '</div>' + (person ? "" : '<div class="tug-sub">' + walkers(d.my_members) + '</div>') + '<div class="mono">' + fmt(my) + '</div><div class="tug-sub" style="font-size:12px">' + unit + '</div></div>' +
       '<div class="tug-vs">vs</div>' +
       '<div class="tug-r"><div class="tug-n">' + esc(d.rival_label || "Waiting\u2026") + '</div>' + (person ? "" : '<div class="tug-sub">' + walkers(d.rival_members) + '</div>') + '<div class="mono">' + fmt(rv) + '</div><div class="tug-sub" style="font-size:12px">' + unit + '</div></div></div>' +
       '<div class="tug-bar" role="img" aria-label="You hold ' + share + ' percent of the rope"><i style="width:' + share + '%"></i><span class="bone" style="left:calc(' + share + '% - 17px)">' + BONE + '</span></div>' +
-      '<p class="tug-line">' + (d.is_random ? '<span class="muted">Random rival. </span>' : "") + line + '</p>' +
+      ((d.is_random || line) ? '<p class="tug-line">' + (d.is_random ? '<span class="muted">Random rival. </span>' : "") + line + '</p>' : "") +
       (d.incoming ? '<div class="row"><button class="btn coral small" data-duel="' + d.id + '" data-ans="1">Accept</button><button class="btn light small" data-duel="' + d.id + '" data-ans="0">Decline</button></div>' : "") +
       (d.status === "pending" && !d.incoming ? '<div class="row" style="flex-wrap:wrap">' + (d.invite_token ? '<button class="btn small coral" data-share="' + d.invite_token + '" data-days="' + d.days_left + '">Share link</button>' : "") + '<button class="btn small light" data-cancel="' + d.id + '">Cancel</button></div>' : "") + '</div>';
   }
