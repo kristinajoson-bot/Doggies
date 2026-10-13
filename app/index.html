@@ -332,19 +332,19 @@ option{background:var(--surface);color:var(--fg)}
       await loadAll(); render(); toast("Saved");
     },
     async saveSteps(f, mode) {
-      mode = mode || "set"; S.stepVal = f.steps.value; S.stepMsg = "";
+      mode = mode || "add"; S.stepVal = f.steps.value; S.stepMsg = "";
       var ci = challengeInfo();
       if (ci && ci.state !== "on") { S.stepMsg = ci.state === "before" ? "The challenge has not started yet, so steps are not counted." : "This challenge has finished, so new steps are not counted."; return render(); }
       var n = parseSteps(f.steps.value);
       if (isNaN(n)) { S.stepMsg = "Type a number of steps, like 8,432."; return render(); }
       var cur = todaySteps(), val = mode === "add" ? cur + n : n;
-      if (val > 60000) { S.stepMsg = mode === "add" ? "Adding " + fmt(n) + " would take today past the 60,000 daily limit. You have " + fmt(cur) + " so far." : "That is more than the 60,000 daily limit. Check the number and try again."; return render(); }
+      if (val > 60000) { S.stepMsg = "Adding " + fmt(n) + " would take today past the 60,000 daily limit. You have " + fmt(cur) + " so far."; return render(); }
       var before = bowlsFor(totalSteps());
       var r = await sb.from("step_days").upsert({ user_id: S.user.id, day: today(), steps: val }, { onConflict: "user_id,day" });
       if (r.error) { S.stepMsg = "We could not save that. Check your signal and try again."; return render(); }
       S.sheet = false; S.stepVal = ""; await loadAll();
       var after = bowlsFor(totalSteps());
-      if (after > before) S.celebrate = { bowls: after, count: after - before, steps: MILESTONES[after - 1] }; else toast("Today is now " + fmt(val) + " steps");
+      if (after > before) S.celebrate = { bowls: after, count: after - before, steps: MILESTONES[after - 1] }; else toast("Added " + fmt(n) + ". Today is " + fmt(val) + " steps");
       render();
     }
   };
@@ -424,7 +424,7 @@ option{background:var(--surface);color:var(--fg)}
       '<div class="stats"><div><div class="stat-n">' + fmt(todaySteps()) + '</div><div class="stat-l">Steps today</div></div><div><div class="stat-n">' + fmt(steps) + '</div><div class="stat-l">This challenge</div></div></div>' + dayLine() +
       '<div class="bar" style="margin-top:8px" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100"><i style="width:' + pct + '%"></i></div>' +
       '<div style="font-weight:700;margin-top:2px">' + (next ? fmt(next - steps) + " steps to your next scoop" : "All 10 scoops unlocked. Epic walking!") + '</div></div>' +
-      challengeBanner() + '<button class="btn" data-act="sheet">Update today\'s steps</button>' +
+      challengeBanner() + '<button class="btn" data-act="sheet">Add today\'s steps</button>' +
       '<div class="between"><div class="h2">Scoops</div><div class="muted" style="font-size:14px">' + done + ' of 10 in the bowl</div></div>' +
       '<div class="scoops">' + scoops + '</div>' +
       '<div class="buddy"><div class="' + (S.bounce ? "bounce" : "") + '">' + DOG + '</div><div style="flex:1;min-width:0"><div style="font-weight:700">' + esc(S.profile.buddy_name) + ' is ready for a walk</div><div class="muted" style="font-size:14px">Your Buddy cheers every scoop</div></div><button class="btn small" style="background:var(--pink);color:var(--dark)" data-act="pat">Pat</button></div></div>';
@@ -463,20 +463,20 @@ option{background:var(--surface);color:var(--fg)}
       '<button class="btn light" data-act="signout">Sign out</button><p class="muted" style="font-size:13px;text-align:center">' + esc(S.user.email) + '</p></div>';
   }
   function sheet() {
-    return '<div class="sheet-bg" data-act="closesheet"><form class="sheet" data-form="saveSteps" role="dialog" aria-modal="true" aria-label="Update steps" style="max-height:92vh;overflow:auto"><div class="h2">Update your steps</div>' +
+    return '<div class="sheet-bg" data-act="closesheet"><form class="sheet" data-form="saveSteps" role="dialog" aria-modal="true" aria-label="Update steps" style="max-height:92vh;overflow:auto"><div class="h2">Add your steps</div>' +
       '<div class="stats"><div><div class="stat-n">' + fmt(todaySteps()) + '</div><div class="stat-l">Today so far</div></div><div><div class="stat-n">' + fmt(totalSteps()) + '</div><div class="stat-l">This challenge</div></div></div>' +
-      '<p class="muted" style="font-size:14px">Type the steps from your Health app. <b>Set today\'s total</b> replaces today\'s number. <b>Add to today</b> puts extra steps on top of it.</p>' +
-      '<label for="steps" class="eyebrow">Steps</label><input id="steps" name="steps" inputmode="numeric" enterkeyhint="done" placeholder="Example: 8,432" autocomplete="off" value="' + esc(S.stepVal || "") + '">' +
+      '<p class="muted" style="font-size:14px">Type the steps you have walked since you last added. They are added to today\'s total.</p>' +
+      '<label for="steps" class="eyebrow">Steps to add</label><input id="steps" name="steps" inputmode="numeric" enterkeyhint="done" placeholder="Example: 8,432" autocomplete="off" value="' + esc(S.stepVal || "") + '">' +
       '<p class="tug-sub" id="steps-prev" aria-live="polite"></p>' +
       (S.stepMsg ? '<p class="err" role="alert">' + esc(S.stepMsg) + '</p>' : "") +
-      '<button class="btn coral">Set today\'s total</button><button type="button" class="btn light" data-act="addsteps">Add to today</button><button type="button" class="btn light" data-act="closesheet">Cancel</button></form></div>';
+      '<button class="btn coral">Add to today</button><button type="button" class="btn light" data-act="closesheet">Cancel</button></form></div>';
   }
   function updatePreview() {
     var el = $("#steps"), out = $("#steps-prev"); if (!el || !out) return;
     var n = parseSteps(el.value), cur = todaySteps(), tot = totalSteps();
     if (!el.value.trim()) { out.textContent = ""; return; }
     if (isNaN(n)) { out.textContent = "That does not look like a number of steps."; return; }
-    out.innerHTML = "Set: today <b>" + fmt(n) + "</b>, challenge <b>" + fmt(tot - cur + n) + "</b><br>Add: today <b>" + fmt(cur + n) + "</b>, challenge <b>" + fmt(tot + n) + "</b>";
+    out.innerHTML = "Today will be <b>" + fmt(cur + n) + "</b>, challenge <b>" + fmt(tot + n) + "</b>";
   }
   function celebrate() {
     var c = S.celebrate, n = c.count || 1;
@@ -681,7 +681,6 @@ option{background:var(--surface);color:var(--fg)}
       else { try { navigator.clipboard.writeText(text); toast("Invite copied. Paste it into a message."); } catch (x) { toast(link); } }
     }
     else if (act === "sheet") { S.sheet = true; S.stepMsg = ""; S.stepVal = ""; render(); }
-    else if (act === "addsteps") { var sf = $("form[data-form=saveSteps]"); if (sf) actions.saveSteps(sf, "add").catch(function () { toast("Something went wrong. Try again."); }); }
     else if (act === "wiz") { S.wiz = { kind: "team", opp: "", random: false, days: 7, options: [], loading: true }; S.wizMsg = ""; sb.rpc("duel_options", { p_kind: "team" }).then(function (r) { if (S.wiz) { S.wiz.options = r.data || []; S.wiz.loading = false; render(); } }); render(); }
     else if (act === "closewiz") { S.wiz = null; render(); }
     else if (act === "cupnew") { S.cupform = true; S.cupMsg = ""; render(); }
