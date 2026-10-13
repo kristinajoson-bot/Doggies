@@ -348,6 +348,19 @@ option{background:var(--surface);color:var(--fg)}
       if (r.error) { S.msg = r.error.message; return render(); }
       S.recovery = false; S.msg = ""; toast("Password updated"); await enter();
     },
+    async wizTeam(f) {
+      S.wizMsg = "";
+      var r = await sb.rpc("create_workplace", { p_name: f.tname.value, p_industry: "Other", p_bracket: f.tsize.value });
+      if (r.error) { S.wizMsg = r.error.message.indexOf("check") > -1 ? "Please use a team name of 2 to 60 characters." : r.error.message; return render(); }
+      var w = S.wiz; await loadAll(); S.wiz = w; w.options = []; w.loading = true; render();
+      toast("Team created: " + r.data.name + ". Team code " + r.data.join_code);
+      sb.rpc("duel_options", { p_kind: "team" }).then(function (o) { if (S.wiz) { S.wiz.options = o.data || []; S.wiz.loading = false; render(); } });
+    },
+    async renameTeam(f) {
+      var r = await sb.rpc("rename_team", { p_name: f.rname.value });
+      if (r.error) return toast(r.error.message);
+      await loadAll(); render(); toast("Team renamed");
+    },
     async makeDuel(f) {
       var w = S.wiz; S.wizMsg = "";
       if (w.kind === "person" && w.mode === "link") {
@@ -465,8 +478,8 @@ option{background:var(--surface);color:var(--fg)}
     return '<div class="app">' + topbar("") + '<div class="stack"><div><h1 class="h1">Who are you walking with?</h1><p class="muted">Walk with your workplace to join the league, or walk on your own.</p></div>' +
       (S.msg ? '<p class="err" role="alert">' + esc(S.msg) + '</p>' : "") +
       '<form class="card stack" data-form="joinCode"><div class="gap8"><label for="code">Join with a workplace code</label><input id="code" name="code" placeholder="Example: A1B2C3" autocapitalize="characters" required></div><button class="btn coral">Join my team</button></form>' +
-      '<form class="card stack" data-form="createTeam"><div class="h2">Start a team for your workplace</div>' +
-      '<div class="gap8"><label for="wname">Workplace name</label><input id="wname" name="wname" minlength="2" maxlength="60" required></div>' +
+      '<form class="card stack" data-form="createTeam"><div class="h2">Start your team</div>' +
+      '<div class="gap8"><label for="wname">Team name</label><input id="wname" name="wname" minlength="2" maxlength="60" placeholder="Example: The Bluegum Walkers" required></div>' +
       '<div class="gap8"><label for="industry">Industry</label><select id="industry" name="industry">' + INDUSTRIES.map(function (i) { return "<option>" + esc(i) + "</option>"; }).join("") + '</select></div>' +
       '<div class="gap8"><label for="bracket">Team size</label><select id="bracket" name="bracket">' + BRACKETS.map(function (b) { return "<option value=\"" + b[0] + "\">" + b[0] + " (" + b[1] + ")</option>"; }).join("") + '</select></div>' +
       '<button class="btn">Create team</button></form>' +
@@ -526,7 +539,7 @@ option{background:var(--surface);color:var(--fg)}
   function viewMe() {
     var i = S.impact || {};
     var team = i.team_name
-      ? '<div class="card stack" style="gap:10px"><div class="h2">' + esc(i.team_name) + '</div><p class="muted">' + i.team_members + (i.team_members === 1 ? " walker" : " walkers") + '. Workmates join with this code:</p><div style="font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:.12em">' + esc(i.team_join_code) + '</div><div class="row" style="flex-wrap:wrap"><button class="btn small" data-act="invite" data-code="' + esc(i.team_join_code) + '" data-team="' + esc(i.team_name) + '">Invite workmates</button><a class="btn small light" href="' + mailtoInvite(i.team_name, i.team_join_code) + '">Email invite</a><button class="btn small light" data-act="copy" data-code="' + esc(i.team_join_code) + '">Copy code</button><button class="btn small light" data-act="leave">Leave team</button></div></div>'
+      ? '<div class="card stack" style="gap:10px"><div class="h2">' + esc(i.team_name) + '</div>' + renameForm(i.team_name) + '<p class="muted">' + i.team_members + (i.team_members === 1 ? " walker" : " walkers") + '. Workmates join with this code:</p><div style="font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:.12em">' + esc(i.team_join_code) + '</div><div class="row" style="flex-wrap:wrap"><button class="btn small" data-act="invite" data-code="' + esc(i.team_join_code) + '" data-team="' + esc(i.team_name) + '">Invite workmates</button><a class="btn small light" href="' + mailtoInvite(i.team_name, i.team_join_code) + '">Email invite</a><button class="btn small light" data-act="copy" data-code="' + esc(i.team_join_code) + '">Copy code</button><button class="btn small light" data-act="leave">Leave team</button></div></div>'
       : '<button class="btn coral" data-act="gojoin">Join or start a team</button>';
     return topbar("") + '<div class="stack"><h1 class="h1">Me</h1>' +
       '<form class="card stack" data-form="saveNames"><div class="gap8"><label for="dname">Your name</label><input id="dname" name="dname" value="' + esc(S.profile.display_name) + '" maxlength="40" required></div><div class="gap8"><label for="bname">Your Buddy\'s name</label><input id="bname" name="bname" value="' + esc(S.profile.buddy_name) + '" maxlength="24" required></div><button class="btn">Save</button></form>' +
@@ -655,7 +668,23 @@ option{background:var(--surface);color:var(--fg)}
     }
     return topbar("") + '<div class="stack">' + head + body + '</div>';
   }
+  function renameForm(name) {
+    return '<form class="gap8" data-form="renameTeam"><label for="rname">Team name</label><div class="row"><input id="rname" name="rname" value="' + esc(name) + '" maxlength="60" minlength="2" required><button class="btn small light">Rename</button></div></form>';
+  }
+  // A team tug of war is team against team, so a team needs a name before it can challenge anyone.
+  function teamFirstSheet() {
+    var w = S.wiz;
+    var kinds = KINDS.map(function (k) { return '<button type="button" class="pill" aria-pressed="' + (w.kind === k[0]) + '" data-wkind="' + k[0] + '">' + k[1] + '</button>'; }).join("");
+    return '<div class="sheet-bg" data-act="closewiz"><form class="sheet" data-form="wizTeam" role="dialog" aria-modal="true" aria-label="Name your team" style="max-height:92vh;overflow:auto"><div class="h2">Challenge a rival</div>' +
+      '<div class="chips" role="group" aria-label="Who to challenge">' + kinds + '</div>' +
+      '<p>A team tug of war is <b>team against team</b>. Name your team first. Your workmates join with your team code.</p>' +
+      '<div class="gap8"><label for="tname">Team name</label><input id="tname" name="tname" minlength="2" maxlength="60" placeholder="Example: The Bluegum Walkers" autocomplete="off" required></div>' +
+      '<div class="gap8"><label for="tsize">Team size</label><select id="tsize" name="tsize">' + BRACKETS.map(function (b) { return '<option value="' + b[0] + '">' + b[0] + ' (' + b[1] + ')</option>'; }).join("") + '</select></div>' +
+      (S.wizMsg ? '<p class="err" role="alert">' + esc(S.wizMsg) + '</p>' : "") +
+      '<button class="btn coral">Create team and continue</button><button type="button" class="btn light" data-act="closewiz">Cancel</button></form></div>';
+  }
   function wizSheet() {
+    if (S.wiz.kind === "team" && !S.profile.workplace_id) return teamFirstSheet();
     var w = S.wiz, person = w.kind === "person", link = person && w.mode === "link";
     var kinds = KINDS.map(function (k) { return '<button type="button" class="pill" aria-pressed="' + (w.kind === k[0]) + '" data-wkind="' + k[0] + '">' + k[1] + '</button>'; }).join("");
     var days = [3, 7, 14].map(function (n) { return '<button type="button" class="pill" aria-pressed="' + (w.days === n) + '" data-wdays="' + n + '">' + n + ' days</button>'; }).join("");

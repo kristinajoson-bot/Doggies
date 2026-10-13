@@ -29,3 +29,7 @@ create or replace trigger duel_base before insert or update on public.duels for 
 -- started_at records the exact moment a tug of war begins, for use by automatic step syncing later.
 alter table public.duels add column if not exists started_at timestamptz;
 -- duel_set_base() also sets started_at := now() when a duel becomes active.
+
+-- Teams have a captain (the person who started the team) and can be renamed by them. Nothing existing was edited.
+alter table public.workplaces add column if not exists captain_id uuid references auth.users(id) on delete set null; update public.workplaces set captain_id = created_by where captain_id is null and created_by is not null;
+create or replace function public.rename_team(p_name text) returns void language plpgsql security definer set search_path = public as $fn$ declare wp uuid; begin select workplace_id into wp from public.profiles where user_id = auth.uid(); if wp is null then raise exception 'Join or start a team first'; end if; if char_length(trim(coalesce(p_name, ''))) < 2 then raise exception 'Give your team a name of at least 2 characters'; end if; update public.workplaces set name = left(trim(p_name), 60) where id = wp and (captain_id = auth.uid() or created_by = auth.uid()); if not found then raise exception 'Only the person who started the team can rename it'; end if; end $fn$; revoke execute on function public.rename_team(text) from public, anon; grant execute on function public.rename_team(text) to authenticated;
