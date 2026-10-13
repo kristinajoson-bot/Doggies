@@ -395,7 +395,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     async savePrivacy(f) {
       var r = await sb.from("profiles").update({ marketing_opt_in: f.marketing.checked, show_on_leaderboard: f.board.checked }).eq("user_id", S.user.id);
       if (r.error) return toast("Could not save that");
-      S.privOpen = true; await loadAll(); render(); toast(f.marketing.checked ? "Saved. We may send you Walkies news." : "Saved. No marketing emails.");
+      await loadAll(); render(); toast(f.marketing.checked ? "Saved. We may send you Walkies news." : "Saved. No marketing emails.");
     },
     async saveRival(f) {
       var r = await sb.from("profiles").update({ open_to_rivals: f.open.checked }).eq("user_id", S.user.id);
@@ -405,7 +405,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     async joinCode(f) {
       var r = await sb.rpc("join_workplace", { p_code: f.code.value });
       if (r.error) { S.msg = r.error.message; return render(); }
-      store.set("walkies-onboarded-" + S.user.id, "1"); S.msg = ""; toast("Welcome to " + r.data.name + "!"); var t = S.tab; await finishJoin(); if (t === "rivals") { S.tab = "rivals"; render(); }
+      store.set("walkies-onboarded-" + S.user.id, "1"); S.msg = ""; toast("Welcome to " + r.data.name + "!"); var t = S.tab; await finishJoin(); if (t === "rivals" || t === "me") { S.tab = t; render(); }
     },
     async createTeam(f) {
       var r = await sb.rpc("create_workplace", { p_name: f.wname.value, p_industry: f.industry.value, p_bracket: f.bracket.value });
@@ -413,7 +413,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       store.set("walkies-onboarded-" + S.user.id, "1"); S.msg = ""; toast("Pack created. Share code " + r.data.join_code); var t = S.tab; await finishJoin(); if (t === "rivals") { S.tab = "rivals"; render(); }
     },
     async solo() { store.set("walkies-onboarded-" + S.user.id, "1"); S.view = "app"; render(); },
-    async leave() { await sb.rpc("leave_workplace"); await finishJoin(); toast("You left your team"); },
+    async leave() { await sb.rpc("leave_workplace"); var t = S.tab; await finishJoin(); if (t === "me") { S.tab = "me"; render(); } toast("You left your team"); },
     async saveNames(f) {
       var r = await sb.from("profiles").update({ display_name: f.dname.value.trim() || "Walker" }).eq("user_id", S.user.id);
       if (r.error) return toast("Your name must be 1 to 40 characters");
@@ -572,12 +572,15 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       dogImpactCard() + '<div class="card"><b>Delivery proof</b><p class="muted" style="font-size:14px">Photos and delivery dockets from our rescue partners will show up here once the first food goes out.</p></div>' +
       '<div class="card row" style="border-color:var(--cyan)"><div style="flex:1;font-size:14px"><b>Want to add a bowl?</b> Friends and family will soon be able to sponsor your steps.</div><button class="btn small" style="background:var(--pink);color:var(--dark)" data-act="sponsor">Tell me</button></div></div>';
   }
+  function openAttr(k, dflt) { var o = S.openDet || {}; return (k in o ? o[k] : dflt) ? " open" : ""; }
   function myTeams() {
     var i = S.impact || {}, mates = S.mates || [];
-    if (!i.team_name) return '<div class="h2">My teams</div><div class="card stack" style="gap:10px"><p class="muted" style="font-size:14px">You are not in a team yet. Walk with your workplace to join the league.</p><button class="btn coral" data-act="gojoin">Join or start a team</button></div>';
+    if (!i.team_name) return '<details class="drop" data-det="teams"' + openAttr("teams", true) + '><summary>My teams</summary><form class="stack" data-form="joinCode" style="gap:12px;margin-top:10px"><p class="muted" style="font-size:14px;margin:0">You are not in a team yet. Enter the code from your team to join it.</p>' +
+      (S.msg ? '<p class="err" role="alert">' + esc(S.msg) + '</p>' : "") +
+      '<div class="gap8"><label for="code">Team code</label><input id="code" name="code" placeholder="Example: A1B2C3" autocapitalize="characters" required></div><button class="btn coral">Join team</button></form></details>';
     var list = mates.length ? '<div class="h2" style="font-size:15px;margin-top:4px">Teammates</div><ul class="mates">' + mates.map(function (m) { return '<li><span>' + esc(m.display_name) + (m.is_me ? " (you)" : "") + '</span>' + (m.is_captain ? '<span class="tag">Captain</span>' : "") + '</li>'; }).join("") + '</ul>' : "";
-    return '<div class="h2">My teams</div><div class="card stack" style="gap:10px"><div class="between"><div class="h2" style="margin:0">' + esc(i.team_name) + '</div><span class="muted" style="font-size:14px">' + i.team_members + (i.team_members === 1 ? " walker" : " walkers") + '</span></div>' + renameForm(i.team_name) + list +
-      '<p class="muted" style="font-size:14px">Workmates join with this code:</p><div style="font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:.12em">' + esc(i.team_join_code) + '</div><div class="row" style="flex-wrap:wrap"><button class="btn small" data-act="invite" data-code="' + esc(i.team_join_code) + '" data-team="' + esc(i.team_name) + '">Invite workmates</button><a class="btn small light" href="' + mailtoInvite(i.team_name, i.team_join_code) + '">Email invite</a><button class="btn small light" data-act="copy" data-code="' + esc(i.team_join_code) + '">Copy code</button><button class="btn small light" data-act="leave">Leave team</button></div></div>';
+    return '<details class="drop" data-det="teams"' + openAttr("teams", false) + '><summary>My teams <span class="muted" style="font-weight:600;font-size:14px">1</span></summary><div class="stack" style="gap:10px;margin-top:10px"><div class="between"><div class="h2" style="margin:0">' + esc(i.team_name) + '</div><span class="muted" style="font-size:14px">' + i.team_members + (i.team_members === 1 ? " walker" : " walkers") + '</span></div>' + renameForm(i.team_name) + list +
+      '<p class="muted" style="font-size:14px">Workmates join with this code:</p><div style="font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:.12em">' + esc(i.team_join_code) + '</div><div class="row" style="flex-wrap:wrap"><button class="btn small" data-act="invite" data-code="' + esc(i.team_join_code) + '" data-team="' + esc(i.team_name) + '">Invite workmates</button><a class="btn small light" href="' + mailtoInvite(i.team_name, i.team_join_code) + '">Email invite</a><button class="btn small light" data-act="copy" data-code="' + esc(i.team_join_code) + '">Copy code</button><button class="btn small light" data-act="leave">Leave team</button></div></div></details>';
   }
   var PRIVACY_CONTACT = "";
   function policyHtml() {
@@ -597,12 +600,12 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   function privacySection() {
     var p = S.profile || {};
     return '<div class="h2">Privacy</div>' +
-      '<details class="drop"' + (S.privOpen ? " open" : "") + '><summary>Privacy settings</summary><form class="stack" data-form="savePrivacy" style="gap:12px;margin-top:10px">' +
+      '<details class="drop" data-det="priv"' + openAttr("priv", false) + '><summary>Privacy settings</summary><form class="stack" data-form="savePrivacy" style="gap:12px;margin-top:10px">' +
       '<label class="check"><input type="checkbox" name="marketing"' + (p.marketing_opt_in ? " checked" : "") + '> Send me Walkies news and offers by email. You can turn this off any time.</label>' +
       '<label class="check"><input type="checkbox" name="board"' + (p.show_on_leaderboard ? " checked" : "") + '> Show my name and monthly steps on the walker leaderboard (Pup).</label>' +
       '<p class="muted" style="font-size:13px;margin:0">We only email about your account unless you tick this. Right now you are ' + (p.marketing_opt_in ? "opted in" : "not opted in") + (p.marketing_opt_in && p.marketing_opt_in_at ? " (since " + fmtDay(String(p.marketing_opt_in_at).slice(0, 10)) + ")" : "") + '.</p>' +
       '<p class="muted" style="font-size:13px;margin:0">Random challenges and your rival code are controlled in the For rivals card above.</p><button class="btn small">Save privacy settings</button></form></details>' +
-      '<details class="drop"><summary>Privacy policy</summary>' + policyHtml() + '</details>';
+      '<details class="drop" data-det="policy"' + openAttr("policy", false) + '><summary>Privacy policy</summary>' + policyHtml() + '</details>';
   }
   function viewMe() {
     return topbar("") + '<div class="stack"><h1 class="h1">Me</h1>' +
@@ -875,6 +878,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     e.preventDefault();
     var fn = actions[f.dataset.form]; if (fn) fn(f).catch(function () { toast("Something went wrong. Try again."); });
   });
+  document.addEventListener("toggle", function (e) { var d = e.target; if (d && d.dataset && d.dataset.det) { S.openDet = S.openDet || {}; S.openDet[d.dataset.det] = d.open; } }, true);
   document.addEventListener("input", function (e) { if (e.target && e.target.id === "steps") updatePreview(); });
   document.addEventListener("click", function (e) {
     var t = e.target;
