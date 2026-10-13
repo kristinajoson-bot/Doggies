@@ -506,7 +506,7 @@ option{background:var(--surface);color:var(--fg)}
       return '<div class="scoop ' + cls + '" role="img" aria-label="' + fmt(m) + ' steps, ' + (m === next ? "next scoop" : "locked") + '">' + pawTile(label) + '</div>';
     }).join("");
     return topbar(esc(timeLeft())) + '<div class="stack">' +
-      todayTug() + '<div class="hero"><div class="eyebrow">Dog bowls this month</div><div style="margin-bottom:-34px;position:relative"><span class="big" style="font-size:64px">' + done + '</span></div>' + bowlSvg(steps / 150000, true) +
+      todayTug() + '<div class="hero"><div class="eyebrow">Dog bowls this month</div><div style="margin:14px 0 ' + Math.round(-48 + 52 * Math.min(1, steps / 150000)) + 'px;position:relative"><span class="big" style="font-size:64px">' + done + '</span></div>' + bowlSvg(steps / 150000, true) +
       '<div class="stats"><div><div class="stat-n">' + fmt(todaySteps()) + '</div><div class="stat-l">Steps today</div></div><div><div class="stat-n">' + fmt(steps) + '</div><div class="stat-l">Steps this month</div></div></div>' + dayLine() +
       '<div class="bar" style="margin-top:8px" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100"><i style="width:' + pct + '%"></i></div>' +
       '<div style="font-weight:700;margin-top:2px">' + (next ? fmt(next - steps) + " steps to your next scoop" : "All 10 scoops unlocked. Epic walking!") + '</div></div>' +
