@@ -388,12 +388,12 @@ option{background:var(--surface);color:var(--fg)}
     async joinCode(f) {
       var r = await sb.rpc("join_workplace", { p_code: f.code.value });
       if (r.error) { S.msg = r.error.message; return render(); }
-      store.set("walkies-onboarded-" + S.user.id, "1"); S.msg = ""; toast("Welcome to " + r.data.name + "!"); await finishJoin();
+      store.set("walkies-onboarded-" + S.user.id, "1"); S.msg = ""; toast("Welcome to " + r.data.name + "!"); var t = S.tab; await finishJoin(); if (t === "rivals") { S.tab = "rivals"; render(); }
     },
     async createTeam(f) {
       var r = await sb.rpc("create_workplace", { p_name: f.wname.value, p_industry: f.industry.value, p_bracket: f.bracket.value });
       if (r.error) { S.msg = r.error.message.indexOf("check") > -1 ? "Please use a team name of 2 to 60 characters." : r.error.message; return render(); }
-      store.set("walkies-onboarded-" + S.user.id, "1"); S.msg = ""; toast("Team created. Share code " + r.data.join_code); await finishJoin();
+      store.set("walkies-onboarded-" + S.user.id, "1"); S.msg = ""; toast("Pack created. Share code " + r.data.join_code); var t = S.tab; await finishJoin(); if (t === "rivals") { S.tab = "rivals"; render(); }
     },
     async solo() { store.set("walkies-onboarded-" + S.user.id, "1"); S.view = "app"; render(); },
     async leave() { await sb.rpc("leave_workplace"); await finishJoin(); toast("You left your team"); },
@@ -616,11 +616,10 @@ option{background:var(--surface);color:var(--fg)}
       (d.status === "pending" && !d.incoming ? '<div class="row" style="flex-wrap:wrap">' + (d.invite_token ? '<button class="btn small coral" data-share="' + d.invite_token + '" data-days="' + d.days_left + '">Share link</button>' : "") + '<button class="btn small light" data-cancel="' + d.id + '">Cancel</button></div>' : "") + '</div>';
   }
   var MAX_CHALLENGES = 3;
-  // A person challenge, a team challenge and a World Cup each count as one. Requests waiting for you do not count.
+  // A person challenge or a team challenge each count as one. Requests waiting for you do not count.
   function challengeCount() {
     var d = (S.duels || []).filter(function (x) { return !x.finished && (x.status === "active" || (x.status === "pending" && !x.incoming)); }).length;
-    var c = (S.cups || []).filter(function (x) { return x.i_am_in && x.status !== "finished"; }).length;
-    return d + c;
+    return d;
   }
   function todayTug() {
     var act = (S.duels || []).filter(function (x) { return x.status === "active" && !x.finished; });
@@ -637,18 +636,26 @@ option{background:var(--surface);color:var(--fg)}
       (c.champion ? '<p>Champion: <b style="color:var(--yellow)">' + esc(c.champion) + '</b></p>' : "") +
       '<div class="row" style="flex-wrap:wrap">' + acts + '</div></div>';
   }
+  function packSection() {
+    var i = S.impact || {};
+    if (i.team_name) return '<div class="h2" style="margin-top:8px">Your pack</div><div class="card stack" style="gap:10px"><div class="between"><b>' + esc(i.team_name) + '</b><span class="muted" style="font-size:14px">' + i.team_members + (i.team_members === 1 ? " walker" : " walkers") + '</span></div><p class="muted" style="font-size:14px">Challenge another pack in a tug of war. Workmates join with this code:</p><div style="font-family:var(--display);font-weight:800;font-size:30px;letter-spacing:.12em">' + esc(i.team_join_code) + '</div><div class="row" style="flex-wrap:wrap"><button class="btn small" data-act="invite" data-code="' + esc(i.team_join_code) + '" data-team="' + esc(i.team_name) + '">Invite workmates</button><button class="btn small light" data-act="copy" data-code="' + esc(i.team_join_code) + '">Copy code</button></div></div>';
+    return '<div class="h2" style="margin-top:8px">Create a pack</div><p class="muted" style="font-size:14px;margin-top:-8px">A pack is your team. Start one, share the code, then challenge other packs in a tug of war.</p>' +
+      (S.msg ? '<p class="err" role="alert">' + esc(S.msg) + '</p>' : "") +
+      '<form class="card stack" data-form="createTeam"><div class="gap8"><label for="wname">Pack name</label><input id="wname" name="wname" minlength="2" maxlength="60" placeholder="Example: The Bluegum Walkers" required></div>' +
+      '<div class="gap8"><label for="industry">Industry</label><select id="industry" name="industry">' + INDUSTRIES.map(function (x) { return "<option>" + esc(x) + "</option>"; }).join("") + '</select></div>' +
+      '<div class="gap8"><label for="bracket">Pack size</label><select id="bracket" name="bracket">' + BRACKETS.map(function (b) { return "<option value=\"" + b[0] + "\">" + b[0] + " (" + b[1] + ")</option>"; }).join("") + '</select></div>' +
+      '<button class="btn coral">Create pack</button></form>' +
+      '<form class="card stack" data-form="joinCode"><div class="gap8"><label for="code">Or join a pack with its code</label><input id="code" name="code" placeholder="Example: A1B2C3" autocapitalize="characters" required></div><button class="btn light">Join pack</button></form>';
+  }
   function viewRivals() {
     var duels = S.duels || [], inc = duels.filter(function (d) { return d.incoming; }), mine = duels.filter(function (d) { return !d.incoming; });
-    var cups = S.cups || [];
     return topbar("") + '<div class="stack"><div><h1 class="h1">Rivals</h1><p class="muted">Pick a rival and pull the bone your way.</p></div>' +
-      '<div class="between"><span class="tag">Challenges ' + challengeCount() + ' of ' + MAX_CHALLENGES + '</span><span class="muted" style="font-size:13px">A person, a team or a World Cup each count as one</span></div>' +
+      '<div class="between"><span class="tag">Challenges ' + challengeCount() + ' of ' + MAX_CHALLENGES + '</span><span class="muted" style="font-size:13px">A person or a team challenge each count as one</span></div>' +
       (challengeCount() >= MAX_CHALLENGES ? '<button class="btn" disabled>You have 3 challenges. Finish one to start another.</button>' : '<button class="btn coral" data-act="wiz">Challenge a rival</button>') +
       (inc.length ? '<div class="h2">Challenges for you</div>' + inc.map(tugCard).join("") : "") +
       '<div class="h2">Your tug of wars</div>' +
       (mine.length ? mine.map(tugCard).join("") : '<div class="card"><b>No tug of wars yet.</b><p class="muted" style="font-size:14px">Challenge a person or a team. Everyone starts from zero when it begins.</p></div>') +
-      '<div class="between" style="margin-top:8px"><div class="h2">World Cup</div><button class="btn small light" data-act="cupnew">Start one</button></div>' +
-      '<p class="muted" style="font-size:14px;margin-top:-8px">Knockout rounds. Win your match with the most steps per walker and move on to the next round.</p>' +
-      (cups.length ? cups.map(cupCard).join("") : '<div class="card"><b>No World Cups yet.</b><p class="muted" style="font-size:14px">Start one for teams and invite others to join.</p></div>') + '</div>';
+      packSection() + '</div>';
   }
   function roundName(r, total) { var left = total - r; return left === 0 ? "Final" : left === 1 ? "Semi-finals" : left === 2 ? "Quarter-finals" : "Round " + r; }
   function viewCup() {
@@ -808,7 +815,7 @@ option{background:var(--surface);color:var(--fg)}
   document.addEventListener("click", function (e) {
     var t = e.target;
     var tab = t.closest("[data-tab]");
-    if (tab) { S.dogview = null; S.tab = tab.dataset.tab; render(); window.scrollTo(0, 0); if (S.tab === "packs") loadBoard().then(render); if (S.tab === "impact") loadImpact().then(render); if (S.tab === "rivals") loadRivals().then(render); return; }
+    if (tab) { S.dogview = null; S.msg = ""; S.tab = tab.dataset.tab; render(); window.scrollTo(0, 0); if (S.tab === "packs") loadBoard().then(render); if (S.tab === "impact") loadImpact().then(render); if (S.tab === "rivals") loadRivals().then(render); return; }
     var cel = t.closest("[data-cel]");
     if (cel) { S.celebrate = { bowls: bowlsFor(Number(cel.dataset.cel)), count: 1, steps: Number(cel.dataset.cel) }; render(); return; }
     var wk = t.closest("[data-wkind]");
