@@ -140,6 +140,7 @@ option{background:var(--surface);color:var(--fg)}
 .mini-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--pink),var(--cyan))}
 .sample{display:inline-block;font-family:'Geist Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--yellow);border:1px solid rgba(244,255,58,.5);border-radius:999px;padding:2px 8px}
 .note{border-left:3px solid var(--pink);padding:2px 0 2px 12px}
+.welcome.has-popup form[data-form=auth]:not(.in-popup){display:none}
 .bounce{animation:bounce .5s}
 @keyframes bounce{40%{transform:translateY(-8px) rotate(-6deg)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -178,7 +179,7 @@ option{background:var(--surface);color:var(--fg)}
   var STATES = ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"];
   var KINDS = [["person", "Person"], ["team", "Team"], ["state", "State"], ["city", "City"]];
   var KIND_LABEL = { person: "Person", team: "Team", state: "State", city: "City" };
-  S.invite = null; S.inviteMsg = ""; S.dogs = []; S.shelters = {}; S.dogTotals = {}; S.dogview = null; S.stepVal = ""; S.stepMsg = ""; S.duels = []; S.cups = []; S.wiz = null; S.cupform = false; S.tview = null; S.wizMsg = ""; S.cupMsg = "";
+  S.pubInvite = null; S.pubClosed = false; S.draft = { name: "", email: "" }; S.invite = null; S.inviteMsg = ""; S.dogs = []; S.shelters = {}; S.dogTotals = {}; S.dogview = null; S.stepVal = ""; S.stepMsg = ""; S.duels = []; S.cups = []; S.wiz = null; S.cupform = false; S.tview = null; S.wizMsg = ""; S.cupMsg = "";
   try {
     var qr = new URLSearchParams(location.search).get("rival");
     if (qr) { store.set("walkies-pending-rival", qr.trim().slice(0, 12).toUpperCase()); history.replaceState(null, "", location.pathname); }
@@ -231,6 +232,13 @@ option{background:var(--surface);color:var(--fg)}
   function todaySteps() { var t = today(), r = S.days.filter(function (d) { return d.day === t; })[0]; return r ? r.steps : 0; }
   function bowlsFor(steps) { return MILESTONES.filter(function (m) { return steps >= m; }).length; }
 
+  async function loadPubInvite() {
+    var t = store.get("walkies-pending-duel");
+    if (!t) { S.pubInvite = null; return; }
+    var r = await sb.rpc("link_duel_public", { p_token: t }), row = r.data && r.data[0];
+    S.pubInvite = row ? { token: t, challenger: row.challenger, days: row.days, available: row.available } : { token: t, missing: true };
+    S.mode = "signup";
+  }
   async function loadAll() {
     var uid = S.user.id;
     var ch = await sb.from("challenge").select("*").limit(1).maybeSingle();
@@ -275,7 +283,7 @@ option{background:var(--surface);color:var(--fg)}
   async function boot() {
     var r = await sb.auth.getSession();
     S.user = r.data.session ? r.data.session.user : null;
-    if (!S.user) { S.view = "auth"; return render(); }
+    if (!S.user) { S.view = "auth"; try { await loadPubInvite(); } catch (e) {} return render(); }
     if (S.recovery) { S.view = "reset"; return render(); }
     await enter();
   }
@@ -293,12 +301,18 @@ option{background:var(--surface);color:var(--fg)}
     var seen = store.get("walkies-onboarded-" + S.user.id);
     S.view = (!S.profile.workplace_id && !seen) ? "join" : "app";
     if (S.view === "app" && !S.profile.dog_id && !store.get("walkies-dog-seen-" + S.user.id) && (S.dogs || []).length) { store.set("walkies-dog-seen-" + S.user.id, "1"); S.dogview = { list: true }; }
+    S.pubInvite = null;
     var pdl = store.get("walkies-pending-duel");
     if (pdl) {
       store.set("walkies-pending-duel", "");
       var pv = await sb.rpc("link_duel_preview", { p_token: pdl }), prow = pv.data && pv.data[0];
       S.view = "app"; S.tab = "rivals"; S.dogview = null; S.inviteMsg = "";
       S.invite = prow ? { token: pdl, challenger: prow.challenger, days: prow.days, mine: prow.mine, available: prow.available } : { token: pdl, missing: true };
+      if (store.get("walkies-auto-accept") === "1" && prow && prow.available && !prow.mine) {
+        var ar = await sb.rpc("accept_link_duel", { p_token: pdl });
+        if (ar.error) S.inviteMsg = ar.error.message; else { S.invite = null; await loadRivals(); toast("You accepted! Your tug of war has started."); }
+      }
+      store.set("walkies-auto-accept", "");
     }
     var pr = store.get("walkies-pending-rival");
     if (pr) { store.set("walkies-pending-rival", ""); S.view = "app"; S.tab = "rivals"; S.wiz = { kind: "person", opp: pr, random: false, days: 7, options: [], loading: false }; S.wizMsg = ""; }
@@ -309,6 +323,8 @@ option{background:var(--surface);color:var(--fg)}
   var actions = {
     async auth(f) {
       var email = f.email.value.trim(), password = f.password.value, name = f.name ? f.name.value.trim() : "";
+      S.draft = { name: name, email: email };
+      if (popupOn()) store.set("walkies-auto-accept", "1");
       S.msg = ""; S.busy = true; render();
       var res;
       if (S.mode === "signup") res = await sb.auth.signUp({ email: email, password: password, options: { emailRedirectTo: ORIGIN + "/", data: { display_name: name || "Walker" } } });
@@ -409,7 +425,7 @@ option{background:var(--surface);color:var(--fg)}
   function viewAuth() {
     var up = S.mode === "signup", fg = S.mode === "forgot", pend = store.get("walkies-pending-join");
     var label = fg ? "Email me a reset link" : (up ? "Create my account" : "Sign in");
-    return '<div class="welcome"><div class="app">' + topbar("") +
+    return '<div class="welcome' + (popupOn() && S.pubInvite.available ? " has-popup" : "") + '"><div class="app">' + topbar("") +
       '<h1 class="h1" style="font-size:44px;line-height:1.02">Walk. Fill a bowl. Feed a rescue dog.</h1>' +
       (store.get("walkies-pending-duel") ? '<div class="card" style="border:2px solid var(--yellow)"><b>You have been challenged to a tug of war!</b> Sign in or create an account to take it on.</div>' : "") + (pend ? '<div class="card" style="border:2px solid var(--cyan)"><b>You have been invited to a team!</b> Sign in or create an account and you will join it automatically.</div>' : '<p style="font-size:17px">Every scoop you unlock is a bowl of food for a shelter dog. Join your workplace, or walk on your own.</p>') +
       '<form class="card stack" data-form="' + (fg ? "forgot" : "auth") + '" style="border:2px solid var(--pink);box-shadow:var(--glow);border-radius:24px">' +
@@ -422,6 +438,21 @@ option{background:var(--surface);color:var(--fg)}
       (S.mode === "signin" ? '<button type="button" class="btn light" data-act="forgot">Forgot your password?</button>' : "") + '</form>' +
       (fg ? '<button class="btn" data-act="signinmode">Back to sign in</button>' : '<button class="btn" data-act="mode">' + (up ? "I already have an account" : "Create a new account") + '</button>') +
       '<p style="text-align:center;font-size:13px">Free to join. We only read your step count.</p></div></div>';
+  }
+  function popupOn() { return S.view === "auth" && !!S.pubInvite && !S.pubClosed; }
+  function inviteAuthSheet() {
+    var v = S.pubInvite, up = S.mode === "signup", d = S.draft || {};
+    if (v.missing || !v.available) return '<div class="sheet-bg" data-act="closepub"><div class="sheet" role="dialog" aria-modal="true" aria-label="Challenge"><div class="h2">This link is not available</div><p>This challenge link has already been used, was cancelled, or is not valid.</p><button class="btn" data-act="closepub">Continue</button></div></div>';
+    return '<div class="sheet-bg"><form class="sheet in-popup" data-form="auth" role="dialog" aria-modal="true" aria-label="You have been challenged" style="max-height:94vh;overflow:auto"><div class="h2">You have been challenged!</div>' +
+      '<p><b>' + esc(v.challenger) + '</b> challenged you to a <b>' + v.days + '-day</b> tug of war. Whoever walks the most steps wins the bone.</p>' +
+      '<div class="chips" role="group" aria-label="Account"><button type="button" class="pill" aria-pressed="' + up + '" data-pmode="signup">Create account</button><button type="button" class="pill" aria-pressed="' + (!up) + '" data-pmode="signin">I have an account</button></div>' +
+      (up ? '<div class="gap8"><label for="pn-name">Your first name</label><input id="pn-name" name="name" autocomplete="given-name" maxlength="40" required value="' + esc(d.name) + '"></div>' : "") +
+      '<div class="gap8"><label for="pn-email">Email</label><input id="pn-email" name="email" type="email" autocomplete="email" required value="' + esc(d.email) + '"></div>' +
+      '<div class="gap8"><label for="pn-pass">Password (8 or more characters)</label><input id="pn-pass" name="password" type="password" minlength="8" autocomplete="' + (up ? "new-password" : "current-password") + '" required></div>' +
+      (S.msg ? '<p class="err" role="alert">' + esc(S.msg) + '</p>' : "") +
+      (S.confirmEmail ? '<button type="button" class="btn light" data-act="resend">Resend confirmation email</button>' : "") +
+      '<button class="btn coral" ' + (S.busy ? "disabled" : "") + '>' + (up ? "Create account and accept" : "Sign in and accept") + '</button><button type="button" class="btn light" data-act="closepub">Not now</button>' +
+      '<p class="muted" style="font-size:13px;text-align:center">Free to join. We only read your step count.</p></form></div>';
   }
   function viewReset() {
     return '<div class="welcome"><div class="app">' + topbar("") + '<h1 class="h1">Choose a new password</h1>' +
@@ -732,7 +763,7 @@ option{background:var(--surface);color:var(--fg)}
   function render() {
     var root = $("#root"), html;
     if (S.view === "loading") html = '<div class="app">' + topbar("") + '<p class="muted" role="status">Loading your bowl…</p></div>';
-    else if (S.view === "auth") html = viewAuth();
+    else if (S.view === "auth") html = viewAuth() + (popupOn() ? inviteAuthSheet() : "");
     else if (S.view === "reset") html = viewReset();
     else if (S.view === "join") html = viewJoin();
     else html = '<div class="app">' + (S.dogview ? (S.dogview.id ? viewDog : viewDogs) : S.tab === "rivals" ? (S.tview ? viewCup : viewRivals) : ({ today: viewToday, packs: viewPacks, impact: viewImpact, me: viewMe }[S.tab]))() + '</div>' + nav() + (S.sheet ? sheet() : "") + (S.wiz ? wizSheet() : "") + (S.invite ? inviteSheet() : "") + (S.cupform ? cupSheet() : "") + (S.celebrate ? celebrate() : "");
@@ -762,6 +793,8 @@ option{background:var(--surface);color:var(--fg)}
       if (w.kind !== "person") { w.loading = true; sb.rpc("duel_options", { p_kind: w.kind }).then(function (r) { w.options = r.data || []; w.loading = false; render(); }); } else w.loading = false;
       render(); return;
     }
+    var pm = t.closest("[data-pmode]");
+    if (pm) { var pf = $("form.in-popup"); if (pf) S.draft = { name: pf.name ? pf.name.value.trim() : "", email: pf.email.value.trim() }; S.mode = pm.dataset.pmode; S.msg = ""; S.confirmEmail = null; render(); return; }
     var wm = t.closest("[data-wmode]");
     if (wm && S.wiz) { S.wiz.mode = wm.dataset.wmode; S.wizMsg = ""; render(); return; }
     var wd = t.closest("[data-wdays]");
@@ -813,6 +846,7 @@ option{background:var(--surface);color:var(--fg)}
         S.invite = null; S.inviteMsg = ""; toast("Tug of war started! Get walking."); return loadRivals().then(render);
       });
     }
+    else if (act === "closepub") { S.pubClosed = true; render(); }
     else if (act === "closeinvite") { S.invite = null; S.inviteMsg = ""; render(); }
     else if (act === "closesheet") { S.sheet = false; render(); }
     else if (act === "closecel") { S.celebrate = null; render(); }
