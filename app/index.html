@@ -515,6 +515,9 @@ option{background:var(--surface);color:var(--fg)}
       '<div class="scoops">' + scoops + '</div>' +
       '<div class="buddy"><div class="' + (S.bounce ? "bounce" : "") + '">' + DOG + '</div><div style="flex:1;min-width:0"><div style="font-weight:700">' + esc(S.profile.buddy_name) + ' is ready for a walk</div><div class="muted" style="font-size:14px">Your Buddy cheers every scoop</div></div><button class="btn small" style="background:var(--pink);color:var(--dark)" data-act="pat">Pat</button></div></div>';
   }
+  function packKey() {
+    return '<div class="card" style="gap:6px"><b>What the names mean</b><p class="muted" style="font-size:14px;margin:4px 0 0"><b style="color:var(--text,inherit)">Pack</b> is your team on Walkies. The size tags group packs by company size, so a small team races other small teams: <b>Pup</b> up to 50 staff, <b>Pack</b> 51 to 250, <b>Big Dog</b> 251 to 1,000, <b>Top Dog</b> 1,000+. Tap a tag to see only that size.</p></div>';
+  }
   function viewPacks() {
     var rows = S.board, mine = rows.filter(function (r) { return r.is_mine; })[0], mineIdx = rows.indexOf(mine);
     var chips = '<button class="pill" aria-pressed="' + (!S.bracket) + '" data-bracket="">All</button>' + BRACKETS.map(function (b) { return '<button class="pill" aria-pressed="' + (S.bracket === b[0]) + '" data-bracket="' + b[0] + '">' + b[0] + '</button>'; }).join("");
@@ -523,7 +526,7 @@ option{background:var(--surface);color:var(--fg)}
     }).join("") : '<div class="card"><b>No teams here yet.</b><p class="muted">Start a team from the Me tab, share the code with your workmates and be the first on the board.</p></div>';
     var hint = "";
     if (mine && mineIdx > 0) { var above = rows[mineIdx - 1]; hint = '<div class="card" style="border-style:dashed"><b>Catch ' + esc(above.name) + '</b> and your team moves up a place. Only <b>' + fmt(Math.max(1, above.steps_per_member - mine.steps_per_member + 1)) + '</b> more steps each.</div>'; }
-    return topbar("") + '<div class="stack"><div><h1 class="h1">Packs</h1><p class="muted">Ranked by steps per walker, so every size of team has a shot at the Golden Bowl.</p></div><div class="chips" role="group" aria-label="Team size">' + chips + '</div><div class="stack" style="gap:10px">' + list + '</div>' + hint + '</div>';
+    return topbar("") + '<div class="stack"><div><h1 class="h1">Packs</h1><p class="muted">Every pack on Walkies, ranked by average steps per walker this month. You do not need a challenge to be on it.</p></div>' + packKey() + '<div class="chips" role="group" aria-label="Team size">' + chips + '</div><div class="stack" style="gap:10px">' + list + '</div>' + hint + '</div>';
   }
   function viewImpact() {
     var i = S.impact || {}, teamKg = (i.team_bowls || 0) * BOWL_KG, commKg = (i.community_bowls || 0) * BOWL_KG, myKg = (i.my_bowls || 0) * BOWL_KG;
