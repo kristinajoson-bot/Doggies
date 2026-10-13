@@ -444,7 +444,7 @@ option{background:var(--surface);color:var(--fg)}
     var v = S.pubInvite, up = S.mode === "signup", d = S.draft || {};
     if (v.missing || !v.available) return '<div class="sheet-bg" data-act="closepub"><div class="sheet" role="dialog" aria-modal="true" aria-label="Challenge"><div class="h2">This link is not available</div><p>This challenge link has already been used, was cancelled, or is not valid.</p><button class="btn" data-act="closepub">Continue</button></div></div>';
     return '<div class="sheet-bg"><form class="sheet in-popup" data-form="auth" role="dialog" aria-modal="true" aria-label="You have been challenged" style="max-height:94vh;overflow:auto"><div class="h2">You have been challenged!</div>' +
-      '<p><b>' + esc(v.challenger) + '</b> challenged you to a <b>' + v.days + '-day</b> tug of war. Whoever walks the most steps wins the bone.</p>' +
+      '<p><b>' + esc(v.challenger) + '</b> challenged you to a <b>' + v.days + '-day</b> tug of war. Whoever walks the most steps wins the bone. You both start from zero when you accept.</p>' +
       '<div class="chips" role="group" aria-label="Account"><button type="button" class="pill" aria-pressed="' + up + '" data-pmode="signup">Create account</button><button type="button" class="pill" aria-pressed="' + (!up) + '" data-pmode="signin">I have an account</button></div>' +
       (up ? '<div class="gap8"><label for="pn-name">Your first name</label><input id="pn-name" name="name" autocomplete="given-name" maxlength="40" required value="' + esc(d.name) + '"></div>' : "") +
       '<div class="gap8"><label for="pn-email">Email</label><input id="pn-email" name="email" type="email" autocomplete="email" required value="' + esc(d.email) + '"></div>' +
@@ -623,7 +623,7 @@ option{background:var(--surface);color:var(--fg)}
       '<button class="btn coral" data-act="wiz">Challenge a rival</button>' +
       (inc.length ? '<div class="h2">Challenges for you</div>' + inc.map(tugCard).join("") : "") +
       '<div class="h2">Your tug of wars</div>' +
-      (mine.length ? mine.map(tugCard).join("") : '<div class="card"><b>No tug of wars yet.</b><p class="muted" style="font-size:14px">Challenge a person, a team, a state or a city. Or let us pick a random rival.</p></div>') +
+      (mine.length ? mine.map(tugCard).join("") : '<div class="card"><b>No tug of wars yet.</b><p class="muted" style="font-size:14px">Challenge a person, a team, a state or a city. Everyone starts from zero when it begins.</p></div>') +
       '<div class="between" style="margin-top:8px"><div class="h2">World Cup</div><button class="btn small light" data-act="cupnew">Start one</button></div>' +
       '<p class="muted" style="font-size:14px;margin-top:-8px">Knockout rounds. Win your match with the most steps per walker and move on to the next round.</p>' +
       (cups.length ? cups.map(cupCard).join("") : '<div class="card"><b>No World Cups yet.</b><p class="muted" style="font-size:14px">Start one for teams, states or cities and invite others to join.</p></div>') + '</div>';
@@ -660,7 +660,7 @@ option{background:var(--surface);color:var(--fg)}
     var kinds = KINDS.map(function (k) { return '<button type="button" class="pill" aria-pressed="' + (w.kind === k[0]) + '" data-wkind="' + k[0] + '">' + k[1] + '</button>'; }).join("");
     var days = [3, 7, 14].map(function (n) { return '<button type="button" class="pill" aria-pressed="' + (w.days === n) + '" data-wdays="' + n + '">' + n + ' days</button>'; }).join("");
     var modes = person ? '<div class="chips" role="group" aria-label="How to reach them"><button type="button" class="pill" aria-pressed="' + (!link) + '" data-wmode="code">Use a rival code</button><button type="button" class="pill" aria-pressed="' + link + '" data-wmode="link">Send a link</button></div>' : "";
-    var who = link ? '<p class="muted" style="font-size:14px">We make a link with your challenge inside. Send it to anyone. When they open it and accept, the tug of war starts.</p>' : person
+    var who = link ? '<p class="muted" style="font-size:14px">We make a link with your challenge inside. Send it to anyone. When they open it and accept, the tug of war starts and you both begin from zero.</p>' : person
       ? '<div class="gap8"><label for="opp">Their rival code</label><input id="opp" name="opp" value="' + esc(w.opp) + '" placeholder="Example: K3P9XZ" autocapitalize="characters" autocomplete="off"></div><p class="muted" style="font-size:13px">Ask for the code on their Me tab. They must accept before it starts.</p>'
       : '<div class="gap8"><label for="opp">Who do you want to take on?</label><select id="opp" name="opp"><option value="">' + (w.loading ? "Loading…" : (w.options.length ? "Choose one" : "No one to challenge yet")) + '</option>' + w.options.map(function (o) { return '<option value="' + esc(o.ref) + '"' + (o.ref === w.opp ? " selected" : "") + '>' + esc(o.label) + ' (' + o.members + ')</option>'; }).join("") + '</select></div>';
     var rnd = link ? "" : '<label class="check"><input type="checkbox" name="random"' + (w.random ? " checked" : "") + '> ' + (person ? "Pick a random walker for me (only people who opted in)" : "Surprise me with a random rival") + '</label>';
@@ -680,7 +680,7 @@ option{background:var(--surface);color:var(--fg)}
     var v = S.invite, body;
     if (v.missing || (!v.available && !v.mine)) body = '<p>This challenge link has already been used, was cancelled, or is not valid.</p><button class="btn" data-act="closeinvite">Close</button>';
     else if (v.mine) body = '<p>This is your own challenge link. Send it to someone else.</p><button class="btn" data-act="closeinvite">Close</button>';
-    else body = '<p><b>' + esc(v.challenger) + '</b> challenged you to a <b>' + v.days + '-day</b> tug of war. Whoever walks the most steps wins the bone.</p>' + (S.inviteMsg ? '<p class="err" role="alert">' + esc(S.inviteMsg) + '</p>' : "") + '<button class="btn coral" data-act="acceptinvite">Accept the challenge</button><button class="btn light" data-act="closeinvite">Not now</button>';
+    else body = '<p><b>' + esc(v.challenger) + '</b> challenged you to a <b>' + v.days + '-day</b> tug of war. Whoever walks the most steps wins the bone. You both start from zero when you accept.</p>' + (S.inviteMsg ? '<p class="err" role="alert">' + esc(S.inviteMsg) + '</p>' : "") + '<button class="btn coral" data-act="acceptinvite">Accept the challenge</button><button class="btn light" data-act="closeinvite">Not now</button>';
     return '<div class="sheet-bg" data-act="closeinvite"><div class="sheet" role="dialog" aria-modal="true" aria-label="Challenge"><div class="h2">You have been challenged!</div>' + body + '</div></div>';
   }
   function cupSheet() {

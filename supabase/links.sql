@@ -18,3 +18,9 @@ revoke execute on function public.create_link_duel(int), public.link_duel_previe
 
 -- Lets a visitor who is not signed in see who challenged them (first name and length only) before creating an account.
 create or replace function public.link_duel_public(p_token text) returns table (challenger text, days int, available boolean) language sql stable security definer set search_path = public as $fn$ select split_part(coalesce(public.side_label('person', d.a_ref), 'Someone'), ' ', 1), d.days, (d.b_ref is null and d.status = 'pending') from public.duels d where d.invite_token = lower(trim(p_token)) $fn$; revoke execute on function public.link_duel_public(text) from public; grant execute on function public.link_duel_public(text) to anon, authenticated;
+
+-- Challenges start from zero: each side's steps on the day the duel begins are recorded and subtracted.
+alter table public.duels add column if not exists a_base bigint not null default 0; alter table public.duels add column if not exists b_base bigint not null default 0;
+create or replace function public.duel_set_base() returns trigger language plpgsql security definer set search_path = public as $fn$ begin if new.status = 'active' and new.starts_on is not null and new.b_ref is not null and (tg_op = 'INSERT' or old.status is distinct from 'active') then new.a_base := coalesce((select s.total from public.side_stats(new.kind, new.a_ref, new.starts_on, new.starts_on) s), 0); new.b_base := coalesce((select s.total from public.side_stats(new.kind, new.b_ref, new.starts_on, new.starts_on) s), 0); end if; return new; end $fn$; revoke execute on function public.duel_set_base() from public, anon, authenticated;
+create or replace trigger duel_base before insert or update on public.duels for each row execute function public.duel_set_base();
+-- my_duels() now returns each side's score minus its starting amount (same columns as before). World Cup round 1 starts the day after kick-off.
