@@ -627,9 +627,8 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     return topbar("") + '<div class="stack"><h1 class="h1">Me</h1>' +
       '<form class="card stack" data-form="saveNames"><div class="gap8"><label for="dname">Your name</label><input id="dname" name="dname" value="' + esc(S.profile.display_name) + '" maxlength="40" required></div><button class="btn">Save</button></form>' +
       myTeams() + rivalForm() +
-      '<div class="h2">Account</div><div class="card stack" style="gap:10px"><div class="muted" style="font-size:14px">Signed in as ' + esc(S.user.email) + '</div><button class="btn light" data-act="resetmail">Reset my password</button><p class="muted" style="font-size:13px;margin:0">We will email a link to set a new password.</p></div>' +
       privacySection() +
-      '<button class="btn light" data-act="signout">Sign out</button><p class="muted" style="font-size:13px;text-align:center">version ' + esc(window.WALKIES_VERSION || "dev") + '</p></div>';
+      '<button class="btn light" data-act="signout">Sign out</button><p class="muted" style="font-size:13px;text-align:center">' + esc(S.user.email) + ' \u00b7 version ' + esc(window.WALKIES_VERSION || "dev") + '</p></div>';
   }
   function sheet() {
     return '<div class="sheet-bg" data-act="closesheet"><form class="sheet" data-form="saveSteps" role="dialog" aria-modal="true" aria-label="Update steps" style="max-height:92vh;overflow:auto"><div class="h2">Add your steps</div>' +
@@ -1004,7 +1003,6 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     else if (act === "sponsor") toast("Coming soon: friends and family will be able to sponsor your bowls.");
     else if (act === "pat") { S.bounce = true; render(); toast((myDog() ? myDog().name : "Your dog") + " wags their tail!"); setTimeout(function () { S.bounce = false; }, 600); }
     else if (act === "joinboard") { sb.from("profiles").update({ show_on_leaderboard: true }).eq("user_id", S.user.id).then(function (r) { if (r.error) return toast("Could not save that"); S.profile.show_on_leaderboard = true; return loadBoard().then(render); }); }
-    else if (act === "resetmail") { sb.auth.resetPasswordForEmail(S.user.email, { redirectTo: ORIGIN + "/" }).then(function (r) { toast(r.error ? r.error.message : "Reset link sent to " + S.user.email); }); }
     else if (act === "signout") { sb.auth.signOut().then(function () { S.user = null; S.view = "auth"; S.mode = "signin"; S.tab = "today"; render(); }); }
   });
   sb.auth.onAuthStateChange(function (ev, session) {
