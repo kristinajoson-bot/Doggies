@@ -259,9 +259,13 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       var d = await sb.from("step_days").select("day,steps").gte("day", S.challenge.starts_on).lte("day", S.challenge.ends_on);
       S.days = d.data || [];
     }
-    await Promise.all([loadImpact(), loadBoard(), loadRivals(), loadDogs(), loadMates()]);
+    await Promise.all([loadImpact(), loadBoard(), loadRivals(), loadDogs(), loadTeams()]);
   }
-  async function loadMates() { var r = await sb.rpc("team_mates"); S.mates = r.data || []; }
+  async function loadTeams() {
+    var r = await sb.rpc("my_teams"); S.teams = r.data || []; S.matesBy = {};
+    await Promise.all(S.teams.map(function (t) { return sb.rpc("team_mates_of", { p_id: t.id }).then(function (m) { S.matesBy[t.id] = m.data || []; }); }));
+  }
+  function canAccept(d) { return d.kind !== "team" || (S.teams || []).some(function (t) { return t.is_captain && t.name === d.my_label; }); }
   async function loadImpact() { var r = await sb.rpc("impact"); S.impact = r.data && r.data[0] ? r.data[0] : null; }
   async function loadDogs() {
     var a = await sb.from("dogs").select("*").order("name"), b = await sb.from("shelters").select("id,name,city,state,is_demo");
@@ -304,13 +308,13 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var pend = store.get("walkies-pending-join");
     if (pend) {
       store.set("walkies-pending-join", "");
-      if (!S.profile.workplace_id) {
+      if ((S.teams || []).length < 3) {
         var jr = await sb.rpc("join_workplace", { p_code: pend });
         if (jr.error) S.msg = "That invite code did not work. Ask for a new one."; else { store.set("walkies-onboarded-" + S.user.id, "1"); await loadAll(); toast("Welcome to " + jr.data.name + "!"); }
       }
     }
     var seen = store.get("walkies-onboarded-" + S.user.id);
-    S.view = (!S.profile.workplace_id && !seen) ? "join" : "app";
+    S.view = (!(S.teams || []).length && !seen) ? "join" : "app";
     if (S.view === "app" && !S.profile.dog_id && !store.get("walkies-dog-seen-" + S.user.id) && (S.dogs || []).length) { store.set("walkies-dog-seen-" + S.user.id, "1"); S.dogview = { list: true }; }
     S.pubInvite = null;
     var pdl = store.get("walkies-pending-duel");
@@ -369,8 +373,13 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       toast("Team created: " + r.data.name + ". Team code " + r.data.join_code);
       sb.rpc("duel_options", { p_kind: "team" }).then(function (o) { if (S.wiz) { S.wiz.options = o.data || []; S.wiz.loading = false; render(); } });
     },
+    async meNewTeam(f) {
+      var r = await sb.rpc("create_workplace", { p_name: f.nname.value, p_industry: "Other", p_bracket: f.nsize.value });
+      if (r.error) { S.msg = r.error.message.indexOf("check") > -1 ? "Please use a team name of 2 to 60 characters." : r.error.message; return render(); }
+      S.msg = ""; var t = S.tab; await finishJoin(); if (t === "me") { S.tab = "me"; render(); } toast("Team created. Share code " + r.data.join_code);
+    },
     async renameTeam(f) {
-      var r = await sb.rpc("rename_team", { p_name: f.rname.value });
+      var r = await sb.rpc("rename_team_id", { p_id: f.tid.value, p_name: f.rname.value });
       if (r.error) return toast(r.error.message);
       await loadAll(); render(); toast("Team renamed");
     },
@@ -382,7 +391,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
         S.wiz = null; await loadRivals(); render(); toast("Link ready. Tap Share link on your challenge."); return;
       }
       w.opp = f.opp.value; w.random = f.random.checked;
-      var r = await sb.rpc("create_duel", { p_kind: w.kind, p_opponent: w.opp || "", p_days: w.days, p_random: w.random });
+      var r = await sb.rpc("start_duel", { p_kind: w.kind, p_opponent: w.opp || "", p_days: w.days, p_random: w.random, p_team: w.kind === "team" ? (f.mteam ? f.mteam.value : ((S.teams || [])[0] || {}).id || null) : null });
       if (r.error) { S.wizMsg = r.error.message; return render(); }
       var person = w.kind === "person"; S.wiz = null; await loadRivals(); render(); toast(person ? "Challenge sent!" : "Challenge sent! Their team captain needs to accept.");
     },
@@ -413,7 +422,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       store.set("walkies-onboarded-" + S.user.id, "1"); S.msg = ""; toast("Pack created. Share code " + r.data.join_code); var t = S.tab; await finishJoin(); if (t === "rivals") { S.tab = "rivals"; render(); }
     },
     async solo() { store.set("walkies-onboarded-" + S.user.id, "1"); S.view = "app"; render(); },
-    async leave() { await sb.rpc("leave_workplace"); var t = S.tab; await finishJoin(); if (t === "me") { S.tab = "me"; render(); } toast("You left your team"); },
+    async leave(id) { await sb.rpc("leave_team", { p_id: id }); var t = S.tab; await finishJoin(); if (t === "me") { S.tab = "me"; render(); } toast("You left the team"); },
     async saveNames(f) {
       var r = await sb.from("profiles").update({ display_name: f.dname.value.trim() || "Walker" }).eq("user_id", S.user.id);
       if (r.error) return toast("Your name must be 1 to 40 characters");
@@ -530,7 +539,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       if (on) return '<button class="scoop on" data-cel="' + m + '" aria-label="View scoop: ' + fmt(m) + ' steps">' + pawTile(label) + '</button>';
       return '<div class="scoop ' + cls + '" role="img" aria-label="' + fmt(m) + ' steps, ' + (m === next ? "next scoop" : "locked") + '">' + pawTile(label) + '</div>';
     }).join("");
-    return topbar(esc(timeLeft())) + '<div class="stack">' +
+    return topbar("") + '<div class="stack">' +
       todayTug() + '<div class="hero"><div class="eyebrow">Dog bowls this month</div><div style="margin:14px 0 ' + Math.round(-48 + 52 * Math.min(1, steps / 150000)) + 'px;position:relative"><span class="big" style="font-size:64px">' + done + '</span></div>' + bowlSvg(steps / 150000, true) +
       '<div class="stats"><div><div class="stat-n">' + fmt(todaySteps()) + '</div><div class="stat-l">Steps today</div></div><div><div class="stat-n">' + fmt(steps) + '</div><div class="stat-l">Steps this month</div></div></div>' + dayLine() +
       '<div class="bar" style="margin-top:8px" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100"><i style="width:' + pct + '%"></i></div>' +
@@ -561,11 +570,11 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     return topbar("") + '<div class="stack"><h1 class="h1">Leaderboard</h1><div class="chips" role="group" aria-label="Leaderboard">' + chips + '</div><div class="stack" style="gap:10px">' + body + '</div></div>';
   }
   function viewImpact() {
-    var i = S.impact || {}, teamKg = (i.team_bowls || 0) * BOWL_KG, commKg = (i.community_bowls || 0) * BOWL_KG, myKg = (i.my_bowls || 0) * BOWL_KG;
-    var pct = Math.min(100, Math.round(teamKg / TEAM_GOAL_KG * 100));
-    var team = i.team_name
-      ? '<div class="card stack" style="gap:10px"><div class="between"><div style="font-weight:800">Goal: ' + TEAM_GOAL_KG + ' kg unlocks a dog visit</div><div class="muted" style="font-size:14px">' + Math.max(0, Math.round(TEAM_GOAL_KG - teamKg)) + ' kg to go</div></div><div class="bar"><i style="width:' + pct + '%"></i></div><p class="muted" style="font-size:14px">' + esc(i.team_name) + ' has unlocked ' + (Math.round(teamKg * 10) / 10) + ' kg so far. Reach the goal and a shelter dog and its handler come to your office to say thanks.</p></div>'
-      : '<div class="card"><b>Walking solo</b><p class="muted">Join or start a team from the Me tab to unlock an office dog visit together.</p></div>';
+    var i = S.impact || {}, commKg = (i.community_bowls || 0) * BOWL_KG, myKg = (i.my_bowls || 0) * BOWL_KG;
+    var team = (S.teams || []).length ? S.teams.map(function (t) {
+      var kg = (t.bowls || 0) * BOWL_KG, pct = Math.min(100, Math.round(kg / TEAM_GOAL_KG * 100));
+      return '<div class="card stack" style="gap:10px"><div class="between"><div style="font-weight:800">Goal: ' + TEAM_GOAL_KG + ' kg unlocks a dog visit</div><div class="muted" style="font-size:14px">' + Math.max(0, Math.round(TEAM_GOAL_KG - kg)) + ' kg to go</div></div><div class="bar"><i style="width:' + pct + '%"></i></div><p class="muted" style="font-size:14px">' + esc(t.name) + ' has unlocked ' + (Math.round(kg * 10) / 10) + ' kg so far. Reach the goal and a shelter dog and its handler come to your office to say thanks.</p></div>';
+    }).join("") : '<div class="card"><b>Walking solo</b><p class="muted">Join or start a team from the Me tab to unlock an office dog visit together.</p></div>';
     return topbar("") + '<div class="stack"><h1 class="h1">Impact</h1>' +
       '<div class="hero" style="align-items:flex-start;text-align:left"><div class="eyebrow">Food unlocked by the Walkies community this month</div><div><span class="big" style="font-size:64px">' + (Math.round(commKg * 10) / 10) + '</span> <b style="font-size:20px">kg</b></div><div>' + fmt(i.community_bowls) + ' bowls from ' + fmt(i.community_walkers) + ' walkers. You unlocked ' + (i.my_bowls || 0) + ' (' + (Math.round(myKg * 10) / 10) + ' kg).</div></div>' +
       team +
@@ -574,13 +583,19 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   }
   function openAttr(k, dflt) { var o = S.openDet || {}; return (k in o ? o[k] : dflt) ? " open" : ""; }
   function myTeams() {
-    var i = S.impact || {}, mates = S.mates || [];
-    if (!i.team_name) return '<details class="drop" data-det="teams"' + openAttr("teams", true) + '><summary>My teams</summary><form class="stack" data-form="joinCode" style="gap:12px;margin-top:10px"><p class="muted" style="font-size:14px;margin:0">You are not in a team yet. Enter the code from your team to join it.</p>' +
+    var teams = S.teams || [], full = teams.length >= 3;
+    var blocks = teams.map(function (t) {
+      var mates = (S.matesBy || {})[t.id] || [];
+      var list = mates.length ? '<div class="h2" style="font-size:15px;margin-top:4px">Teammates</div><ul class="mates">' + mates.map(function (m) { return '<li><span>' + esc(m.display_name) + (m.is_me ? " (you)" : "") + '</span>' + (m.is_captain ? '<span class="tag">Captain</span>' : "") + '</li>'; }).join("") + '</ul>' : "";
+      return '<div class="card stack" style="gap:10px"><div class="between"><div class="h2" style="margin:0">' + esc(t.name) + '</div><span class="muted" style="font-size:14px">' + t.members + (t.members === 1 ? " walker" : " walkers") + '</span></div>' + (t.is_captain ? renameForm(t.name, t.id) : "") + list +
+        '<p class="muted" style="font-size:14px">Workmates join with this code:</p><div style="font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:.12em">' + esc(t.join_code) + '</div><div class="row" style="flex-wrap:wrap"><button class="btn small" data-act="invite" data-code="' + esc(t.join_code) + '" data-team="' + esc(t.name) + '">Invite workmates</button><a class="btn small light" href="' + mailtoInvite(t.name, t.join_code) + '">Email invite</a><button class="btn small light" data-act="copy" data-code="' + esc(t.join_code) + '">Copy code</button><button class="btn small light" data-act="leave" data-tid="' + esc(t.id) + '">Leave team</button></div></div>';
+    }).join("");
+    var join = full ? '<p class="muted" style="font-size:14px">You are in 3 teams, the most you can be in. Leave one to join another.</p>' :
+      '<form class="stack" data-form="joinCode" style="gap:12px"><p class="muted" style="font-size:14px;margin:0">' + (teams.length ? "Join another team with its code." : "You are not in a team yet. Enter the code from your team to join it.") + '</p>' +
       (S.msg ? '<p class="err" role="alert">' + esc(S.msg) + '</p>' : "") +
-      '<div class="gap8"><label for="code">Team code</label><input id="code" name="code" placeholder="Example: A1B2C3" autocapitalize="characters" required></div><button class="btn coral">Join team</button></form></details>';
-    var list = mates.length ? '<div class="h2" style="font-size:15px;margin-top:4px">Teammates</div><ul class="mates">' + mates.map(function (m) { return '<li><span>' + esc(m.display_name) + (m.is_me ? " (you)" : "") + '</span>' + (m.is_captain ? '<span class="tag">Captain</span>' : "") + '</li>'; }).join("") + '</ul>' : "";
-    return '<details class="drop" data-det="teams"' + openAttr("teams", false) + '><summary>My teams <span class="muted" style="font-weight:600;font-size:14px">1</span></summary><div class="stack" style="gap:10px;margin-top:10px"><div class="between"><div class="h2" style="margin:0">' + esc(i.team_name) + '</div><span class="muted" style="font-size:14px">' + i.team_members + (i.team_members === 1 ? " walker" : " walkers") + '</span></div>' + renameForm(i.team_name) + list +
-      '<p class="muted" style="font-size:14px">Workmates join with this code:</p><div style="font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:.12em">' + esc(i.team_join_code) + '</div><div class="row" style="flex-wrap:wrap"><button class="btn small" data-act="invite" data-code="' + esc(i.team_join_code) + '" data-team="' + esc(i.team_name) + '">Invite workmates</button><a class="btn small light" href="' + mailtoInvite(i.team_name, i.team_join_code) + '">Email invite</a><button class="btn small light" data-act="copy" data-code="' + esc(i.team_join_code) + '">Copy code</button><button class="btn small light" data-act="leave">Leave team</button></div></div></details>';
+      '<div class="gap8"><label for="code">Team code</label><input id="code" name="code" placeholder="Example: A1B2C3" autocapitalize="characters" required></div><button class="btn ' + (teams.length ? "light" : "coral") + '">Join team</button></form>' +
+      '<form class="stack" data-form="meNewTeam" style="gap:12px"><p class="muted" style="font-size:14px;margin:0">Or start a new team and share its code.</p><div class="gap8"><label for="nname">Team name</label><input id="nname" name="nname" minlength="2" maxlength="60" placeholder="Example: The Bluegum Walkers" required></div><div class="gap8"><label for="nsize">Team size</label><select id="nsize" name="nsize">' + BRACKETS.map(function (b) { return "<option value=\"" + b[0] + "\">" + b[0] + " (" + b[1] + ")</option>"; }).join("") + '</select></div><button class="btn light">Start team</button></form>';
+    return '<details class="drop" data-det="teams"' + openAttr("teams", !teams.length) + '><summary>My teams' + (teams.length ? ' <span class="muted" style="font-weight:600;font-size:14px">' + teams.length + '</span>' : "") + '</summary><div class="stack" style="gap:12px;margin-top:10px">' + blocks + join + '</div></details>';
   }
   var PRIVACY_CONTACT = "";
   function policyHtml() {
@@ -589,7 +604,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       '<p><b>Last updated:</b> October 2026. This is a plain-English summary of how Walkies handles your information. It follows the Australian Privacy Principles in the <i>Privacy Act 1988</i> (Cth).</p>' +
       '<h4>What we collect</h4><ul><li>Your email address and password (the password is stored securely by our sign-in provider and we cannot read it).</li><li>Your display name, your team and the shelter dog you choose.</li><li>The step counts you type in, by day. We do not collect your location, contacts or health records.</li><li>Your challenges (who you challenged and the results).</li></ul>' +
       '<h4>Why we collect it</h4><p>To run the app: count your steps, work out your bowls, show team leaderboards and run tug of wars. We only use it for that unless you agree to something else.</p>' +
-      '<h4>Who can see it</h4><ul><li>Your teammates can see your display name.</li><li>A rival in a tug of war sees your name and your step total for that challenge, not your daily steps.</li><li>Team leaderboards show team averages, not individual steps. The walker leaderboard (Pup) shows your name and monthly step total only if you choose to join it, and you can change this at any time in Privacy settings.</li><li>We do not sell your information or show ads.</li></ul>' +
+      '<h4>Who can see it</h4><ul><li>Your teammates, in each team you are in, can see your display name.</li><li>A rival in a tug of war sees your name and your step total for that challenge, not your daily steps.</li><li>Team leaderboards show team averages, not individual steps. The walker leaderboard (Pup) shows your name and monthly step total only if you choose to join it, and you can change this at any time in Privacy settings.</li><li>We do not sell your information or show ads.</li></ul>' +
       '<h4>Marketing</h4><p>We only send marketing messages if you tick the box in Privacy settings. Every message will have a working unsubscribe link, in line with the <i>Spam Act 2003</i> (Cth). You can turn it off at any time in Me, then Privacy settings. Messages about your account (like a password reset) are not marketing.</p>' +
       '<h4>Where it is stored</h4><p>Your data is stored with Supabase in Sydney, Australia. The app is delivered through Vercel. Both only handle data to provide the service to us.</p>' +
       '<h4>Keeping it safe</h4><p>Information is sent over an encrypted connection, and each person can only read their own step records. We keep your information while you have an account.</p>' +
@@ -668,7 +683,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var my = person ? Number(d.my_total) : avgOf(d.my_total, d.my_members), rv = person ? Number(d.rival_total) : avgOf(d.rival_total, d.rival_members), tot = my + rv;
     var share = tot > 0 ? Math.max(6, Math.min(94, Math.round(my / tot * 100))) : 50;
     var line;
-    if (d.status === "pending") line = d.incoming ? (d.kind === "team" && !S.captain ? esc(d.rival_label) + " challenged your team. Your team captain needs to accept." : esc(d.rival_label) + " wants a tug of war with you. Most steps wins the bone.") : (d.invite_token ? "Waiting for someone to open your link and accept." : "Waiting for " + esc(d.rival_label) + (d.kind === "team" ? "'s captain to accept." : " to accept."));
+    if (d.status === "pending") line = d.incoming ? (!canAccept(d) ? esc(d.rival_label) + " challenged your team. Your team captain needs to accept." : esc(d.rival_label) + " wants a tug of war with you. Most steps wins the bone.") : (d.invite_token ? "Waiting for someone to open your link and accept." : "Waiting for " + esc(d.rival_label) + (d.kind === "team" ? "'s captain to accept." : " to accept."));
     else if (d.finished) line = my > rv ? "You won this tug of war!" : my < rv ? esc(d.rival_label) + " won this one." : "It ended in a draw.";
     else line = my > rv ? "You are winning the tug of war!" : my < rv ? esc(d.rival_label) + " is pulling ahead. Time to walk!" : "";
     var when = d.status === "pending" ? "Not started" : d.finished ? "Finished" : d.days_left + (d.days_left === 1 ? " day left" : " days left");
@@ -679,7 +694,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       '<div class="tug-r"><div class="tug-n">' + esc(d.rival_label || "Waiting\u2026") + '</div>' + (person ? "" : '<div class="tug-sub">' + walkers(d.rival_members) + '</div>') + '<div class="mono">' + fmt(rv) + '</div><div class="tug-sub" style="font-size:12px">' + unit + '</div></div></div>' +
       '<div class="tug-bar" role="img" aria-label="You hold ' + share + ' percent of the rope"><i style="width:' + share + '%"></i><span class="bone" style="left:calc(' + share + '% - 17px)">' + BONE + '</span></div>' +
       ((d.is_random || line) ? '<p class="tug-line">' + (d.is_random ? '<span class="muted">Random rival. </span>' : "") + line + '</p>' : "") +
-      (d.incoming && (d.kind !== "team" || S.captain) ? '<div class="row"><button class="btn coral small" data-duel="' + d.id + '" data-ans="1">Accept</button><button class="btn light small" data-duel="' + d.id + '" data-ans="0">Decline</button></div>' : "") +
+      (d.incoming && canAccept(d) ? '<div class="row"><button class="btn coral small" data-duel="' + d.id + '" data-ans="1">Accept</button><button class="btn light small" data-duel="' + d.id + '" data-ans="0">Decline</button></div>' : "") +
       (d.status === "pending" && !d.incoming ? '<div class="row" style="flex-wrap:wrap">' + (d.invite_token ? '<button class="btn small coral" data-share="' + d.invite_token + '" data-days="' + d.days_left + '">Share link</button>' : "") + '<button class="btn small light" data-cancel="' + d.id + '">Cancel</button></div>' : "") + '</div>';
   }
   var MAX_CHALLENGES = 3;
@@ -705,7 +720,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   }
   function packSection() {
     var i = S.impact || {};
-    if (i.team_name) return "";
+    if ((S.teams || []).length) return "";
     return '<div class="h2" style="margin-top:8px">Create a pack</div><p class="muted" style="font-size:14px;margin-top:-8px">A pack is your team. Start one, share the code, then challenge other packs in a tug of war.</p>' +
       (S.msg ? '<p class="err" role="alert">' + esc(S.msg) + '</p>' : "") +
       '<form class="card stack" data-form="createTeam"><div class="gap8"><label for="wname">Pack name</label><input id="wname" name="wname" minlength="2" maxlength="60" placeholder="Example: The Bluegum Walkers" required></div>' +
@@ -751,8 +766,8 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     }
     return topbar("") + '<div class="stack">' + head + body + '</div>';
   }
-  function renameForm(name) {
-    return '<form class="gap8" data-form="renameTeam"><label for="rname">Team name</label><div class="row"><input id="rname" name="rname" value="' + esc(name) + '" maxlength="60" minlength="2" required><button class="btn small light">Rename</button></div></form>';
+  function renameForm(name, id) {
+    return '<form class="gap8" data-form="renameTeam"><input type="hidden" name="tid" value="' + esc(id) + '"><label for="rname-' + esc(id) + '">Team name</label><div class="row"><input id="rname-' + esc(id) + '" name="rname" value="' + esc(name) + '" maxlength="60" minlength="2" required><button class="btn small light">Rename</button></div></form>';
   }
   // A team tug of war is team against team, so a team needs a name before it can challenge anyone.
   function teamFirstSheet() {
@@ -767,7 +782,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       '<button class="btn coral">Create team and continue</button><button type="button" class="btn light" data-act="closewiz">Cancel</button></form></div>';
   }
   function wizSheet() {
-    if (S.wiz.kind === "team" && !S.profile.workplace_id) return teamFirstSheet();
+    if (S.wiz.kind === "team" && !(S.teams || []).length) return teamFirstSheet();
     var w = S.wiz, person = w.kind === "person", link = person && w.mode === "link";
     var kinds = KINDS.map(function (k) { return '<button type="button" class="pill" aria-pressed="' + (w.kind === k[0]) + '" data-wkind="' + k[0] + '">' + k[1] + '</button>'; }).join("");
     var days = [3, 7, 14].map(function (n) { return '<button type="button" class="pill" aria-pressed="' + (w.days === n) + '" data-wdays="' + n + '">' + n + ' days</button>'; }).join("");
@@ -775,9 +790,10 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var who = link ? '<p class="muted" style="font-size:14px">We make a link with your challenge inside. Send it to anyone. When they open it and accept, the tug of war starts and you both begin from zero.</p>' : person
       ? '<div class="gap8"><label for="opp">Their rival code</label><input id="opp" name="opp" value="' + esc(w.opp) + '" placeholder="Example: K3P9XZ" autocapitalize="characters" autocomplete="off"></div><p class="muted" style="font-size:13px">Ask for the code on their Me tab. They must accept before it starts.</p>'
       : '<div class="gap8"><label for="opp">Who do you want to take on?</label><select id="opp" name="opp"><option value="">' + (w.loading ? "Loading…" : (w.options.length ? "Choose one" : "No one to challenge yet")) + '</option>' + w.options.map(function (o) { return '<option value="' + esc(o.ref) + '"' + (o.ref === w.opp ? " selected" : "") + '>' + esc(o.label) + ' (' + o.members + ')</option>'; }).join("") + '</select></div>';
+    var asTeam = (!person && (S.teams || []).length > 1) ? '<div class="gap8"><label for="mteam">Challenge as</label><select id="mteam" name="mteam">' + S.teams.map(function (t) { return '<option value="' + esc(t.id) + '">' + esc(t.name) + '</option>'; }).join("") + '</select></div>' : "";
     var rnd = link ? "" : '<label class="check"><input type="checkbox" name="random"' + (w.random ? " checked" : "") + '> ' + (person ? "Pick a random walker for me (only people who opted in)" : "Surprise me with a random rival") + '</label>';
     return '<div class="sheet-bg" data-act="closewiz"><form class="sheet" data-form="makeDuel" role="dialog" aria-modal="true" aria-label="Challenge a rival" style="max-height:92vh;overflow:auto"><div class="h2">Challenge a rival</div>' +
-      '<div class="chips" role="group" aria-label="Who to challenge">' + kinds + '</div>' + modes + who + rnd +
+      '<div class="chips" role="group" aria-label="Who to challenge">' + kinds + '</div>' + modes + asTeam + who + rnd +
       '<div class="gap8"><label>How long?</label><div class="chips">' + days + '</div></div>' +
       (S.wizMsg ? '<p class="err" role="alert">' + esc(S.wizMsg) + '</p>' : "") +
       '<button class="btn coral">' + (link ? "Create challenge link" : person ? "Send challenge" : "Start tug of war") + '</button><button type="button" class="btn light" data-act="closewiz">Cancel</button></form></div>';
@@ -955,7 +971,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     else if (act === "celimpact") { S.celebrate = null; S.tab = "impact"; render(); }
     else if (act === "solo") actions.solo();
     else if (act === "gojoin") { S.view = "join"; S.msg = ""; render(); }
-    else if (act === "leave") { if (confirm("Leave your team? Your steps stay with you.")) actions.leave(); }
+    else if (act === "leave") { if (confirm("Leave your team? Your steps stay with you.")) actions.leave(a.dataset.tid); }
     else if (act === "copy") { try { navigator.clipboard.writeText(a.dataset.code); toast("Code copied"); } catch (x) { toast("Code: " + a.dataset.code); } }
     else if (act === "sponsor") toast("Coming soon: friends and family will be able to sponsor your bowls.");
     else if (act === "pat") { S.bounce = true; render(); toast((myDog() ? myDog().name : "Your dog") + " wags their tail!"); setTimeout(function () { S.bounce = false; }, 600); }
