@@ -405,7 +405,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     async savePrivacy(f) {
       var r = await sb.from("profiles").update({ marketing_opt_in: f.marketing.checked, show_on_leaderboard: f.board.checked }).eq("user_id", S.user.id);
       if (r.error) return toast("Could not save that");
-      await loadAll(); render(); toast(f.marketing.checked ? "Saved. We may send you Walkies news." : "Saved. No marketing emails.");
+      await loadAll(); render(); toast("Saved");
     },
     async saveRival(f) {
       var r = await sb.from("profiles").update({ open_to_rivals: f.open.checked }).eq("user_id", S.user.id);
@@ -616,16 +616,16 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   function privacySection() {
     var p = S.profile || {};
     return '<div class="h2">Privacy</div>' +
-      '<details class="drop" data-det="priv"' + openAttr("priv", false) + '><summary>Privacy settings</summary><form class="stack" data-form="savePrivacy" style="gap:12px;margin-top:10px">' +
+      '<details class="drop" data-det="priv"' + openAttr("priv", false) + '><summary>Privacy settings</summary><form class="stack" data-form="savePrivacy" data-autosave style="gap:12px;margin-top:10px">' +
       '<label class="check"><input type="checkbox" name="marketing"' + (p.marketing_opt_in ? " checked" : "") + '> Send me Walkies news and offers by email. You can turn this off any time.</label>' +
       '<label class="check"><input type="checkbox" name="board"' + (p.show_on_leaderboard ? " checked" : "") + '> Show my name and monthly steps on the walker leaderboard (Pup).</label>' +
       '<p class="muted" style="font-size:13px;margin:0">We only email about your account unless you tick this. Right now you are ' + (p.marketing_opt_in ? "opted in" : "not opted in") + (p.marketing_opt_in && p.marketing_opt_in_at ? " (since " + fmtDay(String(p.marketing_opt_in_at).slice(0, 10)) + ")" : "") + '.</p>' +
-      '<p class="muted" style="font-size:13px;margin:0">Random challenges and your rival code are controlled in the For rivals card above.</p><button class="btn small">Save privacy settings</button></form></details>' +
+      '<p class="muted" style="font-size:13px;margin:0">Random challenges and your rival code are controlled in the For rivals card above.</p></form></details>' +
       '<details class="drop" data-det="policy"' + openAttr("policy", false) + '><summary>Privacy policy</summary>' + policyHtml() + '</details>';
   }
   function viewMe() {
     return topbar("") + '<div class="stack"><h1 class="h1">Me</h1>' +
-      '<form class="card stack" data-form="saveNames"><div class="gap8"><label for="dname">Your name</label><input id="dname" name="dname" value="' + esc(S.profile.display_name) + '" maxlength="40" required></div><button class="btn">Save</button></form>' +
+      '<form class="card stack" data-form="saveNames" data-autosave><div class="gap8"><label for="dname">Your name</label><input id="dname" name="dname" value="' + esc(S.profile.display_name) + '" maxlength="40" required></div></form>' +
       myTeams() + rivalForm() +
       privacySection() +
       '<button class="btn light" data-act="signout">Sign out</button><p class="muted" style="font-size:13px;text-align:center">' + esc(S.user.email) + ' \u00b7 version ' + esc(window.WALKIES_VERSION || "dev") + '</p></div>';
@@ -822,8 +822,8 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   }
   function rivalForm() {
     var p = S.profile;
-    return '<form class="card stack" data-form="saveRival"><div class="h2">For rivals</div>' +
-      '<label class="check"><input type="checkbox" name="open"' + (p.open_to_rivals ? " checked" : "") + '> Let random walkers challenge me (you can still say no)</label><button class="btn">Save</button>' +
+    return '<form class="card stack" data-form="saveRival" data-autosave><div class="h2">For rivals</div>' +
+      '<label class="check"><input type="checkbox" name="open"' + (p.open_to_rivals ? " checked" : "") + '> Let random walkers challenge me (you can still say no)</label>' +
       (p.rival_code ? '<div class="gap8"><div class="muted" style="font-size:14px">Your rival code. Friends can use it to challenge you.</div><div style="font-family:var(--display);font-weight:800;font-size:28px;letter-spacing:.12em">' + esc(p.rival_code) + '</div><div class="row" style="flex-wrap:wrap"><button type="button" class="btn small light" data-act="wizlink">Create a challenge link</button></div></div>' : "") + '</form>';
   }
   // ---- shelter dogs ----
@@ -921,6 +921,12 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       else { box.style.transition = "transform .2s ease-out"; box.style.transform = ""; }
     });
   })();
+  // Settings save themselves as soon as a box is ticked or a field is changed.
+  document.addEventListener("change", function (e) {
+    var f = e.target.closest ? e.target.closest("form[data-autosave]") : null; if (!f) return;
+    if (f.checkValidity && !f.checkValidity()) { f.reportValidity(); return; }
+    var fn = actions[f.dataset.form]; if (fn) fn(f).catch(function () { toast("Something went wrong. Try again."); });
+  });
   document.addEventListener("toggle", function (e) { var d = e.target; if (d && d.dataset && d.dataset.det) { S.openDet = S.openDet || {}; S.openDet[d.dataset.det] = d.open; } }, true);
   document.addEventListener("input", function (e) { if (e.target && e.target.id === "steps") updatePreview(); });
   document.addEventListener("click", function (e) {
