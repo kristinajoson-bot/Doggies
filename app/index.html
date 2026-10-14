@@ -99,6 +99,7 @@ option{background:var(--surface);color:var(--fg)}
 @keyframes rise{from{transform:translateY(30px);opacity:0}}
 .sheet-bg{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center}
 .sheet{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:28px 28px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
+.sheet{position:relative}.sheet::before{content:"";align-self:center;width:44px;height:5px;border-radius:3px;background:var(--line);margin:-8px 0 4px;flex:none}
 .toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,16px);opacity:0;background:var(--fg);color:var(--dark);padding:11px 16px;border-radius:12px;font-weight:700;font-size:14px;transition:.25s;pointer-events:none;z-index:40;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .welcome{background:radial-gradient(520px 420px at 50% 8%,rgba(255,46,154,.28),transparent 70%),radial-gradient(480px 380px at 50% 100%,rgba(35,229,255,.16),transparent 70%),var(--bg);min-height:100vh}
@@ -894,6 +895,33 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     e.preventDefault();
     var fn = actions[f.dataset.form]; if (fn) fn(f).catch(function () { toast("Something went wrong. Try again."); });
   });
+  // Swipe down to close a sheet or the celebration.
+  (function () {
+    var el = null, y0 = 0, dy = 0, t0 = 0, on = false;
+    function closeIt(box) {
+      var btn = box.querySelector("[data-act^=close]"), bg = box.closest(".sheet-bg");
+      if (btn) btn.click(); else if (bg && bg.dataset.act) bg.click();
+    }
+    document.addEventListener("touchstart", function (e) {
+      el = e.target.closest ? e.target.closest(".sheet, .celebrate") : null; on = false; dy = 0;
+      if (!el || e.touches.length !== 1) { el = null; return; }
+      y0 = e.touches[0].clientY; t0 = Date.now();
+    }, { passive: true });
+    document.addEventListener("touchmove", function (e) {
+      if (!el) return;
+      var d = e.touches[0].clientY - y0;
+      if (!on && (d <= 6 || el.scrollTop > 0)) return;
+      on = true; dy = Math.max(0, d);
+      el.style.transition = "none"; el.style.transform = "translateY(" + dy + "px)";
+      if (e.cancelable) e.preventDefault();
+    }, { passive: false });
+    document.addEventListener("touchend", function () {
+      if (!el || !on) { el = null; return; }
+      var box = el, fast = dy / Math.max(1, Date.now() - t0) > 0.6; el = null; on = false;
+      if (dy > 110 || (dy > 50 && fast)) { box.style.transition = "transform .18s ease-out"; box.style.transform = "translateY(100%)"; setTimeout(function () { closeIt(box); }, 140); }
+      else { box.style.transition = "transform .2s ease-out"; box.style.transform = ""; }
+    });
+  })();
   document.addEventListener("toggle", function (e) { var d = e.target; if (d && d.dataset && d.dataset.det) { S.openDet = S.openDet || {}; S.openDet[d.dataset.det] = d.open; } }, true);
   document.addEventListener("input", function (e) { if (e.target && e.target.id === "steps") updatePreview(); });
   document.addEventListener("click", function (e) {
