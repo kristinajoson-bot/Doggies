@@ -100,19 +100,14 @@ option{background:var(--surface);color:var(--fg)}
 .sheet-bg{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center}
 .sheet{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:28px 28px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
 .race{border:1px solid var(--line);border-radius:24px;overflow:hidden}
-.game{position:relative;height:min(68vh,540px);overflow:hidden;perspective:560px;perspective-origin:50% 38%;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+.game{position:relative;height:min(68vh,540px);overflow:hidden;overflow:clip;perspective:560px;perspective-origin:50% 38%;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
 .game .world{position:absolute;left:50%;top:0;width:0;height:0;transform-style:preserve-3d;transform-origin:0 0}
 .game .plane{position:absolute;left:0;top:0;transform-style:preserve-3d}
 .game .plane svg{position:absolute;left:0;top:0;pointer-events:none}
 .sp{position:absolute;transform-origin:50% 100%;transform:translate(-50%,-100%) rotateX(var(--untilt));line-height:1;white-space:nowrap;pointer-events:none}
-.sp.kart{transition:left 1.6s cubic-bezier(.2,.8,.2,1),top 1.6s cubic-bezier(.2,.8,.2,1)}
+.sp.kart{transform:translate(-50%,-100%) translateZ(3px) rotateX(var(--untilt));transition:left 1.6s cubic-bezier(.2,.8,.2,1),top 1.6s cubic-bezier(.2,.8,.2,1)}
 .shd{position:absolute;width:40px;height:16px;margin:-8px 0 0 -20px;border-radius:50%;background:rgba(0,0,0,.38);transition:left 1.6s cubic-bezier(.2,.8,.2,1),top 1.6s cubic-bezier(.2,.8,.2,1)}
 .sp.deco{filter:drop-shadow(0 4px 3px rgba(0,0,0,.25))}
-.kart .tok{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:3px solid rgba(255,255,255,.9);box-shadow:0 4px 10px rgba(0,0,0,.4)}
-.kart .ini{font-family:var(--display);font-weight:800;font-size:14px;color:#050507}
-.kart.me .tok{width:50px;height:50px;border-color:#fff;box-shadow:0 0 0 3px var(--pink),0 0 18px var(--pink)}
-.kart .crown{position:absolute;right:-12px;top:-16px;font-size:20px;transform:rotate(18deg)}
-.kart .you{position:absolute;left:50%;top:calc(100% + 4px);transform:translateX(-50%);background:var(--pink);color:#050507;font-family:var(--display);font-weight:800;font-size:11px;letter-spacing:.08em;padding:2px 8px;border-radius:999px}
 .stop{display:flex;flex-direction:column;align-items:center;gap:2px}
 .stop .toy{display:grid;place-items:center;width:42px;height:42px;font-size:24px;border-radius:50%;background:rgba(20,18,30,.78);border:2px solid rgba(255,255,255,.55)}
 .stop .lvl{font-family:var(--display);font-weight:800;font-size:11px;color:#fff;background:rgba(20,18,30,.78);padding:1px 7px;border-radius:999px}
@@ -121,6 +116,18 @@ option{background:var(--surface);color:var(--fg)}
 .stop.goal .toy{width:64px;height:64px;font-size:40px;border-color:var(--yellow);box-shadow:0 0 22px var(--yellow)}
 .cam{position:absolute;right:10px;bottom:10px;display:flex;flex-direction:column;gap:8px;z-index:3}
 .cam-btn{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:rgba(13,12,18,.82);color:#fff;font-size:22px;font-weight:700;display:grid;place-items:center}
+.kart{width:84px;height:112px}
+.kart .kb{position:absolute;left:4px;top:48px;width:76px;height:64px}.kart .kt{display:block;width:100%;height:100%;overflow:visible}
+.kart .plate{position:absolute;left:50%;top:16px;transform:translateX(-50%);display:block;font-family:var(--display);font-weight:800;padding:2px 9px;border-radius:999px;border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.35)}
+.kart .ini{font-size:13px;color:#050507}
+.kart.me .kb{transform:scale(1.25);transform-origin:50% 100%;filter:drop-shadow(0 0 8px var(--pink)) drop-shadow(0 0 14px var(--pink))}
+.kart.me .plate{border-color:#fff;box-shadow:0 0 0 2px var(--pink),0 0 14px var(--pink);top:4px;transform:translateX(-50%) scale(1.15)}
+.kart .crown{position:absolute;right:-6px;top:-18px;font-size:20px;transform:rotate(18deg)}
+.kart .you{position:absolute;left:50%;top:calc(100% + 4px);transform:translateX(-50%);background:var(--pink);color:#050507;font-family:var(--display);font-weight:800;font-size:11px;letter-spacing:.08em;padding:2px 8px;border-radius:999px}
+.sp.hill{opacity:.9}
+.sp.arch{width:100px;height:90px}
+.arch .arch-b{position:absolute;left:0;right:0;top:0;height:28px;background:repeating-conic-gradient(#fff 0 25%,#111 0 50%) 0 0/14px 14px;border:2px solid #fff;border-radius:6px;color:#fff;font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:.14em;display:grid;place-items:center;text-shadow:0 1px 3px #000}
+.arch .arch-p{position:absolute;left:4px;top:26px;width:8px;height:64px;background:#e8362d;border-radius:3px}.arch .arch-p.r{left:auto;right:4px}
 @media (prefers-reduced-motion:reduce){.sp.kart,.shd{transition:none}}
 .sheet{position:relative}.sheet::before{content:"";align-self:center;width:44px;height:5px;border-radius:3px;background:var(--line);margin:-8px 0 4px;flex:none}
 .toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,16px);opacity:0;background:var(--fg);color:var(--dark);padding:11px 16px;border-radius:12px;font-weight:700;font-size:14px;transition:.25s;pointer-events:none;z-index:40;max-width:90vw;text-align:center}
@@ -317,7 +324,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     if (r[0].error || !r[0].data || !r[0].data[0]) return toast("Could not open that World Cup");
     S.tview = { id: id, info: r[0].data[0], matches: r[1].data || [] }; render(); window.scrollTo(0, 0);
   }
-  async function loadBoard() { var r = await sb.rpc("leaderboard", { p_bracket: null }), w = await sb.rpc("walker_board"); S.allTeams = r.data || []; S.walkers = w.data || []; S.board = S.allTeams; }
+  async function loadBoard() { var r = await sb.rpc("leaderboard", { p_bracket: null }), w = await sb.rpc("walker_board"); S.allTeams = r.data || []; S.walkers = w.data || []; S.board = S.allTeams; try { return checkRaceAlerts(); } catch (e) { console.error("alerts", e); return 0; } }
 
   async function boot() {
     var r = await sb.auth.getSession();
@@ -426,6 +433,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       S.cupform = false; await loadRivals(); render(); toast("World Cup created. Invite others to join!");
     },
     async savePrivacy(f) {
+      store.set("walkies-race-alerts-" + S.user.id, f.alerts.checked ? "1" : "0");
       var r = await sb.from("profiles").update({ marketing_opt_in: f.marketing.checked, show_on_leaderboard: f.board.checked }).eq("user_id", S.user.id);
       if (r.error) return toast("Could not save that");
       await loadAll(); render(); toast("Saved");
@@ -611,9 +619,25 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     return { all: list, shown: list.filter(function (e, i) { return keep[i]; }), me: mi > -1 ? list[mi] : null };
   }
   function ordinal(n) { var s2 = ["th", "st", "nd", "rd"], v = n % 100; return n + (s2[(v - 20) % 10] || s2[v] || s2[0]); }
+  // The track is different every month (seeded by the challenge start) and the same for everyone.
   function racePath() {
-    var y0 = RACE_H - 90, d = "M" + (CX - 130) + "," + y0;
-    for (var i = 1; i <= 10; i++) { var xa = i % 2 ? CX - 130 : CX + 130, xb = i % 2 ? CX + 130 : CX - 130, ya = y0 - (i - 1) * SEG, yb = y0 - i * SEG; d += " C" + xa + "," + (ya - SEG / 2) + " " + xb + "," + (yb + SEG / 2) + " " + xb + "," + yb; }
+    var seedStr = String((S.challenge && S.challenge.starts_on) || "2026-10"), seed = 0;
+    for (var i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) | 0;
+    var r = rng(seed), n = 13, total = RACE_H - 180, steps = [], sum = 0, k;
+    for (k = 0; k < n; k++) { steps.push(0.75 + r() * 0.6); sum += steps[k]; }
+    var pts = [[CX + (r() - 0.5) * 120, RACE_H - 90]], y = RACE_H - 90, x = pts[0][0], dir = r() < 0.5 ? -1 : 1;
+    for (k = 0; k < n; k++) {
+      y -= steps[k] / sum * total;
+      if (r() < 0.62) dir = -dir;
+      var dx = (70 + r() * 230) * dir; x += dx;
+      if (x < CX - 320) { x = CX - 320 + r() * 60; dir = 1; } else if (x > CX + 320) { x = CX + 320 - r() * 60; dir = -1; }
+      pts.push([x, y]);
+    }
+    var d = "M" + pts[0][0].toFixed(1) + "," + pts[0][1].toFixed(1);
+    for (k = 0; k < pts.length - 1; k++) {
+      var p0 = pts[Math.max(0, k - 1)], p1 = pts[k], p2 = pts[k + 1], p3 = pts[Math.min(pts.length - 1, k + 2)];
+      d += " C" + (p1[0] + (p2[0] - p0[0]) / 6).toFixed(1) + "," + (p1[1] + (p2[1] - p0[1]) / 6).toFixed(1) + " " + (p2[0] - (p3[0] - p1[0]) / 6).toFixed(1) + "," + (p2[1] - (p3[1] - p1[1]) / 6).toFixed(1) + " " + p2[0].toFixed(1) + "," + p2[1].toFixed(1);
+    }
     return d;
   }
   function raceView(tab) {
@@ -636,12 +660,30 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       (r.all.length > r.shown.length ? '<p class="muted" style="font-size:13px;text-align:center">Showing you and the three racers in front of you. Drag to look around, pinch to zoom. Switch to List to see everyone.</p>' : '<p class="muted" style="font-size:13px;text-align:center">Drag to look around, pinch to zoom.</p>');
   }
   function rng(seed) { var a = seed >>> 0; return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function kartSvg(col) {
+    return '<div class="kb"><svg class="kt" viewBox="0 0 64 54" aria-hidden="true"><ellipse cx="32" cy="50" rx="26" ry="4" fill="rgba(0,0,0,.3)"/>' +
+      '<rect x="4" y="26" width="12" height="22" rx="5" fill="#15131c"/><rect x="48" y="26" width="12" height="22" rx="5" fill="#15131c"/><rect x="8" y="32" width="4" height="10" rx="2" fill="#888"/><rect x="52" y="32" width="4" height="10" rx="2" fill="#888"/>' +
+      '<path d="M12 30 h40 a6 6 0 0 1 6 6 v6 a6 6 0 0 1 -6 6 h-40 a6 6 0 0 1 -6 -6 v-6 a6 6 0 0 1 6 -6z" fill="' + col + '" stroke="#fff" stroke-width="2"/><rect x="14" y="36" width="36" height="4" rx="2" fill="rgba(255,255,255,.55)"/>' +
+      '<rect x="12" y="24" width="40" height="5" rx="2.5" fill="#15131c"/>' +
+      '<text x="32" y="25" font-size="26" text-anchor="middle">\uD83D\uDC36</text></svg></div>';
+  }
   function applyCam(anim) {
     var g = document.querySelector(".race .game"), w = g && g.querySelector(".world"); if (!w) return;
     var c = S.cam, H = g.clientHeight || 520;
-    c.z = Math.max(0.7, Math.min(2.4, c.z)); c.fy = Math.max(RACE_H * 0.12, Math.min(RACE_H - 110, c.fy));
-    w.style.transition = anim ? "transform .6s cubic-bezier(.2,.8,.2,1)" : "none";
-    w.style.transform = "translateY(" + Math.round(H * 0.66) + "px) rotateX(" + TILT + "deg) scale(" + c.z.toFixed(3) + ") translate(" + (-CX) + "px," + (-c.fy).toFixed(1) + "px)";
+    c.z = Math.max(0.7, Math.min(2.4, c.z)); c.fy = Math.max(RACE_H * 0.12, Math.min(RACE_H - 110, c.fy)); c.fx = Math.max(220, Math.min(RACE_W - 220, c.fx == null ? CX : c.fx));
+    w.style.transition = "none";
+    w.style.transform = "translateY(" + Math.round(H * 0.66) + "px) rotateX(" + TILT + "deg) scale(" + c.z.toFixed(3) + ") translate(" + (-c.fx).toFixed(1) + "px," + (-c.fy).toFixed(1) + "px)";
+  }
+  // Camera moves are tweened here, not with a CSS transition: a CSS transition on this 3D layer drifts when the page scrolls.
+  function tweenCam(to) {
+    var c = S.cam, from = { z: c.z, fx: c.fx, fy: c.fy }; if (to.z != null) c.zt = to.z;
+    var t0 = Date.now(), dur = 450, id = (S.camTween = (S.camTween || 0) + 1);
+    (function step() {
+      if (S.camTween !== id || !S.cam) return;
+      var k = Math.min(1, (Date.now() - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      ["z", "fx", "fy"].forEach(function (f) { if (to[f] != null) c[f] = from[f] + (to[f] - from[f]) * e; });
+      applyCam(false); if (k < 1) requestAnimationFrame(step);
+    })();
   }
   function placeRace() {
     var plane = document.querySelector(".race .plane"), data = S.raceData; if (!plane || !data) return;
@@ -650,45 +692,55 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var stripes = ""; for (var y = 0; y < RACE_H; y += 70) if ((y / 70) % 2) stripes += '<rect x="0" y="' + y + '" width="' + RACE_W + '" height="70" fill="' + th.ground2 + '"/>';
     svg.innerHTML = '<defs><pattern id="chk" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#fff"/><rect width="6" height="6" fill="#111"/><rect x="6" y="6" width="6" height="6" fill="#111"/></pattern></defs>' +
       '<rect width="' + RACE_W + '" height="' + RACE_H + '" fill="' + th.ground + '"/>' + stripes +
-      '<path id="road" d="' + d + '" fill="none" stroke="' + th.edge + '" stroke-width="58" stroke-linecap="round"/><path d="' + d + '" fill="none" stroke="' + th.road + '" stroke-width="48" stroke-linecap="round"/>' +
-      '<path d="' + d + '" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-dasharray="4 14"/>';
+      '<path id="road" d="' + d + '" fill="none" stroke="#fff" stroke-width="82" stroke-linecap="round"/><path d="' + d + '" fill="none" stroke="#e8362d" stroke-width="82" stroke-linecap="butt" stroke-dasharray="16 16"/><path d="' + d + '" fill="none" stroke="' + th.road + '" stroke-width="70" stroke-linecap="round"/>' +
+      '<path d="' + d + '" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="3" stroke-dasharray="12 18"/>';
     plane.innerHTML = ""; plane.appendChild(svg);
     var road = svg.querySelector("#road"), L = road.getTotalLength();
     function at(p) { return road.getPointAtLength(Math.max(0, Math.min(1, p)) * L); }
     var samples = []; for (var s = 0; s <= L; s += 9) { var q = road.getPointAtLength(s); samples.push([q.x, q.y]); }
     // start and finish lines
     var p0 = at(0), p1 = at(1);
-    svg.insertAdjacentHTML("beforeend", '<rect x="' + (p0.x - 30) + '" y="' + (p0.y - 4) + '" width="60" height="8" fill="url(#chk)"/><rect x="' + (p1.x - 30) + '" y="' + (p1.y - 6) + '" width="60" height="12" fill="url(#chk)"/>');
+    var padRand = rng(L | 0), pads = "";
+    for (var bi = 0; bi < 7; bi++) {
+      var bp = 0.06 + (bi + padRand() * 0.6) * 0.13, a1 = at(bp - 0.003), b1 = at(bp + 0.003), ang = Math.atan2(b1.y - a1.y, b1.x - a1.x) * 180 / Math.PI + 90, bq = at(bp);
+      pads += '<g transform="translate(' + bq.x.toFixed(1) + ',' + bq.y.toFixed(1) + ') rotate(' + ang.toFixed(1) + ')"><path d="M-16,10 L0,-10 L16,10 L9,10 L0,-3 L-9,10Z" fill="#ffe14a" stroke="#ff9d00" stroke-width="2"/></g>';
+    }
+    svg.insertAdjacentHTML("beforeend", pads);
+    svg.insertAdjacentHTML("beforeend", '<rect x="' + (p0.x - 30) + '" y="' + (p0.y - 4) + '" width="60" height="8" fill="url(#chk)"/><rect x="' + (p1.x - 32) + '" y="' + (p1.y - 6) + '" width="64" height="12" fill="url(#chk)"/>');
     function sprite(cls, x, y, html, style) { var el = document.createElement("div"); el.className = "sp " + cls; el.style.left = x.toFixed(1) + "px"; el.style.top = y.toFixed(1) + "px"; if (style) el.style.cssText += style; el.innerHTML = html; plane.appendChild(el); return el; }
     // scenery, kept off the road
     var rand = rng(data.theme.length * 7919 + 17), placed = [], tries = 0;
-    while (placed.length < 110 && tries++ < 1800) {
+    while (placed.length < 85 && tries++ < 1800) {
       var x = 20 + rand() * (RACE_W - 40), y = 60 + rand() * (RACE_H - 120);
       if (samples.some(function (q) { return Math.hypot(q[0] - x, q[1] - y) < 62; })) continue;
       if (placed.some(function (q) { return Math.hypot(q[0] - x, q[1] - y) < 46; })) continue;
       placed.push([x, y]);
-      sprite("deco", x, y, th.decor[Math.floor(rand() * th.decor.length)], "font-size:" + Math.round(30 + rand() * 24) + "px");
+      sprite("deco", x, y, th.decor[Math.floor(rand() * th.decor.length)], "font-size:" + Math.round(28 + rand() * 18) + "px");
     }
+    var hill = { country: "\u26F0\uFE0F", city: "\uD83C\uDFD9\uFE0F", beach: "\uD83C\uDF0A", snow: "\uD83C\uDFD4\uFE0F" }[data.theme];
+    for (var hx = 40; hx < RACE_W; hx += 120) sprite("hill", hx + (rand() - 0.5) * 40, 38 + rand() * 24, hill, "font-size:" + Math.round(110 + rand() * 50) + "px");
+    sprite("arch", p0.x, p0.y + 4, '<span class="arch-b">START</span><span class="arch-p"></span><span class="arch-p r"></span>', "");
+    sprite("arch fin", p1.x, p1.y + 6, '<span class="arch-b">FINISH</span><span class="arch-p"></span><span class="arch-p r"></span>', "");
     // checkpoints with a toy each
     MILESTONES.forEach(function (m, k) {
       var pt = at((k + 1) / 10), on = data.mySteps != null && data.mySteps >= m, goal = k === 9, label = m >= 1000 ? m / 1000 + "k" : m;
       sprite("stop" + (on ? " on" : "") + (goal ? " goal" : ""), pt.x, pt.y, '<span class="toy">' + TOYS[k] + '</span><span class="lvl">' + label + '</span>', "");
     });
     // racers
-    var prev = [], off = [0, 34, -34, 62, -62];
+    var prev = [], off = [0, 26, -26, 48, -48];
     data.entries.slice().sort(function (a, b) { return racePos(b.steps) - racePos(a.steps); }).forEach(function (e) {
       var p = racePos(e.steps), near = prev.filter(function (z) { return Math.abs(z - p) < 0.03; }).length; prev.push(p);
       var a = at(p - 0.004), b = at(p + 0.004), tx = b.x - a.x, ty = b.y - a.y, tl = Math.hypot(tx, ty) || 1, nx = -ty / tl, ny = tx / tl, o = off[near % off.length], pt = at(p);
       var tx2 = pt.x + nx * o, ty2 = pt.y + ny * o;
       var col = e.me ? "#ff2e9a" : KART_COLORS[Math.abs(Array.from(e.name).reduce(function (acc, c) { return acc * 31 + c.charCodeAt(0); }, 7)) % KART_COLORS.length];
       var st = at(0), shadow = document.createElement("div"); shadow.className = "shd"; shadow.style.left = st.x + "px"; shadow.style.top = st.y + "px"; plane.appendChild(shadow);
-      var el = sprite("kart" + (e.me ? " me" : ""), st.x, st.y, '<span class="tok" style="background:' + col + '"><b class="ini">' + esc(initials(e.name)) + '</b></span>' + (e.rank === 1 ? '<span class="crown">👑</span>' : "") + (e.me ? '<span class="you">YOU</span>' : ""), "");
+      var el = sprite("kart" + (e.me ? " me" : ""), st.x, st.y, '<span class="plate" style="background:' + col + '"><b class="ini">' + esc(initials(e.name)) + '</b></span>' + kartSvg(col) + (e.rank === 1 ? '<span class="crown">👑</span>' : "") + (e.me ? '<span class="you">YOU</span>' : ""), "");
       el.dataset.p = p.toFixed(4); el.dataset.rank = e.rank; el.setAttribute("aria-label", e.name + ", " + ordinal(e.rank) + ", " + fmt(e.steps) + " steps");
-      if (e.me) data.myY = ty2;
+      if (e.me) { data.myY = ty2; data.myX = tx2; }
       requestAnimationFrame(function () { requestAnimationFrame(function () { el.style.left = tx2.toFixed(1) + "px"; el.style.top = ty2.toFixed(1) + "px"; shadow.style.left = tx2.toFixed(1) + "px"; shadow.style.top = ty2.toFixed(1) + "px"; }); });
     });
-    if (!S.cam) S.cam = { z: 1.12, fy: null };
-    if (S.cam.fy == null) S.cam.fy = data.myY != null ? data.myY : at(0.3).y;
+    if (!S.cam) S.cam = { z: 1.12, fy: null, fx: null };
+    if (S.cam.fy == null) { S.cam.fy = data.myY != null ? data.myY : at(0.3).y; S.cam.fx = data.myX != null ? data.myX : at(0.3).x; }
     applyCam(false);
   }
   (function () {
@@ -702,15 +754,74 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     document.addEventListener("pointermove", function (e) {
       var p = ptrs[e.pointerId]; if (!p || !S.cam) return;
       var ids = Object.keys(ptrs);
-      if (ids.length === 1) S.cam.fy -= (e.clientY - p.y) * 1.7 / S.cam.z;
+      if (ids.length === 1) { S.cam.fy -= (e.clientY - p.y) * 1.7 / S.cam.z; S.cam.fx -= (e.clientX - p.x) * 1.1 / S.cam.z; }
       p.x = e.clientX; p.y = e.clientY;
-      if (ids.length === 2) { var a = ptrs[ids[0]], b = ptrs[ids[1]]; S.cam.z = startZ * (Math.hypot(a.x - b.x, a.y - b.y) / startDist); }
+      if (ids.length === 2) { var a = ptrs[ids[0]], b = ptrs[ids[1]]; S.cam.zt = null; S.cam.z = startZ * (Math.hypot(a.x - b.x, a.y - b.y) / startDist); }
       applyCam(false);
     });
     function up(e) { delete ptrs[e.pointerId]; }
     document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
-    document.addEventListener("wheel", function (e) { if (!inGame(e) || !S.cam) return; e.preventDefault(); S.cam.z *= Math.exp(-e.deltaY * 0.0015); applyCam(false); }, { passive: false });
+    document.addEventListener("wheel", function (e) { if (!inGame(e) || !S.cam) return; e.preventDefault(); S.cam.zt = null; S.cam.z *= Math.exp(-e.deltaY * 0.0015); applyCam(false); }, { passive: false });
   })();
+  // ---- Race alerts: tell me when someone passes me or gets close ----
+  function alertsOn() { return !S.user || store.get("walkies-race-alerts-" + S.user.id) !== "0"; }
+  function raceStanding() {
+    var out = { pup: null, teams: [] }, ws = (S.walkers || []).map(function (w) { return { n: w.display_name, s: Number(w.steps), me: w.is_me }; }).sort(function (a, b) { return b.s - a.s; });
+    var mi = ws.findIndex(function (w) { return w.me; });
+    if (mi > -1) out.pup = { label: "you", rank: mi + 1, steps: ws[mi].s, rows: ws, ahead: ws.slice(0, mi).map(function (w) { return w.n; }) };
+    (S.allTeams || []).filter(function (r) { return r.is_mine; }).forEach(function (m) {
+      var rows = (S.allTeams || []).filter(function (r) { return teamTier(r) === teamTier(m); }).map(function (r) { return { n: r.name, s: Number(r.steps_per_member), me: r.workplace_id === m.workplace_id }; }).sort(function (a, b) { return b.s - a.s; });
+      var ti = rows.findIndex(function (w) { return w.me; });
+      out.teams.push({ label: m.name, rank: ti + 1, steps: rows[ti].s, rows: rows, ahead: rows.slice(0, ti).map(function (w) { return w.n; }) });
+    });
+    return out;
+  }
+  function checkRaceAlerts() {
+    if (!S.user) return 0;
+    var uid = S.user.id, prev = null, near = {}, news = [], events = [], now = Date.now();
+    try { prev = JSON.parse(store.get("walkies-race-snap-" + uid) || "null"); } catch (e) {}
+    try { near = JSON.parse(store.get("walkies-race-near-" + uid) || "{}"); } catch (e) {}
+    try { news = JSON.parse(store.get("walkies-race-news-" + uid) || "[]"); } catch (e) {}
+    var cur = raceStanding(), CLOSE = 600;
+    function judge(c, p) {
+      if (!c) return;
+      var team = c.label !== "you", me = team ? c.label : "you", names = c.rows.map(function (r) { return r.n; });
+      if (p) {
+        c.ahead.filter(function (n) { return p.ahead.indexOf(n) < 0 && p.rows.some(function (r) { return r.n === n; }); }).forEach(function (n) { events.push({ t: "bad", text: team ? n + " just passed " + me + "!" : n + " just passed you!" }); });
+        p.ahead.filter(function (n) { return c.ahead.indexOf(n) < 0 && names.indexOf(n) > -1; }).forEach(function (n) { events.push({ t: "good", text: team ? me + " just passed " + n + "!" : "You just passed " + n + "!" }); });
+      }
+      c.rows.forEach(function (r) {
+        if (r.me) return;
+        var diff = Math.abs(r.s - c.steps), ahead = r.s > c.steps, k = c.label + "|" + r.n + "|" + (ahead ? "a" : "b");
+        if (diff <= CLOSE && (!near[k] || now - near[k] > 6 * 3600 * 1000) && !events.some(function (e) { return e.text.indexOf(r.n) === 0 || e.text.indexOf(" " + r.n) > -1; })) {
+          near[k] = now;
+          events.push({ t: "close", text: ahead ? (team ? me + " is only " + fmt(diff) + " steps behind " + r.n + "." : "You are only " + fmt(diff) + " steps behind " + r.n + ".") : (team ? r.n + " is only " + fmt(diff) + " steps behind " + me + "!" : r.n + " is only " + fmt(diff) + " steps behind you!") });
+        }
+      });
+    }
+    if (alertsOn()) {
+      judge(cur.pup, prev ? prev.pup : null);
+      cur.teams.forEach(function (c) { judge(c, prev ? (prev.teams || []).filter(function (t) { return t.label === c.label; })[0] : null); });
+    }
+    var slim = function (c) { return c && { label: c.label, rank: c.rank, steps: c.steps, ahead: c.ahead, rows: c.rows.map(function (r) { return { n: r.n, s: r.s }; }) }; };
+    store.set("walkies-race-snap-" + uid, JSON.stringify({ pup: slim(cur.pup), teams: cur.teams.map(slim) }));
+    store.set("walkies-race-near-" + uid, JSON.stringify(near));
+    if (events.length) {
+      events.forEach(function (e) { e.at = now; });
+      news = events.concat(news).slice(0, 8); store.set("walkies-race-news-" + uid, JSON.stringify(news));
+      events.slice(0, 3).forEach(function (e, i) { setTimeout(function () { toast((e.t === "bad" ? "\uD83D\uDEA8 " : e.t === "good" ? "\uD83C\uDF89 " : "\uD83D\uDC40 ") + e.text); }, i * 3000); });
+      try { if (navigator.vibrate) navigator.vibrate(events[0].t === "bad" ? [120, 60, 120] : 80); } catch (x) {}
+    }
+    return events.length;
+  }
+  function raceNewsCard() {
+    if (!S.user || !alertsOn()) return "";
+    var news = []; try { news = JSON.parse(store.get("walkies-race-news-" + S.user.id) || "[]"); } catch (e) {}
+    news = news.filter(function (n) { return Date.now() - n.at < 24 * 3600 * 1000; }).slice(0, 3);
+    if (!news.length) return "";
+    return '<div class="card stack" style="gap:6px"><b>Race news</b>' + news.map(function (n) { return '<div style="font-size:14px">' + (n.t === "bad" ? "\uD83D\uDEA8 " : n.t === "good" ? "\uD83C\uDF89 " : "\uD83D\uDC40 ") + esc(n.text) + ' <span class="muted" style="font-size:12px">' + timeAgo(n.at) + '</span></div>'; }).join("") + '</div>';
+  }
+  function timeAgo(t) { var m = Math.round((Date.now() - t) / 60000); return m < 1 ? "just now" : m < 60 ? m + " min ago" : Math.round(m / 60) + " h ago"; }
   function teamTier(r) { return r.size_bracket === "Pup" ? "Pack" : r.size_bracket; }
   function viewPacks() {
     var tab = S.bracket || "Pup";
@@ -731,7 +842,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       }).join("") : '<div class="card"><b>No teams here yet.</b><p class="muted">Start a team in Rivals, share the code with your workmates and be the first on the board.</p></div>');
       if (mine && mineIdx > 0) { var above = rows[mineIdx - 1]; body += '<div class="card" style="border-style:dashed"><b>Catch ' + esc(above.name) + '</b> and your team moves up a place. Only <b>' + fmt(Math.max(1, above.steps_per_member - mine.steps_per_member + 1)) + '</b> more steps each.</div>'; }
     }
-    return topbar("") + '<div class="stack"><h1 class="h1">Leaderboard</h1><div class="chips" role="group" aria-label="Leaderboard">' + chips + '</div>' + vt + '<div class="stack" style="gap:10px">' + body + '</div></div>';
+    return topbar("") + '<div class="stack"><h1 class="h1">Leaderboard</h1>' + raceNewsCard() + '<div class="chips" role="group" aria-label="Leaderboard">' + chips + '</div>' + vt + '<div class="stack" style="gap:10px">' + body + '</div></div>';
   }
   function viewImpact() {
     var i = S.impact || {}, commKg = (i.community_bowls || 0) * BOWL_KG, myKg = (i.my_bowls || 0) * BOWL_KG;
@@ -781,6 +892,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     return '<div class="h2">Privacy</div>' +
       '<details class="drop" data-det="priv"' + openAttr("priv", false) + '><summary>Privacy settings</summary><form class="stack" data-form="savePrivacy" data-autosave style="gap:12px;margin-top:10px">' +
       '<label class="check"><input type="checkbox" name="marketing"' + (p.marketing_opt_in ? " checked" : "") + '> Send me Walkies news and offers by email. You can turn this off any time.</label>' +
+      '<label class="check"><input type="checkbox" name="alerts"' + (alertsOn() ? " checked" : "") + '> Tell me when someone passes me or gets close in the race.</label>' +
       '<label class="check"><input type="checkbox" name="board"' + (p.show_on_leaderboard ? " checked" : "") + '> Show my name and monthly steps on the walker leaderboard (Pup).</label>' +
       '<p class="muted" style="font-size:13px;margin:0">We only email about your account unless you tick this. Right now you are ' + (p.marketing_opt_in ? "opted in" : "not opted in") + (p.marketing_opt_in && p.marketing_opt_in_at ? " (since " + fmtDay(String(p.marketing_opt_in_at).slice(0, 10)) + ")" : "") + '.</p>' +
       '<p class="muted" style="font-size:13px;margin:0">Random challenges and your rival code are controlled in the For rivals card above.</p></form></details>' +
@@ -1132,7 +1244,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var br = t.closest("[data-bracket]");
     if (br) { S.bracket = br.dataset.bracket || "Pup"; S.cam = null; render(); return; }
     var rt = t.closest("[data-rtheme]"); if (rt) { S.raceTheme = rt.dataset.rtheme; store.set("walkies-race-theme", S.raceTheme); render(); return; }
-    var cb = t.closest("[data-cam]"); if (cb && S.cam) { var k = cb.dataset.cam; if (k === "in") S.cam.z *= 1.3; else if (k === "out") S.cam.z /= 1.3; else if (S.raceData && S.raceData.myY != null) S.cam.fy = S.raceData.myY; applyCam(true); return; }
+    var cb = t.closest("[data-cam]"); if (cb && S.cam) { var k = cb.dataset.cam; var zt = S.cam.zt != null ? S.cam.zt : S.cam.z; if (k === "in") tweenCam({ z: Math.min(2.4, zt * 1.3) }); else if (k === "out") tweenCam({ z: Math.max(0.7, zt / 1.3) }); else if (S.raceData && S.raceData.myY != null) tweenCam({ fy: S.raceData.myY, fx: Math.max(220, S.raceData.myX) }); return; }
     var bv = t.closest("[data-bview]"); if (bv) { S.boardView = bv.dataset.bview; S.cam = null; render(); window.scrollTo(0, 0); return; }
     var a = t.closest("[data-act]"); if (!a) return;
     if (a.classList.contains("sheet-bg") && t !== a) return;
@@ -1187,6 +1299,8 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     navigator.serviceWorker.addEventListener("controllerchange", function () { if (hadController && !S.sheet && !S.wiz && !S.cupform) location.reload(); });
     window.addEventListener("load", function () { navigator.serviceWorker.register("/sw.js").then(function (reg) { reg.update().catch(function () {}); }).catch(function () {}); });
   }
+  setInterval(function () { if (S.view === "app" && S.user && !document.hidden && !S.celebrate && !S.sheet) loadBoard().then(function (n) { if (n && S.tab === "packs" && S.boardView !== "race") render(); }).catch(function () {}); }, 60000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden && S.view === "app" && S.user) loadBoard().then(function (n) { if (n && S.tab === "packs" && S.boardView !== "race") render(); }).catch(function () {}); });
   setInterval(function () { if (S.view === "app" && S.tab === "today" && !S.sheet && !S.celebrate) { var c = document.querySelector(".chip"); if (c) c.textContent = timeLeft(); } }, 30000);
   boot().catch(function () { S.view = "auth"; render(); });
 })();
