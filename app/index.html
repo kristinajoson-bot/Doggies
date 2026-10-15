@@ -587,9 +587,13 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     else list = (S.allTeams || []).filter(function (r) { return teamTier(r) === tab; }).map(function (r) { return { name: r.name, steps: Number(r.steps_per_member), me: r.is_mine }; });
     list.sort(function (a, b) { return b.steps - a.steps; });
     list.forEach(function (e, i) { e.rank = i + 1; });
-    // keep the track readable: the top 6, me, and a couple either side of me
+    // keep the track readable: me and the 3 racers directly in front of me (or the 3 behind if I lead). With no me, the top 4.
     var mi = list.findIndex(function (e) { return e.me; }), keep = {};
-    list.forEach(function (e, i) { if (i < 6 || (mi > -1 && Math.abs(i - mi) <= 2)) keep[i] = true; });
+    list.forEach(function (e, i) {
+      if (mi < 0) { if (i < 4) keep[i] = true; }
+      else if (mi === 0) { if (i <= 3) keep[i] = true; }
+      else if (i >= mi - 3 && i <= mi) keep[i] = true;
+    });
     return { all: list, shown: list.filter(function (e, i) { return keep[i]; }), me: mi > -1 ? list[mi] : null };
   }
   function ordinal(n) { var s2 = ["th", "st", "nd", "rd"], v = n % 100; return n + (s2[(v - 20) % 10] || s2[v] || s2[0]); }
@@ -617,7 +621,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     return '<div class="card" style="text-align:center"><b>' + line + '</b></div>' +
       '<div class="race"><svg viewBox="0 0 360 ' + H + '" role="img" aria-label="Race track to the bone"><path class="road-edge" d="' + d + '"></path><path class="road" id="road" d="' + d + '"></path><path class="road-dash" d="' + d + '"></path>' +
       '<g class="start" transform="translate(90,30)"><rect x="-26" y="-10" width="52" height="8" fill="#fff"></rect><text y="-16" text-anchor="middle" class="lvl">START</text></g>' + stops + karts + '</svg></div>' +
-      (r.all.length > r.shown.length ? '<p class="muted" style="font-size:13px;text-align:center">Showing the leaders and the racers around you. Switch to List to see everyone.</p>' : "");
+      (r.all.length > r.shown.length ? '<p class="muted" style="font-size:13px;text-align:center">Showing you and the three racers in front of you. Switch to List to see everyone.</p>' : "");
   }
   function placeRace() {
     var road = document.getElementById("road"); if (!road) return;
