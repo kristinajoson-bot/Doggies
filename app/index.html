@@ -107,7 +107,6 @@ option{background:var(--surface);color:var(--fg)}
 .sp{position:absolute;transform-origin:50% 100%;transform:translate(-50%,-100%) rotateX(var(--untilt));line-height:1;white-space:nowrap;pointer-events:none}
 .sp.kart{transform:translate(-50%,-100%) translateZ(3px) rotateX(var(--untilt));transition:left 1.6s cubic-bezier(.2,.8,.2,1),top 1.6s cubic-bezier(.2,.8,.2,1)}
 .shd{position:absolute;width:40px;height:16px;margin:-8px 0 0 -20px;border-radius:50%;background:rgba(0,0,0,.38);transition:left 1.6s cubic-bezier(.2,.8,.2,1),top 1.6s cubic-bezier(.2,.8,.2,1)}
-.sp.deco{filter:drop-shadow(0 4px 3px rgba(0,0,0,.25))}
 .stop{display:flex;flex-direction:column;align-items:center;gap:2px}
 .stop .toy{display:grid;place-items:center;width:42px;height:42px;font-size:24px;border-radius:50%;background:rgba(20,18,30,.78);border:2px solid rgba(255,255,255,.55)}
 .stop .lvl{font-family:var(--display);font-weight:800;font-size:11px;color:#fff;background:rgba(20,18,30,.78);padding:1px 7px;border-radius:999px}
@@ -124,7 +123,7 @@ option{background:var(--surface);color:var(--fg)}
 .kart.me .plate{border-color:#fff;box-shadow:0 0 0 2px var(--pink),0 0 14px var(--pink);top:4px;transform:translateX(-50%) scale(1.15)}
 .kart .crown{position:absolute;right:-6px;top:-18px;font-size:20px;transform:rotate(18deg)}
 .kart .you{position:absolute;left:50%;top:calc(100% + 4px);transform:translateX(-50%);background:var(--pink);color:#050507;font-family:var(--display);font-weight:800;font-size:11px;letter-spacing:.08em;padding:2px 8px;border-radius:999px}
-.sp.hill{opacity:.9}
+.sp.hill{opacity:.95}.sp.sky{opacity:.95}
 .sp.arch{width:100px;height:90px}
 .arch .arch-b{position:absolute;left:0;right:0;top:0;height:28px;background:repeating-conic-gradient(#fff 0 25%,#111 0 50%) 0 0/14px 14px;border:2px solid #fff;border-radius:6px;color:#fff;font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:.14em;display:grid;place-items:center;text-shadow:0 1px 3px #000}
 .arch .arch-p{position:absolute;left:4px;top:26px;width:8px;height:64px;background:#e8362d;border-radius:3px}.arch .arch-p.r{left:auto;right:4px}
@@ -585,13 +584,24 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   var TOYS = ["🎾", "🥏", "🧸", "🦆", "🏐", "🪀", "🥎", "🪁", "🏆", "🦴"];
   var KART_COLORS = ["#23e5ff", "#3bff8f", "#f4ff3a", "#ff8a3d", "#b58cff", "#ff6b6b"];
   var RACE_W = 900, SEG = 110, RACE_H = 70 + 10 * SEG + 150, CX = RACE_W / 2, TILT = 56;
-  var RACE_THEMES = {
-    country: { name: "Countryside", icon: "🌳", sky: ["#5ec3ff", "#d9f6ff"], ground: "#5cae48", ground2: "#54a43f", road: "#3b3a46", edge: "#f1f1f1", decor: ["🌳", "🌳", "🌲", "🌻", "🌼", "🐄", "🐑", "🏡", "🌾", "🪨", "🦋"] },
-    city: { name: "Street", icon: "🏙️", sky: ["#ff8a5c", "#ffd9a3"], ground: "#6c707c", ground2: "#636773", road: "#26262d", edge: "#f4ff3a", decor: ["🏢", "🏬", "🏠", "🏪", "🏦", "🚦", "🚏", "🌳", "🚕", "🚌"] },
-    beach: { name: "Beach", icon: "🏖️", sky: ["#3db8ff", "#c4f1ff"], ground: "#f0d595", ground2: "#e9cc87", road: "#7b6345", edge: "#fff7e0", decor: ["🌴", "🌴", "⛱️", "🐚", "🦀", "🏖️", "🍍", "🪑"] },
-    snow: { name: "Snow", icon: "❄️", sky: ["#8fb0d6", "#e8f1fb"], ground: "#eef4fb", ground2: "#e0eaf6", road: "#49556b", edge: "#ffffff", decor: ["🌲", "🌲", "⛄", "❄️", "🦌", "🏔️", "🧊"] }
+  // ---- Countryside artwork (drawn as SVG so it looks the same on every phone) ----
+  var RACE_TH = { sky: ["#4fb6ff", "#d6f1ff"], ground: "#62b44a", ground2: "#58a841", road: "#3b3a46" };
+  function svgWrap(w, h, vb, inner) { return '<div style="width:' + Math.round(w) + 'px;height:' + Math.round(h) + 'px"><svg viewBox="' + vb + '" aria-hidden="true" style="display:block;width:100%;height:100%;overflow:visible">' + inner + '</svg></div>'; }
+  var GREENS = [["#2e8b3d", "#3da34d", "#6cc26f"], ["#357f3a", "#48a04f", "#82cf7d"], ["#3b8d2f", "#58b043", "#9bdc72"]];
+  var DECO = {
+    tree: function (r) { var g = GREENS[Math.floor(r() * 3)], w = 58 + r() * 26; return svgWrap(w, w * 1.3, "0 0 60 78", '<ellipse cx="30" cy="74" rx="20" ry="4.5" fill="rgba(0,0,0,.22)"/><rect x="26" y="46" width="8" height="28" rx="3" fill="#7b4b25"/><circle cx="30" cy="28" r="25" fill="' + g[0] + '"/><circle cx="19" cy="38" r="16" fill="' + g[1] + '"/><circle cx="42" cy="37" r="17" fill="' + g[1] + '"/><circle cx="27" cy="20" r="13" fill="' + g[2] + '" opacity=".75"/>'); },
+    pine: function (r) { var w = 46 + r() * 20; return svgWrap(w, w * 1.7, "0 0 50 86", '<ellipse cx="25" cy="82" rx="16" ry="4" fill="rgba(0,0,0,.22)"/><rect x="22" y="62" width="6" height="20" fill="#6b4423"/><path d="M25 4 L44 30 H33 L47 52 H34 L50 70 H0 L16 52 H3 L17 30 H6Z" fill="#1f7a45"/><path d="M25 4 L34 22 L25 20Z" fill="#35a05f"/><path d="M25 26 L38 44 L25 42Z" fill="#35a05f" opacity=".8"/>'); },
+    bush: function (r) { var w = 44 + r() * 20; return svgWrap(w, w * .6, "0 0 60 36", '<ellipse cx="30" cy="33" rx="26" ry="4" fill="rgba(0,0,0,.2)"/><circle cx="16" cy="22" r="13" fill="#2f8a3b"/><circle cx="31" cy="17" r="15" fill="#3da34d"/><circle cx="45" cy="22" r="13" fill="#2f8a3b"/><circle cx="29" cy="12" r="6" fill="#7cd17b" opacity=".7"/>'); },
+    flowers: function (r) { var cols = ["#ff5fa2", "#ffd23f", "#ffffff", "#b58cff", "#ff8a3d"], c = cols[Math.floor(r() * cols.length)], c2 = cols[Math.floor(r() * cols.length)], s = ""; [[10, 30, c], [26, 24, c2], [42, 31, c], [18, 36, c2]].forEach(function (f) { s += '<rect x="' + (f[0] - 1) + '" y="' + f[1] + '" width="2" height="' + (46 - f[1]) + '" fill="#2f8a3b"/><circle cx="' + f[0] + '" cy="' + f[1] + '" r="6" fill="' + f[2] + '"/><circle cx="' + f[0] + '" cy="' + f[1] + '" r="2.4" fill="#f4a300"/>'; }); return svgWrap(46, 40, "0 0 52 48", '<ellipse cx="26" cy="46" rx="22" ry="3" fill="rgba(0,0,0,.18)"/>' + s); },
+    rock: function (r) { var w = 36 + r() * 22; return svgWrap(w, w * .7, "0 0 50 34", '<ellipse cx="25" cy="32" rx="22" ry="3.5" fill="rgba(0,0,0,.22)"/><path d="M4 30 L10 12 L22 4 L38 8 L47 22 L44 30Z" fill="#8c929e"/><path d="M10 12 L22 4 L38 8 L30 16Z" fill="#b6bcc7"/><path d="M30 16 L38 8 L47 22 L44 30 L34 30Z" fill="#6f7580"/>'); },
+    hay: function () { return svgWrap(44, 40, "0 0 50 46", '<ellipse cx="25" cy="43" rx="22" ry="3.5" fill="rgba(0,0,0,.22)"/><circle cx="25" cy="24" r="19" fill="#e5b947"/><circle cx="25" cy="24" r="13" fill="none" stroke="#c99a2e" stroke-width="2"/><circle cx="25" cy="24" r="6" fill="none" stroke="#c99a2e" stroke-width="2"/><rect x="6" y="22" width="38" height="3" fill="#a87b1e" opacity=".5"/>'); },
+    sheep: function () { return svgWrap(46, 38, "0 0 56 44", '<ellipse cx="28" cy="41" rx="20" ry="3" fill="rgba(0,0,0,.2)"/><rect x="14" y="30" width="3.5" height="11" fill="#33333b"/><rect x="36" y="30" width="3.5" height="11" fill="#33333b"/><g fill="#fff"><circle cx="18" cy="22" r="11"/><circle cx="30" cy="19" r="12"/><circle cx="40" cy="23" r="10"/><circle cx="26" cy="28" r="10"/></g><circle cx="49" cy="22" r="7" fill="#33333b"/><circle cx="51" cy="20" r="1.6" fill="#fff"/>'); },
+    cow: function () { return svgWrap(60, 44, "0 0 70 48", '<ellipse cx="34" cy="45" rx="24" ry="3" fill="rgba(0,0,0,.2)"/><rect x="14" y="32" width="4" height="12" fill="#e9e9ee"/><rect x="44" y="32" width="4" height="12" fill="#e9e9ee"/><rect x="8" y="14" width="46" height="23" rx="9" fill="#fff"/><path d="M16 16 q8 -2 8 6 q-6 6 -10 -2Z M36 22 q10 -4 10 6 q-8 4 -10 -6Z" fill="#33333b"/><rect x="50" y="10" width="14" height="15" rx="5" fill="#fff"/><ellipse cx="62" cy="22" rx="3.5" ry="2.6" fill="#f3a6b6"/><circle cx="56" cy="15" r="1.5" fill="#222"/><rect x="51" y="6" width="3" height="5" fill="#caa05a"/><rect x="58" y="6" width="3" height="5" fill="#caa05a"/>'); },
+    barn: function () { return svgWrap(96, 84, "0 0 96 84", '<ellipse cx="48" cy="80" rx="44" ry="4.5" fill="rgba(0,0,0,.22)"/><rect x="10" y="30" width="76" height="48" fill="#c8372d"/><path d="M4 32 L48 4 L92 32Z" fill="#8f2620"/><rect x="34" y="46" width="28" height="32" fill="#fff" opacity=".95"/><path d="M34 46 L62 78 M62 46 L34 78" stroke="#c8372d" stroke-width="3"/><rect x="34" y="46" width="28" height="32" fill="none" stroke="#c8372d" stroke-width="3"/><circle cx="48" cy="24" r="5" fill="#fff"/>'); },
+    fence: function () { return svgWrap(84, 34, "0 0 84 34", '<ellipse cx="42" cy="32" rx="40" ry="3" fill="rgba(0,0,0,.18)"/><rect x="0" y="12" width="84" height="4" fill="#d8b27a"/><rect x="0" y="22" width="84" height="4" fill="#d8b27a"/><g fill="#b98a4e"><rect x="4" y="6" width="6" height="26" rx="2"/><rect x="39" y="6" width="6" height="26" rx="2"/><rect x="74" y="6" width="6" height="26" rx="2"/></g>'); },
+    cloud: function (r) { var w = 130 + r() * 90; return svgWrap(w, w * .45, "0 0 120 54", '<g fill="#fff" opacity=".96"><ellipse cx="60" cy="38" rx="50" ry="14"/><circle cx="38" cy="30" r="18"/><circle cx="62" cy="22" r="22"/><circle cx="86" cy="32" r="16"/></g><ellipse cx="60" cy="46" rx="48" ry="6" fill="#bfe0f5" opacity=".6"/>'); },
+    mountain: function (r) { var w = 200 + r() * 90, cols = [["#7f9fc0", "#9db9d4"], ["#6f9a78", "#8fb98a"], ["#8aa0bd", "#a9bdd3"]], c = cols[Math.floor(r() * 3)]; return svgWrap(w, w * .62, "0 0 200 124", '<path d="M0 124 L70 14 L110 64 L140 34 L200 124Z" fill="' + c[0] + '"/><path d="M70 14 L90 40 L78 36 L70 48 L58 34 L52 40Z" fill="#fff" opacity=".9"/><path d="M140 34 L152 52 L142 48 L134 54Z" fill="#fff" opacity=".85"/><path d="M0 124 L70 14 L70 124Z" fill="' + c[1] + '" opacity=".35"/>'); }
   };
-  function raceTheme() { var k = S.raceTheme || store.get("walkies-race-theme") || "country"; return RACE_THEMES[k] ? k : "country"; }
   function initials(name) {
     var parts = String(name || "?").trim().split(/\s+/).filter(Boolean), ch = Array.from;
     if (parts.length > 1) return (ch(parts[0])[0] + ch(parts[1])[0]).toUpperCase();
@@ -643,16 +653,14 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   function raceView(tab) {
     var r = raceEntries(tab);
     if (!r.all.length || (tab === "Pup" && !r.me)) return '<div class="card"><b>' + (tab === "Pup" ? "Join the walker leaderboard to race." : "No teams to race yet.") + '</b><p class="muted">' + (tab === "Pup" ? "Tap Show me on the list view, and your kart will appear on the track." : "Start a team and it will show up on the track.") + '</p></div>';
-    var mySteps = r.me ? r.me.steps : null, th = RACE_THEMES[raceTheme()];
-    S.raceData = { entries: r.shown.slice().sort(function (x, y) { return (x.me ? 1 : 0) - (y.me ? 1 : 0); }), mySteps: mySteps, me: r.me, theme: raceTheme() };
+    var mySteps = r.me ? r.me.steps : null, th = RACE_TH;
+    S.raceData = { entries: r.shown.slice().sort(function (x, y) { return (x.me ? 1 : 0) - (y.me ? 1 : 0); }), mySteps: mySteps, me: r.me };
     var line = "";
     if (r.me) {
       if (r.me.rank === 1) line = "You are in front! Keep going to stay ahead.";
       else { var ahead = r.all[r.me.rank - 2]; line = "You are " + ordinal(r.me.rank) + " of " + r.all.length + ". " + fmt(Math.max(1, Math.ceil(ahead.steps - r.me.steps) + 1)) + " steps to pass " + esc(initials(ahead.name)) + "."; }
     }
-    var themes = Object.keys(RACE_THEMES).map(function (k) { return '<button class="pill" aria-pressed="' + (raceTheme() === k) + '" data-rtheme="' + k + '">' + RACE_THEMES[k].icon + ' ' + RACE_THEMES[k].name + '</button>'; }).join("");
     return '<div class="card" style="text-align:center"><b>' + line + '</b></div>' +
-      '<div class="chips" role="group" aria-label="Scenery">' + themes + '</div>' +
       '<div class="race"><div class="game" style="--untilt:-' + TILT + 'deg;background:linear-gradient(' + th.sky[0] + ',' + th.sky[1] + ' 55%)" role="img" aria-label="Race track to the bone. Drag to look around, pinch or use the buttons to zoom.">' +
       '<div class="world"><div class="plane" style="width:' + RACE_W + 'px;height:' + RACE_H + 'px"></div></div>' +
       '<div class="cam"><button class="cam-btn" data-cam="in" aria-label="Zoom in">+</button><button class="cam-btn" data-cam="out" aria-label="Zoom out">−</button><button class="cam-btn me" data-cam="me" aria-label="Find me">🎯</button></div>' +
@@ -687,7 +695,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   }
   function placeRace() {
     var plane = document.querySelector(".race .plane"), data = S.raceData; if (!plane || !data) return;
-    var th = RACE_THEMES[data.theme], d = racePath();
+    var th = RACE_TH, d = racePath();
     var ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg"); svg.setAttribute("width", RACE_W); svg.setAttribute("height", RACE_H); svg.setAttribute("viewBox", "0 0 " + RACE_W + " " + RACE_H);
     var stripes = ""; for (var y = 0; y < RACE_H; y += 70) if ((y / 70) % 2) stripes += '<rect x="0" y="' + y + '" width="' + RACE_W + '" height="70" fill="' + th.ground2 + '"/>';
     svg.innerHTML = '<defs><pattern id="chk" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#fff"/><rect width="6" height="6" fill="#111"/><rect x="6" y="6" width="6" height="6" fill="#111"/></pattern></defs>' +
@@ -709,16 +717,28 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     svg.insertAdjacentHTML("beforeend", '<rect x="' + (p0.x - 30) + '" y="' + (p0.y - 4) + '" width="60" height="8" fill="url(#chk)"/><rect x="' + (p1.x - 32) + '" y="' + (p1.y - 6) + '" width="64" height="12" fill="url(#chk)"/>');
     function sprite(cls, x, y, html, style) { var el = document.createElement("div"); el.className = "sp " + cls; el.style.left = x.toFixed(1) + "px"; el.style.top = y.toFixed(1) + "px"; if (style) el.style.cssText += style; el.innerHTML = html; plane.appendChild(el); return el; }
     // scenery, kept off the road
-    var rand = rng(data.theme.length * 7919 + 17), placed = [], tries = 0;
-    while (placed.length < 85 && tries++ < 1800) {
-      var x = 20 + rand() * (RACE_W - 40), y = 60 + rand() * (RACE_H - 120);
-      if (samples.some(function (q) { return Math.hypot(q[0] - x, q[1] - y) < 62; })) continue;
-      if (placed.some(function (q) { return Math.hypot(q[0] - x, q[1] - y) < 46; })) continue;
-      placed.push([x, y]);
-      sprite("deco", x, y, th.decor[Math.floor(rand() * th.decor.length)], "font-size:" + Math.round(28 + rand() * 18) + "px");
+    var rand = rng(4242), placed = [], tries = 0, kinds = ["tree", "tree", "tree", "tree", "pine", "pine", "bush", "bush", "flowers", "flowers", "flowers", "rock", "hay", "sheep", "cow", "fence"], barnDone = false;
+    // ground texture and ponds (flat on the grass)
+    var ground = "", gi;
+    for (gi = 0; gi < 260; gi++) { var gx = rand() * RACE_W, gy = rand() * RACE_H; if (samples.some(function (q) { return Math.hypot(q[0] - gx, q[1] - gy) < 50; })) continue; ground += '<circle cx="' + gx.toFixed(0) + '" cy="' + gy.toFixed(0) + '" r="' + (1.5 + rand() * 2.5).toFixed(1) + '" fill="' + (rand() < .5 ? "#ffffff" : rand() < .5 ? "#ffe45e" : "#ff9ec7") + '" opacity=".55"/>'; }
+    for (gi = 0, tries = 0; gi < 2 && tries < 400; tries++) {
+      var px = 90 + rand() * (RACE_W - 180), py = 200 + rand() * (RACE_H - 400);
+      if (samples.some(function (q) { return Math.hypot(q[0] - px, q[1] - py) < 120; })) continue;
+      ground += '<ellipse cx="' + px.toFixed(0) + '" cy="' + py.toFixed(0) + '" rx="62" ry="34" fill="#c9eefc"/><ellipse cx="' + px.toFixed(0) + '" cy="' + py.toFixed(0) + '" rx="55" ry="28" fill="#4aa8e8"/><ellipse cx="' + (px - 12).toFixed(0) + '" cy="' + (py - 8).toFixed(0) + '" rx="22" ry="7" fill="#8cd2f7" opacity=".8"/>'; placed.push([px, py]); placed.push([px - 40, py]); placed.push([px + 40, py]); gi++;
     }
-    var hill = { country: "\u26F0\uFE0F", city: "\uD83C\uDFD9\uFE0F", beach: "\uD83C\uDF0A", snow: "\uD83C\uDFD4\uFE0F" }[data.theme];
-    for (var hx = 40; hx < RACE_W; hx += 120) sprite("hill", hx + (rand() - 0.5) * 40, 38 + rand() * 24, hill, "font-size:" + Math.round(110 + rand() * 50) + "px");
+    svg.insertAdjacentHTML("beforeend", ground);
+    tries = 0;
+    while (placed.length < 120 && tries++ < 2600) {
+      var x = 20 + rand() * (RACE_W - 40), y = 70 + rand() * (RACE_H - 130);
+      if (samples.some(function (q) { return Math.hypot(q[0] - x, q[1] - y) < 66; })) continue;
+      if (placed.some(function (q) { return Math.hypot(q[0] - x, q[1] - y) < 50; })) continue;
+      var kind = kinds[Math.floor(rand() * kinds.length)];
+      if (!barnDone && y < RACE_H * 0.55 && rand() < 0.08) { kind = "barn"; barnDone = true; }
+      placed.push([x, y]);
+      sprite("deco", x, y, DECO[kind](rand), "");
+    }
+    for (var hx = 20; hx < RACE_W; hx += 150) sprite("hill", hx + (rand() - 0.5) * 50, 40 + rand() * 20, DECO.mountain(rand), "");
+    for (var cx2 = 40; cx2 < RACE_W; cx2 += 170) sprite("sky", cx2 + rand() * 60, 30, DECO.cloud(rand), "margin-top:-" + Math.round(150 + rand() * 110) + "px");
     sprite("arch", p0.x, p0.y + 4, '<span class="arch-b">START</span><span class="arch-p"></span><span class="arch-p r"></span>', "");
     sprite("arch fin", p1.x, p1.y + 6, '<span class="arch-b">FINISH</span><span class="arch-p"></span><span class="arch-p r"></span>', "");
     // checkpoints with a toy each
@@ -1243,7 +1263,6 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     if (cn) { sb.rpc("cancel_duel", { p_id: cn.dataset.cancel }).then(function () { return loadRivals(); }).then(render); return; }
     var br = t.closest("[data-bracket]");
     if (br) { S.bracket = br.dataset.bracket || "Pup"; S.cam = null; render(); return; }
-    var rt = t.closest("[data-rtheme]"); if (rt) { S.raceTheme = rt.dataset.rtheme; store.set("walkies-race-theme", S.raceTheme); render(); return; }
     var cb = t.closest("[data-cam]"); if (cb && S.cam) { var k = cb.dataset.cam; var zt = S.cam.zt != null ? S.cam.zt : S.cam.z; if (k === "in") tweenCam({ z: Math.min(2.4, zt * 1.3) }); else if (k === "out") tweenCam({ z: Math.max(0.7, zt / 1.3) }); else if (S.raceData && S.raceData.myY != null) tweenCam({ fy: S.raceData.myY, fx: Math.max(220, S.raceData.myX) }); return; }
     var bv = t.closest("[data-bview]"); if (bv) { S.boardView = bv.dataset.bview; S.cam = null; render(); window.scrollTo(0, 0); return; }
     var a = t.closest("[data-act]"); if (!a) return;
