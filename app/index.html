@@ -99,6 +99,23 @@ option{background:var(--surface);color:var(--fg)}
 @keyframes rise{from{transform:translateY(30px);opacity:0}}
 .sheet-bg{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center}
 .sheet{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:28px 28px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
+.race{background:radial-gradient(420px 260px at 50% 0%,rgba(35,229,255,.10),transparent 70%),#0a0912;border:1px solid var(--line);border-radius:24px;padding:6px 0;overflow:hidden}
+.race svg{display:block;width:100%;height:auto}
+.race .road-edge{fill:none;stroke:var(--pink);stroke-width:46;stroke-linecap:round;opacity:.55;filter:drop-shadow(0 0 6px var(--pink))}
+.race .road{fill:none;stroke:#1b1928;stroke-width:38;stroke-linecap:round}
+.race .road-dash{fill:none;stroke:#f4f2fa;stroke-width:2.5;stroke-dasharray:3 11;opacity:.5}
+.race text{font-family:var(--display);font-weight:800;fill:#f4f2fa}
+.race .lvl{font-size:10px;letter-spacing:.06em;fill:var(--muted)}
+.race .stop circle{fill:#14121e;stroke:var(--line);stroke-width:2}
+.race .stop.on circle{stroke:var(--green);fill:#0e2a1c;filter:drop-shadow(0 0 6px var(--green))}
+.race .stop.on .lvl{fill:var(--green)}
+.race .stop.goal circle{stroke:var(--yellow);stroke-width:3}
+.race .kart{transition:transform 1.4s cubic-bezier(.2,.8,.2,1)}
+.race .kart .ini{fill:#050507;font-size:12px}
+.race .kart .shadow{fill:rgba(0,0,0,.5)}
+.race .kart .you{font-size:10px;fill:var(--pink);letter-spacing:.1em}
+.race .kart.me circle{stroke:#fff;stroke-width:3;filter:drop-shadow(0 0 8px var(--pink))}
+@media (prefers-reduced-motion:reduce){.race .kart{transition:none}}
 .sheet{position:relative}.sheet::before{content:"";align-self:center;width:44px;height:5px;border-radius:3px;background:var(--line);margin:-8px 0 4px;flex:none}
 .toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,16px);opacity:0;background:var(--fg);color:var(--dark);padding:11px 16px;border-radius:12px;font-weight:700;font-size:14px;transition:.25s;pointer-events:none;z-index:40;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
@@ -550,12 +567,81 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       '<div class="scoops">' + scoops + '</div>' +
       (myDog() ? '<div class="buddy"><div class="' + (S.bounce ? "bounce" : "") + '">' + DOG + '</div><div style="flex:1;min-width:0"><div style="font-weight:700">' + esc(myDog().name) + ' is ready for a walk</div><div class="muted" style="font-size:14px">' + esc(myDog().name) + ' cheers every scoop</div></div><button class="btn small" style="background:var(--pink);color:var(--dark)" data-act="pat">Pat</button></div>' : "") + '</div>';
   }
+  // ---- Race view: the leaderboard as a track to a bone toy ----
+  var TOYS = ["🎾", "🥏", "🧸", "🦆", "🏐", "🪀", "🥎", "🪁", "🏆", "🦴"];
+  var KART_COLORS = ["#23e5ff", "#3bff8f", "#f4ff3a", "#ff8a3d", "#b58cff", "#ff6b6b"];
+  function initials(name) {
+    var parts = String(name || "?").trim().split(/\s+/).filter(Boolean), ch = Array.from;
+    if (parts.length > 1) return (ch(parts[0])[0] + ch(parts[1])[0]).toUpperCase();
+    return ch(parts[0] || "?").slice(0, 2).join("").toUpperCase();
+  }
+  function racePos(steps) {
+    var k = 0, lo = 0;
+    while (k < MILESTONES.length && steps >= MILESTONES[k]) { lo = MILESTONES[k]; k++; }
+    if (k >= MILESTONES.length) return 1;
+    return (k + (steps - lo) / (MILESTONES[k] - lo)) / MILESTONES.length;
+  }
+  function raceEntries(tab) {
+    var list;
+    if (tab === "Pup") list = (S.walkers || []).map(function (w) { return { name: w.display_name, steps: Number(w.steps), me: w.is_me }; });
+    else list = (S.allTeams || []).filter(function (r) { return teamTier(r) === tab; }).map(function (r) { return { name: r.name, steps: Number(r.steps_per_member), me: r.is_mine }; });
+    list.sort(function (a, b) { return b.steps - a.steps; });
+    list.forEach(function (e, i) { e.rank = i + 1; });
+    // keep the track readable: the top 6, me, and a couple either side of me
+    var mi = list.findIndex(function (e) { return e.me; }), keep = {};
+    list.forEach(function (e, i) { if (i < 6 || (mi > -1 && Math.abs(i - mi) <= 2)) keep[i] = true; });
+    return { all: list, shown: list.filter(function (e, i) { return keep[i]; }), me: mi > -1 ? list[mi] : null };
+  }
+  function ordinal(n) { var s2 = ["th", "st", "nd", "rd"], v = n % 100; return n + (s2[(v - 20) % 10] || s2[v] || s2[0]); }
+  function raceView(tab) {
+    var r = raceEntries(tab), H = 30 + 10 * 95 + 70, mySteps = r.me ? r.me.steps : null;
+    if (!r.all.length || (tab === "Pup" && !r.me)) return '<div class="card"><b>' + (tab === "Pup" ? "Join the walker leaderboard to race." : "No teams to race yet.") + '</b><p class="muted">' + (tab === "Pup" ? "Tap Show me on the list view, and your kart will appear on the track." : "Start a team and it will show up on the track.") + '</p></div>';
+    var d = "M90,30";
+    for (var i = 1; i <= 10; i++) { var x0 = i % 2 ? 90 : 270, x1 = i % 2 ? 270 : 90, y0 = 30 + (i - 1) * 95, y1 = 30 + i * 95; d += " C" + x0 + "," + (y0 + 47) + " " + x1 + "," + (y1 - 47) + " " + x1 + "," + y1; }
+    var stops = MILESTONES.map(function (m, k) {
+      var on = mySteps != null && mySteps >= m, label = m >= 1000 ? m / 1000 + "k" : m;
+      return '<g class="stop' + (on ? " on" : "") + (k === 9 ? " goal" : "") + '" data-p="' + ((k + 1) / 10) + '"><circle r="' + (k === 9 ? 27 : 21) + '"></circle><text class="toy" y="' + (k === 9 ? 9 : 7) + '" font-size="' + (k === 9 ? 28 : 21) + '" text-anchor="middle">' + TOYS[k] + '</text><text class="lvl" y="' + (k === 9 ? 46 : 37) + '" text-anchor="middle">' + label + '</text></g>';
+    }).join("");
+    var karts = r.shown.slice().reverse().sort(function (x, y) { return (x.me ? 1 : 0) - (y.me ? 1 : 0); }).map(function (e) {
+      var col = e.me ? "#ff2e9a" : KART_COLORS[Math.abs(Array.from(e.name).reduce(function (a, c) { return a * 31 + c.charCodeAt(0); }, 7)) % KART_COLORS.length];
+      return '<g class="kart' + (e.me ? " me" : "") + '" data-p="' + racePos(e.steps).toFixed(4) + '" data-rank="' + e.rank + '" aria-label="' + esc(e.name) + ', ' + ordinal(e.rank) + ', ' + fmt(e.steps) + ' steps">' +
+        '<ellipse class="shadow" cy="19" rx="' + (e.me ? 17 : 14) + '" ry="5"></ellipse><circle r="' + (e.me ? 19 : 16) + '" fill="' + col + '"></circle>' +
+        '<text class="ini" y="5" text-anchor="middle" font-size="' + (e.me ? 14 : 12) + '">' + esc(initials(e.name)) + '</text>' +
+        (e.rank === 1 ? '<text y="-22" font-size="16" text-anchor="middle">\uD83D\uDC51</text>' : "") + (e.me ? '<text class="you" y="-25" text-anchor="middle">YOU</text>' : "") + '</g>';
+    }).join("");
+    var line = "";
+    if (r.me) {
+      if (r.me.rank === 1) line = "You are in front! Keep going to stay ahead.";
+      else { var ahead = r.all[r.me.rank - 2]; line = "You are " + ordinal(r.me.rank) + " of " + r.all.length + ". " + fmt(Math.max(1, Math.ceil(ahead.steps - r.me.steps) + 1)) + " steps to pass " + esc(initials(ahead.name)) + "."; }
+    }
+    return '<div class="card" style="text-align:center"><b>' + line + '</b></div>' +
+      '<div class="race"><svg viewBox="0 0 360 ' + H + '" role="img" aria-label="Race track to the bone"><path class="road-edge" d="' + d + '"></path><path class="road" id="road" d="' + d + '"></path><path class="road-dash" d="' + d + '"></path>' +
+      '<g class="start" transform="translate(90,30)"><rect x="-26" y="-10" width="52" height="8" fill="#fff"></rect><text y="-16" text-anchor="middle" class="lvl">START</text></g>' + stops + karts + '</svg></div>' +
+      (r.all.length > r.shown.length ? '<p class="muted" style="font-size:13px;text-align:center">Showing the leaders and the racers around you. Switch to List to see everyone.</p>' : "");
+  }
+  function placeRace() {
+    var road = document.getElementById("road"); if (!road) return;
+    var L = road.getTotalLength(), lanes = [];
+    function at(p) { return road.getPointAtLength(Math.max(0, Math.min(1, p)) * L); }
+    Array.prototype.forEach.call(document.querySelectorAll(".race .stop"), function (g) { var pt = at(Number(g.dataset.p)); g.setAttribute("transform", "translate(" + pt.x.toFixed(1) + "," + pt.y.toFixed(1) + ")"); });
+    var karts = Array.prototype.slice.call(document.querySelectorAll(".race .kart")).sort(function (a, b) { return Number(b.dataset.p) - Number(a.dataset.p); }), prev = [];
+    var off = [0, 26, -26, 46, -46, 66, -66];
+    karts.forEach(function (g) {
+      var p = Number(g.dataset.p), near = prev.filter(function (q) { return Math.abs(q - p) < 0.025; }).length; prev.push(p);
+      var pt = at(p), x = pt.x + off[near % off.length];
+      g.style.transform = "translate(" + at(0).x + "px," + at(0).y + "px)";
+      requestAnimationFrame(function () { requestAnimationFrame(function () { g.style.transform = "translate(" + x.toFixed(1) + "px," + pt.y.toFixed(1) + "px)"; }); });
+    });
+    if (!S.raceScrolled) { S.raceScrolled = true; var me = document.querySelector(".race .kart.me"); if (me && me.scrollIntoView) setTimeout(function () { me.scrollIntoView({ block: "center", behavior: "smooth" }); }, 700); }
+  }
   function teamTier(r) { return r.size_bracket === "Pup" ? "Pack" : r.size_bracket; }
   function viewPacks() {
     var tab = S.bracket || "Pup";
     var chips = BOARD_TABS.map(function (b) { return '<button class="pill" aria-pressed="' + (tab === b[0]) + '" data-bracket="' + b[0] + '">' + b[0] + '</button>'; }).join("");
-    var body = "";
-    if (tab === "Pup") {
+    var body = "", race = S.boardView === "race";
+    var vt = '<div class="chips" role="group" aria-label="View"><button class="pill" aria-pressed="' + (!race) + '" data-bview="list">List</button><button class="pill" aria-pressed="' + race + '" data-bview="race">\uD83C\uDFC1 Race</button></div>';
+    if (race) body = raceView(tab);
+    else if (tab === "Pup") {
       var ws = S.walkers || [], meIn = ws.some(function (w) { return w.is_me; });
       body = (meIn ? "" : '<div class="card row" style="border-color:var(--cyan)"><div style="flex:1;font-size:14px"><b>Join the walker leaderboard?</b> Your name and monthly steps will show to other walkers. You can change this in Privacy settings.</div><button class="btn small" data-act="joinboard">Show me</button></div>') +
         (ws.length ? ws.map(function (w, i) {
@@ -568,7 +654,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       }).join("") : '<div class="card"><b>No teams here yet.</b><p class="muted">Start a team in Rivals, share the code with your workmates and be the first on the board.</p></div>');
       if (mine && mineIdx > 0) { var above = rows[mineIdx - 1]; body += '<div class="card" style="border-style:dashed"><b>Catch ' + esc(above.name) + '</b> and your team moves up a place. Only <b>' + fmt(Math.max(1, above.steps_per_member - mine.steps_per_member + 1)) + '</b> more steps each.</div>'; }
     }
-    return topbar("") + '<div class="stack"><h1 class="h1">Leaderboard</h1><div class="chips" role="group" aria-label="Leaderboard">' + chips + '</div><div class="stack" style="gap:10px">' + body + '</div></div>';
+    return topbar("") + '<div class="stack"><h1 class="h1">Leaderboard</h1><div class="chips" role="group" aria-label="Leaderboard">' + chips + '</div>' + vt + '<div class="stack" style="gap:10px">' + body + '</div></div>';
   }
   function viewImpact() {
     var i = S.impact || {}, commKg = (i.community_bowls || 0) * BOWL_KG, myKg = (i.my_bowls || 0) * BOWL_KG;
@@ -886,6 +972,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     root.innerHTML = html;
     if (S.sheet) { var el = $("#steps"); if (el) { el.focus(); updatePreview(); } }
     if (S.celebrate) { confetti(); var d = $(".cel-done"); if (d) d.focus(); }
+    if (S.tab === "packs" && S.boardView === "race") placeRace();
   }
 
   // ---- events ----
@@ -966,7 +1053,8 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var cn = t.closest("[data-cancel]");
     if (cn) { sb.rpc("cancel_duel", { p_id: cn.dataset.cancel }).then(function () { return loadRivals(); }).then(render); return; }
     var br = t.closest("[data-bracket]");
-    if (br) { S.bracket = br.dataset.bracket || "Pup"; render(); return; }
+    if (br) { S.bracket = br.dataset.bracket || "Pup"; S.raceScrolled = false; render(); return; }
+    var bv = t.closest("[data-bview]"); if (bv) { S.boardView = bv.dataset.bview; S.raceScrolled = false; render(); window.scrollTo(0, 0); return; }
     var a = t.closest("[data-act]"); if (!a) return;
     if (a.classList.contains("sheet-bg") && t !== a) return;
     var act = a.dataset.act;
