@@ -230,6 +230,14 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
 .promo-p{font-size:14.5px;color:#d9d5e8;max-width:82%}
 .promo-cta{align-self:flex-start;background:var(--fg);color:var(--dark);font-weight:800;border-radius:999px;padding:9px 16px;font-size:14px}
 .rowlist{display:flex;flex-direction:column;gap:8px}
+.ban.camp{border-color:var(--yellow);background:radial-gradient(420px 240px at 50% -20%,rgba(244,255,58,.22),transparent 70%),linear-gradient(160deg,#17160a,#0b0a12);box-shadow:0 0 30px rgba(244,255,58,.22)}
+.camp-tag{background:var(--yellow);color:var(--dark);font-weight:800;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.cityn{font-family:var(--display);font-weight:800;font-size:26px;line-height:1;letter-spacing:-.02em}
+.cityn.a{color:var(--pink);text-shadow:0 0 14px rgba(255,46,154,.6)}.cityn.b{color:var(--cyan);text-shadow:0 0 14px rgba(35,229,255,.6)}
+.cityavg{font-family:'Geist Mono',ui-monospace,monospace;font-weight:600;font-size:20px}
+.splitbar{display:flex;height:12px;border-radius:999px;overflow:hidden;background:var(--line)}
+.splitbar i{display:block;height:100%;transition:width .6s}.splitbar .a{background:var(--pink);box-shadow:0 0 12px rgba(255,46,154,.6)}.splitbar .b{background:var(--cyan);box-shadow:0 0 12px rgba(35,229,255,.6)}
+.sidetag{font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;color:var(--dark)}.sidetag.a{background:var(--pink)}.sidetag.b{background:var(--cyan)}
 @media (prefers-reduced-motion:reduce){.ban.fo,.ban.fi{transition:none;animation:none}}
 </style>
 </head>
@@ -260,6 +268,8 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   S.recovery = /type=recovery/.test(location.hash);
   try {
     var qj = new URLSearchParams(location.search).get("pack");
+    var qc = new URLSearchParams(location.search).get("campaign");
+    if (qc) { store.set("walkies-pending-campaign", qc.trim().slice(0, 40).toLowerCase()); history.replaceState(null, "", location.pathname); }
     if (qj) { store.set("walkies-pending-pack", qj.trim().slice(0, 12).toUpperCase()); history.replaceState(null, "", location.pathname); }
   } catch (e) {}
 
@@ -363,6 +373,8 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var a = await sb.rpc("my_duels"), l = await sb.rpc("my_links"), pk = await sb.rpc("my_packs");
     S.packs = pk.data || [];
     var fc = await sb.rpc("duel_faces"); S.faces = {}; (fc.data || []).forEach(function (f) { S.faces[f.id] = f; });
+    var cn = await sb.rpc("campaign_now"); S.camp = cn.data && cn.data[0] ? cn.data[0] : null;
+    if (S.camp) { var cp = await sb.rpc("campaign_people", { p_id: S.camp.id }); S.campPeople = cp.data || []; }
     S.packPeople = S.packPeople || {};
     await Promise.all(S.packs.map(function (k) { return sb.rpc("pack_people", { p_id: k.id }).then(function (r) { S.packPeople[k.id] = r.data || []; }); }));
     var tk = {}; (l.data || []).forEach(function (x) { tk[x.id] = x.invite_token; });
@@ -386,6 +398,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       var jr = await sb.rpc("join_pack", { p_code: pend });
       if (jr.error) toast(jr.error.message); else { await loadRivals(); S.tab = "rivals"; toast("You joined " + jr.data[0].name + "!"); }
     }
+    if (store.get("walkies-pending-campaign")) { store.set("walkies-pending-campaign", ""); S.tab = "rivals"; if (S.camp) toast("Pick your side in " + S.camp.title + "!"); }
     S.view = "app";
     if (S.view === "app" && !S.profile.dog_id && !store.get("walkies-dog-seen-" + S.user.id) && (S.dogs || []).length) { store.set("walkies-dog-seen-" + S.user.id, "1"); S.dogview = { list: true }; }
     S.pubInvite = null;
@@ -994,7 +1007,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   }
   function packBack(k) {
     var rows = (S.packPeople || {})[k.id], editing = S.pedit === k.id;
-    var title = editing ? '<form data-form="renamePack"><input type="hidden" name="pid" value="' + esc(k.id) + '"><input id="rpname" name="pname" class="titlein" value="' + esc(k.name) + '" maxlength="40" minlength="2" required aria-label="Pack war name" autocomplete="off"></form>'
+    var title = !k.is_owner ? '<div class="ban-name">' + esc(k.name) + '</div>' : editing ? '<form data-form="renamePack"><input type="hidden" name="pid" value="' + esc(k.id) + '"><input id="rpname" name="pname" class="titlein" value="' + esc(k.name) + '" maxlength="40" minlength="2" required aria-label="Pack war name" autocomplete="off"></form>'
       : '<button class="titlebtn ban-name" data-act="editpack" data-pid="' + esc(k.id) + '" aria-label="Rename pack war">' + esc(k.name) + ' <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>';
     var list = !rows ? '<p class="muted">Loading…</p>' : rows.map(function (m) {
       return '<div class="lb ' + (m.is_me ? "mine" : (m.rank === 1 ? "first" : "")) + '" style="grid-template-columns:36px auto 1fr auto"><div class="rank">' + m.rank + '</div>' + faceAv(m.dog_id, m.display_name, 30) +
@@ -1006,6 +1019,32 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       (k.finished ? "" : '<button class="btn coral" data-act="sharepack" data-pid="' + esc(k.id) + '">Invite people with a link</button>') + '</div>';
   }
   function packBanner(k) { return '<div class="fwrap">' + (S.flip && S.flip[k.id] ? packBack(k) : packFront(k)) + '</div>'; }
+  function campAvg(t, n) { return n > 0 ? Math.round(Number(t) / n) : 0; }
+  function campFront(c) {
+    var aa = campAvg(c.a_total, c.a_walkers), bb = campAvg(c.b_total, c.b_walkers), tot = aa + bb, share = tot > 0 ? Math.max(6, Math.min(94, Math.round(aa / tot * 100))) : 50;
+    var mine = c.my_side ? (c.my_side === "a" ? c.side_a : c.side_b) : "";
+    var side = function (k, name, walkersN, avg) { return '<div class="vside"><div class="cityn ' + k + '">' + esc(name) + '</div><div class="cityavg">' + fmt(avg) + '</div><div class="vss">steps per walker</div><div class="vss">' + walkers(walkersN) + '</div></div>'; };
+    var cta = mine ? '<div class="between" style="gap:8px"><span>You are on <b>Team ' + esc(mine) + '</b>. ' + fmt(c.my_steps) + ' steps so far.</span></div><button class="btn coral" data-act="sharecamp">Invite friends</button>'
+      : '<div class="muted" style="font-size:14px;text-align:center">Opt in and pick your side. Your steps count from the moment you join.</div><div class="row"><button class="btn coral" style="background:var(--pink)" data-act="joincamp" data-side="a">Join ' + esc(c.side_a) + '</button><button class="btn" style="background:var(--cyan);color:var(--dark)" data-act="joincamp" data-side="b">Join ' + esc(c.side_b) + '</button></div>';
+    return '<div class="' + flipCls(c.id, "camp") + '" data-flip="' + esc(c.id) + '" role="button" tabindex="0" aria-label="Show the leaderboard">' +
+      '<div class="ban-top"><span class="camp-tag">Campaign of the month</span><span class="chip-s">' + c.days_left + (c.days_left === 1 ? " day left" : " days left") + '</span></div>' +
+      '<div class="ban-name">' + esc(c.title) + '</div><div class="muted" style="font-size:14px;margin-top:-6px">' + esc(c.tagline) + '</div>' +
+      '<div class="vs-row">' + side("a", c.side_a, c.a_walkers, aa) + '<div class="vsbadge">VS</div>' + side("b", c.side_b, c.b_walkers, bb) + '</div>' +
+      '<div class="splitbar" role="img" aria-label="' + esc(c.side_a) + ' holds ' + share + ' percent"><i class="a" style="width:' + share + '%"></i><i class="b" style="width:' + (100 - share) + '%"></i></div>' + cta +
+      '<div class="ban-foot"><span class="muted" style="font-size:13px">The city that walks the most steps per walker wins</span><span class="tap-hint">Walkers \u203a</span></div></div>';
+  }
+  function campBack(c) {
+    var rows = S.campPeople || [];
+    var list = rows.length ? rows.map(function (m) {
+      return '<div class="lb ' + (m.is_me ? "mine" : (m.rank === 1 ? "first" : "")) + '" style="grid-template-columns:36px auto 1fr auto"><div class="rank">' + m.rank + '</div>' + faceAv(m.dog_id, m.display_name, 30) +
+        '<div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(m.display_name) + '</div><div style="font-size:13px"><span class="sidetag ' + m.side + '">' + esc(m.side === "a" ? c.side_a : c.side_b) + '</span></div></div><div class="num">' + fmt(m.steps) + '</div></div>';
+    }).join("") : '<p class="muted">No one has opted in yet. Be the first to pick a side.</p>';
+    return '<div class="' + flipCls(c.id, "camp ban-back") + '" data-flip="' + esc(c.id) + '" role="button" tabindex="0" aria-label="Flip back">' +
+      '<div class="ban-top"><span class="camp-tag">Campaign of the month</span><span class="chip-s">' + c.days_left + (c.days_left === 1 ? " day left" : " days left") + '</span></div>' +
+      '<div class="ban-name">' + esc(c.title) + '</div><div class="rowlist">' + list + '</div>' +
+      (c.my_side ? '<button class="btn coral" data-act="sharecamp">Invite friends</button>' : '<div class="row"><button class="btn coral" style="background:var(--pink)" data-act="joincamp" data-side="a">Join ' + esc(c.side_a) + '</button><button class="btn" style="background:var(--cyan);color:var(--dark)" data-act="joincamp" data-side="b">Join ' + esc(c.side_b) + '</button></div>') + '</div>';
+  }
+  function campBanner(c) { return '<div class="fwrap">' + (S.flip && S.flip[c.id] ? campBack(c) : campFront(c)) + '</div>'; }
   var PAW_ART = '<svg width="110" height="110" viewBox="0 0 120 120" fill="rgba(255,255,255,.13)" aria-hidden="true"><ellipse cx="60" cy="80" rx="25" ry="21"/><ellipse cx="27" cy="52" rx="10" ry="13"/><ellipse cx="47" cy="31" rx="10" ry="13"/><ellipse cx="73" cy="31" rx="10" ry="13"/><ellipse cx="93" cy="52" rx="10" ry="13"/></svg>';
   function promoBanner(kind) {
     var tug = kind === "person";
@@ -1026,6 +1065,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var month = ""; try { month = new Date(S.challenge.starts_on + "T00:00:00").toLocaleDateString("en-AU", { month: "long" }); } catch (e) {}
     var one = function (x) { return x.t === "d" ? tugBanner(x.v) : packBanner(x.v); };
     return topbar("") + '<div class="stack"><div class="promo"><div class="eyebrow">' + esc(month ? month + " · " : "") + 'Pick your fight</div><h1 class="promo-title">Challenges<small>of the month</small></h1><p class="muted">Every step you walk also fills a bowl for a shelter dog. Take on a friend or lead a pack.</p></div>' +
+      (S.camp ? campBanner(S.camp) : "") +
       (inc.length ? '<div class="h2">Challenges for you</div>' + inc.map(tugBanner).join("") : "") +
       '<div class="between"><div class="h2">Your 3 challenges</div><span class="tag">' + Math.min(challengeCount(), MAX_CHALLENGES) + ' of ' + MAX_CHALLENGES + ' going</span></div>' +
       live.map(one).join("") + promos + (challengeCount() >= MAX_CHALLENGES ? '<p class="muted" style="text-align:center">You have 3 challenges. Finish one to start another.</p>' : "") +
@@ -1225,6 +1265,12 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     else if ((act === "wiz" || act === "wizlink") && challengeCount() >= MAX_CHALLENGES) { toast("You already have 3 challenges. Finish one before starting another."); }
     else if (act === "wiz") { S.wiz = { kind: a.dataset.kind === "pack" ? "pack" : "person", days: 7 }; S.wizMsg = ""; render(); }
     else if (act === "closewiz") { S.wiz = null; render(); }
+    else if (act === "joincamp") {
+      var cs = S.camp; if (cs) sb.rpc("join_campaign", { p_id: cs.id, p_side: a.dataset.side }).then(function (r) { if (r.error) { toast(r.error.message); return; } return loadRivals().then(function () { render(); toast("You are on Team " + (a.dataset.side === "a" ? cs.side_a : cs.side_b) + "! Now invite your friends."); }); });
+    }
+    else if (act === "sharecamp") {
+      var cc = S.camp; if (cc) { var clink = ORIGIN + "/?campaign=" + encodeURIComponent(cc.slug), ctext = cc.title + " on Walkies! Pick your city and walk. Every step also feeds a shelter dog. Tap to join:"; if (navigator.share) navigator.share({ title: cc.title, text: ctext, url: clink }).catch(function () {}); else { try { navigator.clipboard.writeText(ctext + " " + clink); toast("Invite copied. Paste it into a message."); } catch (x) { toast(clink); } } }
+    }
     else if (act === "editpack") { S.pedit = a.dataset.pid; render(); }
     else if (act === "sharepack") {
       var pk = (S.packs || []).filter(function (x) { return x.id === a.dataset.pid; })[0];
