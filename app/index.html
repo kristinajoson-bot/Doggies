@@ -592,15 +592,15 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var nextLine = next ? '<b>' + fmt(next - steps) + '</b> steps to your next scoop <span class="muted">(' + (next >= 1000 ? next / 1000 + "k" : next) + ')</span>' : "All 10 scoops unlocked. Epic walking!";
     return topbar("") + '<div class="stack">' +
       dogCard() +
-      '<div class="hero"><div class="eyebrow">Dog bowls this month</div>' +
+      '<div class="hero">' +
       '<div class="rings">' +
       '<div class="orb" aria-label="Dog bowls"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" class="trk"/><circle cx="50" cy="50" r="46" class="ring gold" stroke-dasharray="289" stroke-dashoffset="' + Math.round(289 * (1 - done / 10)) + '"/></svg><div class="in"><b class="stat-n bowls">' + done + '</b><span>dog bowls</span></div></div>' +
-      '<div class="orb" aria-label="Steps today"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" class="trk"/><circle cx="50" cy="50" r="46" class="ring pink" stroke-dasharray="289" stroke-dashoffset="' + 0 + '"/></svg><div class="in"><b class="stat-n today">' + fmt(todaySteps()) + '</b><span>steps today</span></div></div>' +
-      '<div class="orb" aria-label="Steps this month"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" class="trk"/><circle cx="50" cy="50" r="46" class="ring cyan" stroke-dasharray="289" stroke-dashoffset="' + Math.round(289 * (1 - Math.min(1, steps / 150000))) + '"/></svg><div class="in"><b class="stat-n month">' + fmt(steps) + '</b><span>this month</span></div></div>' + '</div>' +
+      '<div class="orb" aria-label="Steps today"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" class="trk"/><circle cx="50" cy="50" r="46" class="ring pink" stroke-dasharray="289" stroke-dashoffset="' + 0 + '"/></svg><div class="in"><b class="stat-n today">' + fmt(todaySteps()) + '</b><span>today</span></div></div>' +
+      '<div class="orb" aria-label="Steps this month"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" class="trk"/><circle cx="50" cy="50" r="46" class="ring cyan" stroke-dasharray="289" stroke-dashoffset="' + Math.round(289 * (1 - Math.min(1, steps / 150000))) + '"/></svg><div class="in"><b class="stat-n month">' + fmt(steps) + '</b><span>month</span></div></div>' + '</div>' +
       '<div class="bigbowl">' + bowlSvg(steps / 150000, true) + '</div>' +
       '<div class="pawrow">' + scoops + '</div>' +
       '<div class="bar" style="margin-top:2px" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100"><i style="width:' + pct + '%"></i></div>' +
-      '<div style="font-size:15px">' + nextLine + '</div>' + dayLine() + '</div>' +
+      '<div style="font-size:15px">' + nextLine + '</div></div>' +
       challengeBanner() + '<button class="btn" data-act="sheet">Add today\'s steps</button>' +
       todayTug() +
       (myDog() ? '<div class="buddy"><div class="' + (S.bounce ? "bounce" : "") + '">' + DOG + '</div><div style="flex:1;min-width:0"><div style="font-weight:700">' + esc(myDog().name) + ' is ready for a walk</div><div class="muted" style="font-size:14px">' + esc(myDog().name) + ' cheers every scoop</div></div><button class="btn small" style="background:var(--pink);color:var(--dark)" data-act="pat">Pat</button></div>' : "") + '</div>';
