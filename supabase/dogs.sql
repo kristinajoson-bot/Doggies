@@ -32,3 +32,7 @@ insert into public.dogs (shelter_id, name, photo_url, photos, coat, ear, is_demo
 update public.dogs set photos = photos || array['/dogs/cusco-2.jpg'] where name = 'Cusco' and not ('/dogs/cusco-2.jpg' = any(photos));
 update public.profiles set dog_id = null where dog_id in (select id from public.dogs where name in ('Biscuit', 'Mabel', 'Rocky', 'Pip'));
 update public.dogs set active = false where name in ('Biscuit', 'Mabel', 'Rocky', 'Pip');
+
+-- No sample wording: the shelter is just "Walkies Rescue" and the dogs are not flagged as demo.
+update public.shelters set name = 'Walkies Rescue', blurb = 'Our shelter partner.', is_demo = false where is_demo;
+update public.dogs set is_demo = false where name in ('Lima', 'Cusco', 'Pepper');
