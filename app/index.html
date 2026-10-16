@@ -430,6 +430,11 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       if (r.error) return toast("Could not save that");
       await loadAll(); render(); toast("Saved");
     },
+    async renamePack(f) {
+      var r = await sb.rpc("rename_pack", { p_id: f.pid.value, p_name: f.pname.value });
+      if (r.error) return toast(r.error.message);
+      await loadRivals(); await loadBoard(); render(); toast("Pack war renamed");
+    },
     async joinPack(f) {
       var r = await sb.rpc("join_pack", { p_code: f.code.value });
       if (r.error) { S.packMsg = r.error.message; return render(); }
@@ -950,7 +955,8 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       return '<div class="lb ' + (m.is_me ? "mine" : (i === 0 ? "first" : "")) + '"><div class="rank">' + (i + 1) + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (m.is_me ? "You: " : "") + esc(m.display_name) + '</div><div style="font-size:13px">' + m.bowls + (m.bowls === 1 ? " bowl" : " bowls") + '</div></div><div><div class="num">' + fmt(m.steps) + '</div></div></div>';
     }).join("");
     var inv = k.finished ? "" : '<div class="card stack" style="gap:10px"><div class="muted" style="font-size:14px">Invite people with this code or link:</div><div style="font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:.12em">' + esc(k.join_code || "") + '</div><div class="row" style="flex-wrap:wrap"><button class="btn small coral" data-act="sharepack">Invite people</button><button class="btn small light" data-act="copy" data-code="' + esc(k.join_code || "") + '">Copy code</button></div></div>';
-    return topbar("") + '<div class="stack">' + head + inv + '<div class="stack" style="gap:10px">' + list + '</div><button class="btn light" data-act="leavepack">Leave this pack war</button></div>';
+    var ren = '<form class="gap8" data-form="renamePack"><input type="hidden" name="pid" value="' + esc(v.id) + '"><label for="rpname">Pack war name</label><div class="row"><input id="rpname" name="pname" value="' + esc(k.name || "") + '" maxlength="40" minlength="2" required><button class="btn small light">Rename</button></div></form>';
+    return topbar("") + '<div class="stack">' + head + inv + ren + '<div class="stack" style="gap:10px">' + list + '</div><button class="btn light" data-act="leavepack">Leave this pack war</button></div>';
   }
   function wizSheet() {
     var w = S.wiz, person = w.kind === "person", pack = w.kind === "pack", link = person && w.mode === "link";
