@@ -27,3 +27,8 @@ alter table public.dogs add column if not exists photos text[] not null default 
 insert into public.dogs (shelter_id, name, photo_url, photos, coat, ear, is_demo) select s.id, 'Lima', '/dogs/lima-thumb.jpg', array['/dogs/lima-1.jpg', '/dogs/lima-2.jpg'], '#F1E6D2', '#D9C3A0', true from public.shelters s where s.is_demo order by s.created_at limit 1;
 insert into public.dogs (shelter_id, name, photo_url, photos, coat, ear, is_demo) select s.id, 'Cusco', '/dogs/cusco-thumb.jpg', array['/dogs/cusco-1.jpg'], '#B98A52', '#6B4A2A', true from public.shelters s where s.is_demo order by s.created_at limit 1;
 insert into public.dogs (shelter_id, name, photo_url, photos, coat, ear, is_demo) select s.id, 'Pepper', '/dogs/pepper-thumb.jpg', array['/dogs/pepper-1.jpg', '/dogs/pepper-2.jpg'], '#1D1B22', '#2A2833', true from public.shelters s where s.is_demo order by s.created_at limit 1;
+
+-- Second Cusco photo, and the four original sample dogs are hidden (kept in the table, not deleted). Anyone who had chosen one is back on the pool.
+update public.dogs set photos = photos || array['/dogs/cusco-2.jpg'] where name = 'Cusco' and not ('/dogs/cusco-2.jpg' = any(photos));
+update public.profiles set dog_id = null where dog_id in (select id from public.dogs where name in ('Biscuit', 'Mabel', 'Rocky', 'Pip'));
+update public.dogs set active = false where name in ('Biscuit', 'Mabel', 'Rocky', 'Pip');
