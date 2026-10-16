@@ -411,6 +411,12 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       S.wiz = null; await loadRivals(); render(); toast("Link ready. Send it to your rival.");
       if (lr.data) shareDuel(lr.data, w.days);
     },
+    async savePrivacy(f) {
+      store.set("walkies-race-alerts-" + S.user.id, f.alerts.checked ? "1" : "0");
+      var r = await sb.from("profiles").update({ marketing_opt_in: f.marketing.checked, show_on_leaderboard: f.board.checked }).eq("user_id", S.user.id);
+      if (r.error) return toast("Could not save that");
+      await loadAll(); render(); toast("Saved");
+    },
     async renamePack(f) {
       var r = await sb.rpc("rename_pack", { p_id: f.pid.value, p_name: f.pname.value });
       if (r.error) return toast(r.error.message);
