@@ -50,6 +50,7 @@ h1,h2,p{margin:0}
 .scoopbox{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:14px;align-items:center;width:100%;margin-top:6px}
 .scoops3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .scoopsum{text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px}
+.scoopbox.top{margin-top:4px}.bowlcol{display:flex;flex-direction:column;align-items:center;gap:0;min-width:0}.bowlcol svg{display:block;width:100%;max-width:230px;height:auto;margin-top:-6px}
 .scoopsum .sumline{width:36px;height:2px;border-radius:2px;background:var(--line);margin:8px 0}
 .scoop{display:block;aspect-ratio:1/1;padding:0;border:0;background:none}
 button.scoop{cursor:pointer}
@@ -577,12 +578,12 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       if (on) return '<button class="scoop on" data-cel="' + m + '" aria-label="View scoop: ' + fmt(m) + ' steps">' + pawTile(label) + '</button>';
       return '<div class="scoop ' + cls + '" role="img" aria-label="' + fmt(m) + ' steps, ' + (m === next ? "next scoop" : "locked") + '">' + pawTile(label) + '</div>';
     }).join("");
-    var scoopBox = '<div class="scoopbox"><div class="scoops3">' + scoops + '</div><div class="scoopsum"><div class="stat-n month" style="font-size:26px">' + fmt(steps) + '</div><div class="stat-l">steps this month</div><div class="sumline"></div><div class="stat-n today" style="font-size:20px">' + fmt(todaySteps()) + '</div><div class="stat-l">steps today</div></div></div>';
+    var top = '<div class="scoopbox top"><div class="bowlcol"><div class="big" style="font-size:54px;line-height:1">' + done + '</div>' + bowlSvg(steps / 150000, true) + '</div><div class="scoopsum"><div class="stat-n month" style="font-size:26px">' + fmt(steps) + '</div><div class="stat-l">steps this month</div><div class="sumline"></div><div class="stat-n today" style="font-size:20px">' + fmt(todaySteps()) + '</div><div class="stat-l">steps today</div></div></div>';
+    var rowB = '<div class="scoopbox"><div class="scoops3">' + scoops + '</div><div class="scoopsum">' + (next ? '<div class="stat-l">next scoop</div><div class="stat-n" style="font-size:24px;color:var(--pink)">' + (next >= 1000 ? next / 1000 + "k" : next) + '</div><div class="stat-l">' + fmt(next - steps) + ' to go</div>' : '<div class="stat-n" style="font-size:20px;color:var(--green)">All 10!</div><div class="stat-l">Epic walking</div>') + '</div></div>';
     return topbar("") + '<div class="stack">' +
       dogCard() +
-      '<div class="hero"><div class="eyebrow">Dog bowls this month</div><div style="margin:14px 0 ' + Math.round(-48 + 52 * Math.min(1, steps / 150000)) + 'px;position:relative"><span class="big" style="font-size:64px">' + done + '</span></div>' + bowlSvg(steps / 150000, true) + scoopBox + dayLine() +
-      '<div class="bar" style="margin-top:8px" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100"><i style="width:' + pct + '%"></i></div>' +
-      '<div style="font-weight:700;margin-top:2px">' + (next ? fmt(next - steps) + " steps to your next scoop" : "All 10 scoops unlocked. Epic walking!") + '</div></div>' +
+      '<div class="hero"><div class="eyebrow">Dog bowls this month</div>' + top + rowB + dayLine() +
+      '<div class="bar" style="margin-top:8px" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100"><i style="width:' + pct + '%"></i></div></div>' +
       challengeBanner() + '<button class="btn" data-act="sheet">Add today\'s steps</button>' +
       todayTug() +
       (myDog() ? '<div class="buddy"><div class="' + (S.bounce ? "bounce" : "") + '">' + DOG + '</div><div style="flex:1;min-width:0"><div style="font-weight:700">' + esc(myDog().name) + ' is ready for a walk</div><div class="muted" style="font-size:14px">' + esc(myDog().name) + ' cheers every scoop</div></div><button class="btn small" style="background:var(--pink);color:var(--dark)" data-act="pat">Pat</button></div>' : "") + '</div>';
