@@ -1005,11 +1005,10 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   function viewRivals() {
     var duels = S.duels || [], inc = duels.filter(function (d) { return d.incoming; }), mine = duels.filter(function (d) { return !d.incoming; });
     return topbar("") + '<div class="stack"><div><h1 class="h1">Rivals</h1><p class="muted">Pick a rival and pull the bone your way.</p></div>' +
-      '<div class="between"><span class="tag">Challenges ' + challengeCount() + ' of ' + MAX_CHALLENGES + '</span></div>' +
-      (challengeCount() >= MAX_CHALLENGES ? '<button class="btn" disabled>You have 3 challenges. Finish one to start another.</button>' : '<button class="btn coral" data-act="wiz">Challenge a rival</button>') +
       (inc.length ? '<div class="h2">Challenges for you</div>' + inc.map(tugCard).join("") : "") +
-      '<div class="h2">Your tug of wars</div>' +
+      '<div class="between"><div class="h2">Your tug of wars</div><span class="tag">Challenges ' + challengeCount() + ' of ' + MAX_CHALLENGES + '</span></div>' +
       (mine.length ? mine.map(tugCard).join("") : '<div class="card"><b>No tug of wars yet.</b><p class="muted" style="font-size:14px">Challenge a person or a team. Everyone starts from zero when it begins.</p></div>') +
+      (challengeCount() >= MAX_CHALLENGES ? '<button class="btn" disabled>You have 3 challenges. Finish one to start another.</button>' : '<button class="btn coral" data-act="wiz">Challenge a rival</button>') +
       packSection() + '</div>';
   }
   function roundName(r, total) { var left = total - r; return left === 0 ? "Final" : left === 1 ? "Semi-finals" : left === 2 ? "Quarter-finals" : "Round " + r; }
