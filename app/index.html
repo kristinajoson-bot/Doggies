@@ -399,7 +399,7 @@ button.citypill{cursor:pointer}
     var fc = await sb.rpc("duel_faces"); S.faces = {}; (fc.data || []).forEach(function (f) { S.faces[f.id] = f; });
     if (S.preview) loadPreviewCamp(); else {
       var cn = await sb.rpc("campaign_overview"); S.camp = cn.data && cn.data[0] ? cn.data[0] : null;
-      if (S.camp) { var cp = await sb.rpc("campaign_people", { p_id: S.camp.id }); S.campPeople = cp.data || []; var cc = await sb.rpc("campaign_cup", { p_id: S.camp.id }); if (cc.data) S.camp.cup = cc.data; }
+      if (S.camp) { var cp = await sb.rpc("campaign_people", { p_id: S.camp.id }); S.campPeople = cp.data || []; var cc = await sb.rpc("campaign_cup", { p_id: S.camp.id }); if (cc.data && cc.data.stage) S.camp.cup = cc.data; }
     }
     S.packPeople = S.packPeople || {};
     await Promise.all(S.packs.map(function (k) { return sb.rpc("pack_people", { p_id: k.id }).then(function (r) { S.packPeople[k.id] = r.data || []; }); }));
