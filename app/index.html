@@ -469,7 +469,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     async renamePack(f) {
       var r = await sb.rpc("rename_pack", { p_id: f.pid.value, p_name: f.pname.value });
       if (r.error) return toast(r.error.message);
-      S.pedit = null; await loadRivals(); await loadBoard(); render(); toast("Pack war renamed");
+      await loadRivals(); await loadBoard(); render(); toast("Pack war renamed");
     },
     async saveNames(f) {
       var r = await sb.from("profiles").update({ display_name: f.dname.value.trim() || "Walker" }).eq("user_id", S.user.id);
@@ -888,9 +888,18 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       '</form></details>' +
       '<details class="drop" data-det="policy"' + openAttr("policy", false) + '><summary>Privacy policy</summary>' + policyHtml() + '</details>';
   }
+  // Pack wars you started: only the owner can rename one.
+  function myPacksSection() {
+    var own = (S.packs || []).filter(function (k) { return k.is_owner && !k.finished; });
+    if (!own.length) return "";
+    return '<div class="card stack" style="gap:12px"><div class="h2">My pack wars</div>' + own.map(function (k) {
+      return '<form class="gap8" data-form="renamePack" data-autosave><input type="hidden" name="pid" value="' + esc(k.id) + '"><label for="pn-' + esc(k.id) + '">Pack war name</label><input id="pn-' + esc(k.id) + '" name="pname" value="' + esc(k.name) + '" maxlength="40" minlength="2" required></form>';
+    }).join("") + '</div>';
+  }
   function viewMe() {
     return topbar("") + '<div class="stack"><h1 class="h1">Me</h1>' +
       '<form class="card stack" data-form="saveNames" data-autosave><div class="gap8"><label for="dname">Your name</label><input id="dname" name="dname" value="' + esc(S.profile.display_name) + '" maxlength="40" required></div></form>' +
+      myPacksSection() +
       privacySection() +
       '<button class="btn light" data-act="signout">Sign out</button><p class="muted" style="font-size:13px;text-align:center">' + esc(S.user.email) + ' \u00b7 version ' + esc(window.WALKIES_VERSION || "dev") + '</p></div>';
   }
@@ -1006,17 +1015,17 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       '<div class="ban-foot"><span>' + walkers(k.members) + ' · ' + line + '</span><span class="tap-hint">Details ›</span></div></div>';
   }
   function packBack(k) {
-    var rows = (S.packPeople || {})[k.id], editing = S.pedit === k.id;
-    var title = !k.is_owner ? '<div class="ban-name">' + esc(k.name) + '</div>' : editing ? '<form data-form="renamePack"><input type="hidden" name="pid" value="' + esc(k.id) + '"><input id="rpname" name="pname" class="titlein" value="' + esc(k.name) + '" maxlength="40" minlength="2" required aria-label="Pack war name" autocomplete="off"></form>'
-      : '<button class="titlebtn ban-name" data-act="editpack" data-pid="' + esc(k.id) + '" aria-label="Rename pack war">' + esc(k.name) + ' <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>';
-    var list = !rows ? '<p class="muted">Loading…</p>' : rows.map(function (m) {
+    var rows = (S.packPeople || {})[k.id], all = S.packAll && S.packAll[k.id];
+    var shown = rows ? (all ? rows : rows.slice(0, 3)) : null;
+    var list = !shown ? '<p class="muted">Loading\u2026</p>' : shown.map(function (m) {
       return '<div class="lb ' + (m.is_me ? "mine" : (m.rank === 1 ? "first" : "")) + '" style="grid-template-columns:36px auto 1fr auto"><div class="rank">' + m.rank + '</div>' + faceAv(m.dog_id, m.display_name, 30) +
         '<div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(m.display_name) + '</div><div style="font-size:13px">' + m.bowls + (m.bowls === 1 ? " bowl" : " bowls") + '</div></div><div class="num">' + fmt(m.steps) + '</div></div>';
     }).join("");
+    var more = rows && rows.length > 3 ? '<button class="btn light small" data-act="packall" data-pid="' + esc(k.id) + '">' + (all ? "Show top 3" : "Show all " + rows.length) + '</button>' : "";
     return '<div class="' + flipCls(k.id, "pk ban-back") + '" data-flip="' + esc(k.id) + '" role="button" tabindex="0" aria-label="Flip back">' +
-      '<div class="ban-top"><span class="tug-tag">' + TROPHY + ' Pack war · ' + (k.finished ? "Finished" : k.days_left + (k.days_left === 1 ? " day left" : " days left")) + '</span></div>' +
-      title + '<div class="rowlist">' + list + '</div>' +
-      (k.finished ? "" : '<button class="btn coral" data-act="sharepack" data-pid="' + esc(k.id) + '">Invite people with a link</button>') + '</div>';
+      '<div class="ban-top"><span class="tug-tag">' + TROPHY + ' Pack war \u00b7 ' + (k.finished ? "Finished" : k.days_left + (k.days_left === 1 ? " day left" : " days left")) + '</span></div>' +
+      '<div class="ban-name">' + esc(k.name) + '</div><div class="rowlist">' + list + '</div>' + more +
+      (k.finished || !k.is_owner ? "" : '<button class="btn coral" data-act="sharepack" data-pid="' + esc(k.id) + '">Invite people with a link</button>') + '</div>';
   }
   function packBanner(k) { return '<div class="fwrap">' + (S.flip && S.flip[k.id] ? packBack(k) : packFront(k)) + '</div>'; }
   function campAvg(t, n) { return n > 0 ? Math.round(Number(t) / n) : 0; }
@@ -1163,7 +1172,6 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     if (S.celebrate) { confetti(); var d = $(".cel-done"); if (d) d.focus(); }
     if (S.tab === "packs" && S.boardView === "race") placeRace();
     scrollToMe();
-    if (S.pedit) { var pin = $("#rpname"); if (pin && document.activeElement !== pin) { pin.focus(); pin.select(); } }
   }
 
   // ---- events ----
@@ -1200,11 +1208,6 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     });
   })();
   // Settings save themselves as soon as a box is ticked or a field is changed.
-  document.addEventListener("focusout", function (e) {
-    if (!e.target || e.target.id !== "rpname" || !S.pedit) return;
-    var k = (S.packs || []).filter(function (x) { return x.id === S.pedit; })[0] || {}, val = e.target.value.trim();
-    if (val.length >= 2 && val !== k.name) actions.renamePack(e.target.form); else { S.pedit = null; render(); }
-  });
   document.addEventListener("change", function (e) {
     var f = e.target.closest ? e.target.closest("form[data-autosave]") : null; if (!f) return;
     if (f.checkValidity && !f.checkValidity()) { f.reportValidity(); return; }
@@ -1215,7 +1218,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   document.addEventListener("click", function (e) {
     var t = e.target;
     var tab = t.closest("[data-tab]");
-    if (tab) { S.dogview = null; S.msg = ""; if (tab.dataset.tab === "packs" && S.tab !== "packs") { S.boardView = "list"; S.cam = null; } S.pedit = null; S.tab = tab.dataset.tab; render(); window.scrollTo(0, 0); S.scrollMe = S.tab === "packs"; scrollToMe(); if (S.tab === "packs") loadBoard().then(render); if (S.tab === "impact") loadImpact().then(render); if (S.tab === "rivals") loadRivals().then(render); return; }
+    if (tab) { S.dogview = null; S.msg = ""; if (tab.dataset.tab === "packs" && S.tab !== "packs") { S.boardView = "list"; S.cam = null; } S.tab = tab.dataset.tab; render(); window.scrollTo(0, 0); S.scrollMe = S.tab === "packs"; scrollToMe(); if (S.tab === "packs") loadBoard().then(render); if (S.tab === "impact") loadImpact().then(render); if (S.tab === "rivals") loadRivals().then(render); return; }
     var cel = t.closest("[data-cel]");
     if (cel) { S.celebrate = { bowls: bowlsFor(Number(cel.dataset.cel)), count: 1, steps: Number(cel.dataset.cel) }; render(); return; }
     var wk = t.closest("[data-wkind]");
@@ -1247,7 +1250,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     if (fl && !t.closest("[data-act],[data-share],[data-cancel],[data-duel],#rpname")) {
       var fid = fl.dataset.flip, fel = fl.closest(".ban") || fl, still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       fel.classList.add("fo");
-      setTimeout(function () { S.flip = S.flip || {}; S.flip[fid] = !S.flip[fid]; S.pedit = null; S.flipAnim = fid; render(); setTimeout(function () { S.flipAnim = null; }, 400); }, still ? 0 : 170);
+      setTimeout(function () { S.flip = S.flip || {}; S.flip[fid] = !S.flip[fid]; S.flipAnim = fid; render(); setTimeout(function () { S.flipAnim = null; }, 400); }, still ? 0 : 170);
       return;
     }
     var a = t.closest("[data-act]"); if (!a) return;
@@ -1271,7 +1274,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     else if (act === "sharecamp") {
       var cc = S.camp; if (cc) { var clink = ORIGIN + "/?campaign=" + encodeURIComponent(cc.slug), ctext = cc.title + " on Walkies! Pick your city and walk. Every step also feeds a shelter dog. Tap to join:"; if (navigator.share) navigator.share({ title: cc.title, text: ctext, url: clink }).catch(function () {}); else { try { navigator.clipboard.writeText(ctext + " " + clink); toast("Invite copied. Paste it into a message."); } catch (x) { toast(clink); } } }
     }
-    else if (act === "editpack") { S.pedit = a.dataset.pid; render(); }
+    else if (act === "packall") { S.packAll = S.packAll || {}; S.packAll[a.dataset.pid] = !S.packAll[a.dataset.pid]; render(); }
     else if (act === "sharepack") {
       var pk = (S.packs || []).filter(function (x) { return x.id === a.dataset.pid; })[0];
       if (pk) { var plink = packLink(pk.join_code), ptext = packText(pk.name, pk.days_left, plink); if (navigator.share) navigator.share({ title: "Walkies pack war", text: ptext, url: plink }).catch(function () {}); else { try { navigator.clipboard.writeText(ptext); toast("Invite copied. Paste it into a message."); } catch (x) { toast(plink); } } }
