@@ -26,3 +26,4 @@ alter table public.profiles add column if not exists show_on_leaderboard boolean
 alter table public.dogs add column if not exists photos text[] not null default '{}';
 insert into public.dogs (shelter_id, name, photo_url, photos, coat, ear, is_demo) select s.id, 'Lima', '/dogs/lima-thumb.jpg', array['/dogs/lima-1.jpg', '/dogs/lima-2.jpg'], '#F1E6D2', '#D9C3A0', true from public.shelters s where s.is_demo order by s.created_at limit 1;
 insert into public.dogs (shelter_id, name, photo_url, photos, coat, ear, is_demo) select s.id, 'Cusco', '/dogs/cusco-thumb.jpg', array['/dogs/cusco-1.jpg'], '#B98A52', '#6B4A2A', true from public.shelters s where s.is_demo order by s.created_at limit 1;
+insert into public.dogs (shelter_id, name, photo_url, photos, coat, ear, is_demo) select s.id, 'Pepper', '/dogs/pepper-thumb.jpg', array['/dogs/pepper-1.jpg', '/dogs/pepper-2.jpg'], '#1D1B22', '#2A2833', true from public.shelters s where s.is_demo order by s.created_at limit 1;
