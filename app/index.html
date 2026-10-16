@@ -232,12 +232,20 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
 .rowlist{display:flex;flex-direction:column;gap:8px}
 .ban.camp{border-color:var(--yellow);background:radial-gradient(420px 240px at 50% -20%,rgba(244,255,58,.22),transparent 70%),linear-gradient(160deg,#17160a,#0b0a12);box-shadow:0 0 30px rgba(244,255,58,.22)}
 .camp-tag{background:var(--yellow);color:var(--dark);font-weight:800;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px;white-space:nowrap}
-.cityn{font-family:var(--display);font-weight:800;font-size:26px;line-height:1;letter-spacing:-.02em}
+.cityn{font-family:var(--display);font-weight:800;font-size:26px;line-height:1;letter-spacing:-.02em;text-shadow:0 0 14px currentColor}
 .youon{text-align:center;font-size:16px}.youon b{font-weight:800}.youon b.a{color:var(--pink)}.youon b.b{color:var(--cyan)}
 .cityn.a{color:var(--pink);text-shadow:0 0 14px rgba(255,46,154,.6)}.cityn.b{color:var(--cyan);text-shadow:0 0 14px rgba(35,229,255,.6)}
 .cityavg{font-family:'Geist Mono',ui-monospace,monospace;font-weight:600;font-size:20px}
 .splitbar{display:flex;height:12px;border-radius:999px;overflow:hidden;background:var(--line)}
 .splitbar i{display:block;height:100%;transition:width .6s}.splitbar .a{background:var(--pink);box-shadow:0 0 12px rgba(255,46,154,.6)}.splitbar .b{background:var(--cyan);box-shadow:0 0 12px rgba(35,229,255,.6)}
+.cityrow{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center}
+.cityrow .cbar{height:8px;border-radius:999px;background:var(--line);overflow:hidden;margin-top:4px}.cityrow .cbar i{display:block;height:100%;border-radius:999px}
+.cityrank{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:var(--dark)}
+.citygrid{display:flex;flex-wrap:wrap;gap:8px}
+.citypill{display:inline-flex;align-items:center;gap:7px;border:2px solid var(--c);border-radius:999px;padding:7px 12px;font-weight:800;font-size:15px;background:rgba(0,0,0,.25);color:inherit}
+.citypill i{width:9px;height:9px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--c)}
+button.citypill{cursor:pointer}
+.previewnote{font-size:12px;color:var(--yellow);text-align:center;letter-spacing:.06em;text-transform:uppercase}
 .sidetag{font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;color:var(--dark)}.sidetag.a{background:var(--pink)}.sidetag.b{background:var(--cyan)}
 @media (prefers-reduced-motion:reduce){.ban.fo,.ban.fi{transition:none;animation:none}}
 </style>
@@ -267,6 +275,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
 
   var ORIGIN = location.origin;
   S.recovery = /type=recovery/.test(location.hash);
+  try { S.preview = new URLSearchParams(location.search).get("preview") === "capitals"; } catch (e) {}
   try {
     var qj = new URLSearchParams(location.search).get("pack");
     var qc = new URLSearchParams(location.search).get("campaign");
@@ -374,15 +383,17 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var a = await sb.rpc("my_duels"), l = await sb.rpc("my_links"), pk = await sb.rpc("my_packs");
     S.packs = pk.data || [];
     var fc = await sb.rpc("duel_faces"); S.faces = {}; (fc.data || []).forEach(function (f) { S.faces[f.id] = f; });
-    var cn = await sb.rpc("campaign_now"); S.camp = cn.data && cn.data[0] ? cn.data[0] : null;
-    if (S.camp) { var cp = await sb.rpc("campaign_people", { p_id: S.camp.id }); S.campPeople = cp.data || []; }
+    if (S.preview) loadPreviewCamp(); else {
+      var cn = await sb.rpc("campaign_overview"); S.camp = cn.data && cn.data[0] ? cn.data[0] : null;
+      if (S.camp) { var cp = await sb.rpc("campaign_people", { p_id: S.camp.id }); S.campPeople = cp.data || []; }
+    }
     S.packPeople = S.packPeople || {};
     await Promise.all(S.packs.map(function (k) { return sb.rpc("pack_people", { p_id: k.id }).then(function (r) { S.packPeople[k.id] = r.data || []; }); }));
     var tk = {}; (l.data || []).forEach(function (x) { tk[x.id] = x.invite_token; });
     S.duels = (a.data || []).map(function (d) { d.invite_token = tk[d.id] || null; return d; });
   }
   async function loadBoard() { var r = await sb.rpc("pack_leaderboard"), w = await sb.rpc("walker_board"); S.packBoard = r.data || []; S.walkers = w.data || [];
-    if (S.camp) { var cpp = await sb.rpc("campaign_people", { p_id: S.camp.id }); S.campPeople = cpp.data || []; } try { return checkRaceAlerts(); } catch (e) { console.error("alerts", e); return 0; } }
+    if (S.camp && !S.preview) { var cpp = await sb.rpc("campaign_people", { p_id: S.camp.id }); S.campPeople = cpp.data || []; } try { return checkRaceAlerts(); } catch (e) { console.error("alerts", e); return 0; } }
 
   async function boot() {
     var r = await sb.auth.getSession();
@@ -844,9 +855,10 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     if (race) body = raceView(tab);
     else if (tab === "Camp" && S.camp) {
       var cps = S.campPeople || [], cm = S.camp;
-      body = (S.camp.my_side ? "" : '<div class="card row" style="border-color:var(--yellow)"><div style="flex:1;font-size:14px"><b>' + esc(cm.title) + '</b> Pick your side to join the leaderboard.</div><button class="btn small" data-tab="rivals">Join</button></div>') +
+      body = (cm.my_side ? "" : '<div class="card row" style="border-color:var(--yellow)"><div style="flex:1;font-size:14px"><b>' + esc(cm.title) + '</b> Pick your side to join the leaderboard.</div><button class="btn small" data-tab="rivals">Join</button></div>') +
+        (cm.sides.length > 2 ? '<div class="h2 tierhead" style="margin:0">Cities</div><div class="card stack" style="gap:12px">' + cityStandings(cm) + '</div><div class="h2 tierhead" style="margin:10px 0 0">Walkers</div>' : "") +
         (cps.length ? cps.map(function (m, i) {
-          return tierHead(i) + '<div class="lb ' + (m.is_me ? "mine" : (i === 0 ? "first" : "")) + '"><div class="rank">' + m.rank + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(m.display_name) + '</div><div style="font-size:13px"><span class="sidetag ' + m.side + '">Team ' + esc(m.side === "a" ? cm.side_a : cm.side_b) + '</span></div></div><div><div class="num">' + fmt(m.steps) + '</div><div style="font-size:12px;text-align:right">steps</div></div></div>';
+          return tierHead(i) + '<div class="lb ' + (m.is_me ? "mine" : (i === 0 ? "first" : "")) + '"><div class="rank">' + m.rank + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(m.display_name) + '</div><div style="font-size:13px">' + sideTag(cm, m.side, "Team ") + '</div></div><div><div class="num">' + fmt(m.steps) + '</div><div style="font-size:12px;text-align:right">steps</div></div></div>';
         }).join("") : '<div class="card"><b>No one has opted in yet.</b><p class="muted">Be the first to pick a side.</p></div>');
     } else if (tab === "Pack") {
       var pks = S.packBoard || [];
@@ -1037,30 +1049,59 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       (k.finished || !k.is_owner ? "" : '<button class="btn coral" data-act="sharepack" data-pid="' + esc(k.id) + '">Invite people with a link</button>') + '</div>';
   }
   function packBanner(k) { return '<div class="fwrap">' + (S.flip && S.flip[k.id] ? packBack(k) : packFront(k)) + '</div>'; }
+  // ?preview=capitals shows a made-up multi-city campaign so we can see how one would look. Nothing is saved.
+  function loadPreviewCamp() {
+    var base = [["a", "Sydney", 120, 9600000], ["b", "Melbourne", 104, 8900000], ["c", "Brisbane", 63, 5700000], ["d", "Perth", 41, 3000000], ["e", "Adelaide", 28, 2100000], ["f", "Hobart", 12, 1100000], ["g", "Darwin", 9, 600000], ["h", "Canberra", 17, 1900000]];
+    var ppl = [["Ana", "h", 131000], ["Marco", "a", 126000], ["Jess", "f", 119000], ["Lee", "b", 117000], ["Sam", "c", 108000], ["Priya", "a", 101000], ["Tom", "d", 96000], ["Mia", "e", 93000], ["Noah", "b", 88000], ["Zoe", "h", 84000], ["Ben", "c", 79000], ["Cy", "g", 74000], ["Dee", "a", 70000], ["Eli", "b", 66000], ["Fay", "d", 61000]];
+    var me = S.demoSide ? [[(S.profile && S.profile.display_name) || "You", S.demoSide, 98000]] : [];
+    var all = ppl.concat(me).sort(function (x, y) { return y[2] - x[2]; });
+    S.camp = { id: "preview", slug: "capital-cities", title: "Capital Cities Challenge", tagline: "", days_left: 15, my_side: S.demoSide || null, my_steps: S.demoSide ? 98000 : 0,
+      sides: base.map(function (b) { var add = S.demoSide === b[0] ? 1 : 0; return { key: b[0], label: b[1], walkers: b[2] + add, total: b[3] + (add ? 98000 : 0) }; }) };
+    S.campPeople = all.map(function (x, i) { return { display_name: x[0], side: x[1], steps: x[2], dog_id: null, is_me: !!S.demoSide && x[0] === ((S.profile && S.profile.display_name) || "You") && x[2] === 98000, rank: i + 1 }; });
+  }
+  var CITY_COLORS = ["#ff2e9a", "#23e5ff", "#f4ff3a", "#3bff8f", "#ff8a3d", "#b58cff", "#ff6b6b", "#5aa9ff"];
   function campAvg(t, n) { return n > 0 ? Math.round(Number(t) / n) : 0; }
+  function sideCol(c, key) { var i = (c.sides || []).findIndex(function (x) { return x.key === key; }); return CITY_COLORS[(i < 0 ? 0 : i) % CITY_COLORS.length]; }
+  function sideName(c, key) { var x = (c.sides || []).filter(function (y) { return y.key === key; })[0]; return x ? x.label : ""; }
+  function sideTag(c, key, prefix) { return '<span class="sidetag" style="background:' + sideCol(c, key) + '">' + esc((prefix || "") + sideName(c, key)) + '</span>'; }
+  function standings(c) { return (c.sides || []).map(function (x) { return { key: x.key, label: x.label, walkers: Number(x.walkers), total: Number(x.total), avg: campAvg(x.total, x.walkers) }; }).sort(function (a, b) { return b.avg - a.avg; }); }
   function campFront(c) {
-    var mine = c.my_side ? (c.my_side === "a" ? c.side_a : c.side_b) : "";
-    var cta = mine ? '<div class="youon">You are on Team <b class="' + c.my_side + '">' + esc(mine) + '</b></div><button class="btn coral" data-act="sharecamp">Invite friends</button>'
-      : '<div class="row"><button class="btn coral" style="background:var(--pink)" data-act="joincamp" data-side="a">Join ' + esc(c.side_a) + '</button><button class="btn" style="background:var(--cyan);color:var(--dark)" data-act="joincamp" data-side="b">Join ' + esc(c.side_b) + '</button></div>';
+    var two = c.sides.length === 2, mine = c.my_side ? sideName(c, c.my_side) : "";
+    var youOn = '<div class="youon">You are on Team <b style="color:' + (c.my_side ? sideCol(c, c.my_side) : "inherit") + '">' + esc(mine) + '</b></div><button class="btn coral" data-act="sharecamp">Invite friends</button>';
+    var cta;
+    if (mine) cta = youOn;
+    else if (two) cta = '<div class="row">' + c.sides.map(function (x) { return '<button class="btn" style="background:' + sideCol(c, x.key) + ';color:var(--dark)" data-act="joincamp" data-side="' + esc(x.key) + '">Join ' + esc(x.label) + '</button>'; }).join("") + '</div>';
+    else cta = '<div class="muted" style="font-size:14px;text-align:center">Pick your city</div><div class="citygrid" style="justify-content:center">' + c.sides.map(function (x) { return '<button class="citypill" style="--c:' + sideCol(c, x.key) + '" data-act="joincamp" data-side="' + esc(x.key) + '"><i></i>' + esc(x.label) + '</button>'; }).join("") + '</div>';
+    var head = two ? '<div class="vs-row" style="padding:6px 0"><div class="vside"><div class="cityn" style="color:' + sideCol(c, c.sides[0].key) + '">' + esc(c.sides[0].label) + '</div></div><div class="vsbadge">VS</div><div class="vside"><div class="cityn" style="color:' + sideCol(c, c.sides[1].key) + '">' + esc(c.sides[1].label) + '</div></div></div>'
+      : '<div class="ban-name">' + esc(c.title) + '</div>' + (mine ? '<div class="citygrid">' + c.sides.map(function (x) { return '<span class="citypill" style="--c:' + sideCol(c, x.key) + '"><i></i>' + esc(x.label) + '</span>'; }).join("") + '</div>' : "");
     return '<div class="' + flipCls(c.id, "camp") + '" data-flip="' + esc(c.id) + '" role="button" tabindex="0" aria-label="Show the details">' +
-      '<div class="ban-top"><span class="camp-tag">Campaign of the month</span><span class="chip-s">' + c.days_left + (c.days_left === 1 ? " day left" : " days left") + '</span></div>' +
-      '<div class="vs-row" style="padding:6px 0"><div class="vside"><div class="cityn a">' + esc(c.side_a) + '</div></div><div class="vsbadge">VS</div><div class="vside"><div class="cityn b">' + esc(c.side_b) + '</div></div></div>' + cta + '</div>';
+      '<div class="ban-top"><span class="camp-tag">Campaign of the month</span><span class="chip-s">' + c.days_left + (c.days_left === 1 ? " day left" : " days left") + '</span></div>' + head + cta + '</div>';
+  }
+  function campPeopleRows(c, shown) {
+    return shown.length ? shown.map(function (m) {
+      return '<div class="lb ' + (m.is_me ? "mine" : (m.rank === 1 ? "first" : "")) + '" style="grid-template-columns:36px auto 1fr auto"><div class="rank">' + m.rank + '</div>' + faceAv(m.dog_id, m.display_name, 30) +
+        '<div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(m.display_name) + '</div><div style="font-size:13px">' + sideTag(c, m.side) + '</div></div><div class="num">' + fmt(m.steps) + '</div></div>';
+    }).join("") : '<p class="muted">No one has opted in yet.</p>';
+  }
+  function cityStandings(c) {
+    var st = standings(c), max = st.length ? Math.max(1, st[0].avg) : 1;
+    return st.map(function (x, i) {
+      return '<div class="cityrow"><div class="cityrank" style="background:' + sideCol(c, x.key) + '">' + (i + 1) + '</div><div style="min-width:0"><div style="font-weight:800">' + esc(x.label) + ' <span class="muted" style="font-weight:600;font-size:13px">' + walkers(x.walkers) + '</span></div><div class="cbar"><i style="width:' + Math.max(3, Math.round(x.avg / max * 100)) + '%;background:' + sideCol(c, x.key) + '"></i></div></div><div style="text-align:right"><div class="cityavg" style="font-size:17px">' + fmt(x.avg) + '</div><div class="vss">per walker</div></div></div>';
+    }).join("");
   }
   function campBack(c) {
-    var aa = campAvg(c.a_total, c.a_walkers), bb = campAvg(c.b_total, c.b_walkers), tot = aa + bb, share = tot > 0 ? Math.max(6, Math.min(94, Math.round(aa / tot * 100))) : 50;
-    var rows = S.campPeople || [], all = S.packAll && S.packAll[c.id], shown = all ? rows : rows.slice(0, 3);
-    var stat = function (k, name, n, avg, total) { return '<div class="vside"><div class="cityn ' + k + '">' + esc(name) + '</div><div class="cityavg">' + fmt(avg) + '</div><div class="vss">steps per walker</div><div class="vss">' + walkers(n) + ' \u00b7 ' + fmt(total) + ' steps</div></div>'; };
-    var list = shown.length ? shown.map(function (m) {
-      return '<div class="lb ' + (m.is_me ? "mine" : (m.rank === 1 ? "first" : "")) + '" style="grid-template-columns:36px auto 1fr auto"><div class="rank">' + m.rank + '</div>' + faceAv(m.dog_id, m.display_name, 30) +
-        '<div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(m.display_name) + '</div><div style="font-size:13px"><span class="sidetag ' + m.side + '">' + esc(m.side === "a" ? c.side_a : c.side_b) + '</span></div></div><div class="num">' + fmt(m.steps) + '</div></div>';
-    }).join("") : '<p class="muted">No one has opted in yet.</p>';
+    var two = c.sides.length === 2, rows = S.campPeople || [], all = S.packAll && S.packAll[c.id], shown = all ? rows : rows.slice(0, 3);
     var more = rows.length > 3 ? '<button class="btn light small" data-act="packall" data-pid="' + esc(c.id) + '">' + (all ? "Show top 3" : "Show all " + rows.length) + '</button>' : "";
+    var top;
+    if (two) {
+      var a = standings(c).filter(function (x) { return x.key === c.sides[0].key; })[0], b = standings(c).filter(function (x) { return x.key === c.sides[1].key; })[0], tot = a.avg + b.avg, share = tot > 0 ? Math.max(6, Math.min(94, Math.round(a.avg / tot * 100))) : 50;
+      var stat = function (x) { return '<div class="vside"><div class="cityn" style="color:' + sideCol(c, x.key) + '">' + esc(x.label) + '</div><div class="cityavg">' + fmt(x.avg) + '</div><div class="vss">steps per walker</div><div class="vss">' + walkers(x.walkers) + ' · ' + fmt(x.total) + ' steps</div></div>'; };
+      top = '<div class="vs-row">' + stat(a) + '<div class="vsbadge">VS</div>' + stat(b) + '</div><div class="splitbar" role="img" aria-label="' + esc(a.label) + ' holds ' + share + ' percent"><i style="width:' + share + '%;background:' + sideCol(c, a.key) + '"></i><i style="width:' + (100 - share) + '%;background:' + sideCol(c, b.key) + '"></i></div>';
+    } else top = '<div class="ban-name">' + esc(c.title) + '</div><div class="rowlist" style="gap:12px">' + cityStandings(c) + '</div>';
     return '<div class="' + flipCls(c.id, "camp ban-back") + '" data-flip="' + esc(c.id) + '" role="button" tabindex="0" aria-label="Flip back">' +
-      '<div class="ban-top"><span class="camp-tag">Campaign of the month</span><span class="chip-s">' + c.days_left + (c.days_left === 1 ? " day left" : " days left") + '</span></div>' +
-      '<div class="vs-row">' + stat("a", c.side_a, c.a_walkers, aa, c.a_total) + '<div class="vsbadge">VS</div>' + stat("b", c.side_b, c.b_walkers, bb, c.b_total) + '</div>' +
-      '<div class="splitbar" role="img" aria-label="' + esc(c.side_a) + ' holds ' + share + ' percent"><i class="a" style="width:' + share + '%"></i><i class="b" style="width:' + (100 - share) + '%"></i></div>' +
+      '<div class="ban-top"><span class="camp-tag">Campaign of the month</span><span class="chip-s">' + c.days_left + (c.days_left === 1 ? " day left" : " days left") + '</span></div>' + top +
       '<div class="muted" style="font-size:13px;text-align:center">The city with the most steps per walker wins</div>' +
-      '<div class="rowlist">' + list + '</div>' + more + '</div>';
+      '<div class="rowlist">' + campPeopleRows(c, shown) + '</div>' + more + '</div>';
   }
   function campBanner(c) { return '<div class="fwrap">' + (S.flip && S.flip[c.id] ? campBack(c) : campFront(c)) + '</div>'; }
   var PAW_ART = '<svg width="110" height="110" viewBox="0 0 120 120" fill="rgba(255,255,255,.13)" aria-hidden="true"><ellipse cx="60" cy="80" rx="25" ry="21"/><ellipse cx="27" cy="52" rx="10" ry="13"/><ellipse cx="47" cy="31" rx="10" ry="13"/><ellipse cx="73" cy="31" rx="10" ry="13"/><ellipse cx="93" cy="52" rx="10" ry="13"/></svg>';
@@ -1083,6 +1124,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var month = ""; try { month = new Date(S.challenge.starts_on + "T00:00:00").toLocaleDateString("en-AU", { month: "long" }); } catch (e) {}
     var one = function (x) { return x.t === "d" ? tugBanner(x.v) : packBanner(x.v); };
     return topbar("") + '<div class="stack"><div class="promo"><div class="eyebrow">' + esc(month ? month + " · " : "") + 'Pick your fight</div><h1 class="promo-title">Challenges<small>of the month</small></h1><p class="muted">Every step you walk also fills a bowl for a shelter dog. Take on a friend or lead a pack.</p></div>' +
+      (S.preview ? '<div class="previewnote">Preview with demo numbers. Nothing is saved.</div>' : "") +
       (S.camp ? campBanner(S.camp) : "") +
       (inc.length ? '<div class="h2">Challenges for you</div>' + inc.map(tugBanner).join("") : "") +
       '<div class="between"><div class="h2">Your 3 challenges</div><span class="tag">' + Math.min(challengeCount(), MAX_CHALLENGES) + ' of ' + MAX_CHALLENGES + ' going</span></div>' +
@@ -1278,7 +1320,11 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     else if (act === "wiz") { S.wiz = { kind: a.dataset.kind === "pack" ? "pack" : "person", days: 7 }; S.wizMsg = ""; render(); }
     else if (act === "closewiz") { S.wiz = null; render(); }
     else if (act === "joincamp") {
-      var cs = S.camp; if (cs) sb.rpc("join_campaign", { p_id: cs.id, p_side: a.dataset.side }).then(function (r) { if (r.error) { toast(r.error.message); return; } return loadRivals().then(function () { render(); toast("You are on Team " + (a.dataset.side === "a" ? cs.side_a : cs.side_b) + "! Now invite your friends."); }); });
+      var cs = S.camp, jside = a.dataset.side;
+      if (cs && confirm("Join Team " + sideName(cs, jside) + "? Your steps count for them from now on, and you can't switch sides.")) {
+        if (S.preview) { S.demoSide = jside; loadPreviewCamp(); render(); toast("You are on Team " + sideName(cs, jside) + "! Now invite your friends."); }
+        else sb.rpc("join_campaign", { p_id: cs.id, p_side: jside }).then(function (r) { if (r.error) { toast(r.error.message); return; } return loadRivals().then(function () { render(); toast("You are on Team " + sideName(cs, jside) + "! Now invite your friends."); }); });
+      }
     }
     else if (act === "sharecamp") {
       var cc = S.camp; if (cc) { var clink = ORIGIN + "/?campaign=" + encodeURIComponent(cc.slug), ctext = cc.title + " on Walkies! Pick your city and walk. Every step also feeds a shelter dog. Tap to join:"; if (navigator.share) navigator.share({ title: cc.title, text: ctext, url: clink }).catch(function () {}); else { try { navigator.clipboard.writeText(ctext + " " + clink); toast("Invite copied. Paste it into a message."); } catch (x) { toast(clink); } } }
