@@ -861,7 +861,18 @@ button.citypill{cursor:pointer}
   }
   var TIERS = [[0, "Top Dog"], [5, "Trail Hounds"], [20, "Pups"]];
   function tierHead(i) { var t = TIERS.filter(function (x) { return x[0] === i; })[0]; return t ? '<div class="h2 tierhead" style="margin:' + (i ? "10px" : "0") + ' 0 0">' + t[1] + '</div>' : ""; }
+  // One pack from the leaderboard: everyone in it with their steps. Only members can open it.
+  function viewLbPack() {
+    var id = S.lbpack, k = (S.packBoard || []).filter(function (x) { return x.id === id; })[0] || (S.packs || []).filter(function (x) { return x.id === id; })[0] || {};
+    var rows = (S.packPeople || {})[id];
+    var list = !rows ? '<p class="muted">Loading\u2026</p>' : rows.map(function (m) {
+      return '<div class="lb ' + (m.is_me ? "mine" : (m.rank === 1 ? "first" : "")) + '" style="grid-template-columns:36px auto 1fr auto"><div class="rank">' + m.rank + '</div>' + faceAv(m.dog_id, m.display_name, 30) +
+        '<div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(m.display_name) + '</div><div style="font-size:13px">' + m.bowls + (m.bowls === 1 ? " bowl" : " bowls") + '</div></div><div class="num">' + fmt(m.steps) + '</div></div>';
+    }).join("");
+    return topbar("") + '<div class="stack"><div class="between"><button class="linkbtn" data-act="lbpackback">\u2039 Leaderboard</button></div><h1 class="h1">' + esc(k.name || "Pack war") + '</h1><div class="stack" style="gap:10px">' + list + '</div></div>';
+  }
   function viewPacks() {
+    if (S.lbpack) return viewLbPack();
     var tab = S.bracket === "Camp" && !S.camp ? "Pup" : (S.bracket || "Pup");
     var chips = [["Pup", "Walkers"], ["Pack", "Packs"]].concat(S.camp ? [["Camp", "Challenges"]] : []).map(function (b) { return '<button class="pill" aria-pressed="' + (tab === b[0]) + '" data-bracket="' + b[0] + '">' + b[1] + '</button>'; }).join("");
     var body = "", race = S.boardView === "race";
@@ -1320,7 +1331,7 @@ button.citypill{cursor:pointer}
   document.addEventListener("click", function (e) {
     var t = e.target;
     var tab = t.closest("[data-tab]");
-    if (tab) { S.dogview = null; S.msg = ""; if (tab.dataset.tab === "packs" && S.tab !== "packs") { S.boardView = "list"; S.cam = null; } S.tab = tab.dataset.tab; render(); window.scrollTo(0, 0); S.scrollMe = S.tab === "packs"; scrollToMe(); if (S.tab === "packs") loadBoard().then(render); if (S.tab === "impact") loadImpact().then(render); if (S.tab === "rivals") loadRivals().then(render); return; }
+    if (tab) { S.dogview = null; S.msg = ""; if (tab.dataset.tab === "packs" && S.tab !== "packs") { S.boardView = "list"; S.cam = null; } S.lbpack = null; S.tab = tab.dataset.tab; render(); window.scrollTo(0, 0); S.scrollMe = S.tab === "packs"; scrollToMe(); if (S.tab === "packs") loadBoard().then(render); if (S.tab === "impact") loadImpact().then(render); if (S.tab === "rivals") loadRivals().then(render); return; }
     var cel = t.closest("[data-cel]");
     if (cel) { S.celebrate = { bowls: bowlsFor(Number(cel.dataset.cel)), count: 1, steps: Number(cel.dataset.cel) }; render(); return; }
     var wk = t.closest("[data-wkind]");
@@ -1335,7 +1346,12 @@ button.citypill{cursor:pointer}
     if (wd && S.wiz) { var wf2 = $("form[data-form=makeDuel]"); if (wf2 && wf2.pname) S.wiz.pname = wf2.pname.value; S.wiz.days = Number(wd.dataset.wdays); render(); return; }
     var da = t.closest("[data-duel]");
     if (da) { sb.rpc("respond_duel", { p_id: da.dataset.duel, p_accept: da.dataset.ans === "1" }).then(function (r) { if (r.error) toast(r.error.message); return loadRivals(); }).then(render); return; }
-    var pkc = t.closest("[data-pack]"); if (pkc) { openPack(pkc.dataset.pack); return; }
+    var pkc = t.closest("[data-pack]");
+    if (pkc) {
+      var pid = pkc.dataset.pack; S.lbpack = pid; render(); window.scrollTo(0, 0);
+      sb.rpc("pack_people", { p_id: pid }).then(function (r) { S.packPeople = S.packPeople || {}; S.packPeople[pid] = r.data || []; if (S.lbpack === pid) render(); });
+      return;
+    }
     var dg = t.closest("[data-dog]");
     if (dg) { openDog(dg.dataset.dog); return; }
     var pd = t.closest("[data-pickdog]");
@@ -1380,6 +1396,7 @@ button.citypill{cursor:pointer}
     else if (act === "sharecamp") {
       var cc = S.camp; if (cc) { var clink = ORIGIN + "/?campaign=" + encodeURIComponent(cc.slug), ctext = cc.title + " on Walkies! Pick your city and walk. Every step also feeds a shelter dog. Tap to join:"; if (navigator.share) navigator.share({ title: cc.title, text: ctext, url: clink }).catch(function () {}); else { try { navigator.clipboard.writeText(ctext + " " + clink); toast("Invite copied. Paste it into a message."); } catch (x) { toast(clink); } } }
     }
+    else if (act === "lbpackback") { S.lbpack = null; S.scrollMe = true; render(); scrollToMe(); }
     else if (act === "packall") { S.packAll = S.packAll || {}; S.packAll[a.dataset.pid] = !S.packAll[a.dataset.pid]; render(); }
     else if (act === "sharepack") {
       var pk = (S.packs || []).filter(function (x) { return x.id === a.dataset.pid; })[0];
