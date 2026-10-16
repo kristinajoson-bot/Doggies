@@ -214,8 +214,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   var BOWL_KG = 0.4, TEAM_GOAL_KG = 250;
   var INDUSTRIES = ["Banking & Finance", "Tech", "Automotive", "Retail", "Health", "Other"];
   var BRACKETS = [["Pack", "up to 250 staff"]];
-  var BOARD_TABS = [["Pup", "Walkers"], ["Pack", "Teams"]];
-  var S = { view: "loading", tab: "today", mode: "signup", user: null, profile: null, challenge: null, days: [], impact: null, board: [], bracket: null, sheet: false, celebrate: null, msg: "", busy: false, bounce: false };
+    var S = { view: "loading", tab: "today", mode: "signup", user: null, profile: null, challenge: null, days: [], impact: null, board: [], bracket: null, sheet: false, celebrate: null, msg: "", busy: false, bounce: false };
   var store = { get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
   var $ = function (s) { return document.querySelector(s); };
   var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
@@ -226,12 +225,12 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   var ORIGIN = location.origin;
   S.recovery = /type=recovery/.test(location.hash);
   try {
-    var qj = new URLSearchParams(location.search).get("join");
-    if (qj) { store.set("walkies-pending-join", qj.trim().slice(0, 12).toUpperCase()); history.replaceState(null, "", location.pathname); }
+    var qj = new URLSearchParams(location.search).get("pack");
+    if (qj) { store.set("walkies-pending-pack", qj.trim().slice(0, 12).toUpperCase()); history.replaceState(null, "", location.pathname); }
   } catch (e) {}
 
   var STATES = ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"];
-  var KINDS = [["person", "Person"], ["team", "Team"]];
+  var KINDS = [["person", "Tug of war"], ["pack", "Pack war"]];
   var KIND_LABEL = { person: "Person", team: "Team", state: "State", city: "City" };
   S.pubInvite = null; S.pubClosed = false; S.draft = { name: "", email: "" }; S.invite = null; S.inviteMsg = ""; S.dogs = []; S.shelters = {}; S.dogTotals = {}; S.dogview = null; S.stepVal = ""; S.stepMsg = ""; S.duels = []; S.cups = []; S.wiz = null; S.cupform = false; S.tview = null; S.wizMsg = ""; S.cupMsg = "";
   try {
@@ -309,14 +308,9 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       var d = await sb.from("step_days").select("day,steps").gte("day", S.challenge.starts_on).lte("day", S.challenge.ends_on);
       S.days = d.data || [];
     }
-    await Promise.all([loadImpact(), loadBoard(), loadRivals(), loadDogs(), loadTeams()]);
+    await Promise.all([loadImpact(), loadBoard(), loadRivals(), loadDogs()]);
   }
-  async function loadTeams() {
-    var r = await sb.rpc("my_teams"); S.teams = r.data || []; S.matesBy = {};
-    var hr = await sb.rpc("my_home_team"); S.home = hr.data || null;
-    await Promise.all(S.teams.map(function (t) { return sb.rpc("team_mates_of", { p_id: t.id }).then(function (m) { S.matesBy[t.id] = m.data || []; }); }));
-  }
-  function canAccept(d) { return d.kind !== "team" || (S.teams || []).some(function (t) { return t.is_captain && t.name === d.my_label; }); }
+  function canAccept(d) { return true; }
   async function loadImpact() { var r = await sb.rpc("impact"); S.impact = r.data && r.data[0] ? r.data[0] : null; }
   async function loadDogs() {
     var a = await sb.from("dogs").select("*").order("name"), b = await sb.from("shelters").select("id,name,city,state,is_demo");
@@ -334,15 +328,10 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     toast(d ? "You are walking for " + d.name + "!" : "Your bowls will feed the Walkies pool");
   }
   async function loadRivals() {
-    var a = await sb.rpc("my_duels"), b = await sb.rpc("list_tournaments"), l = await sb.rpc("my_links"), cp = await sb.rpc("am_captain");
-    S.captain = cp.data === true;
+    var a = await sb.rpc("my_duels"), l = await sb.rpc("my_links"), pk = await sb.rpc("my_packs");
+    S.packs = pk.data || [];
     var tk = {}; (l.data || []).forEach(function (x) { tk[x.id] = x.invite_token; });
-    S.duels = (a.data || []).map(function (d) { d.invite_token = tk[d.id] || null; return d; }); S.cups = b.data || [];
-  }
-  async function openCup(id) {
-    var r = await Promise.all([sb.rpc("tournament_info", { p_id: id }), sb.rpc("tournament_view", { p_id: id })]);
-    if (r[0].error || !r[0].data || !r[0].data[0]) return toast("Could not open that World Cup");
-    S.tview = { id: id, info: r[0].data[0], matches: r[1].data || [] }; render(); window.scrollTo(0, 0);
+    S.duels = (a.data || []).map(function (d) { d.invite_token = tk[d.id] || null; return d; });
   }
   async function loadBoard() { var r = await sb.rpc("leaderboard", { p_bracket: null }), w = await sb.rpc("walker_board"); S.allTeams = r.data || []; S.walkers = w.data || []; S.board = S.allTeams; try { return checkRaceAlerts(); } catch (e) { console.error("alerts", e); return 0; } }
 
@@ -356,16 +345,13 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   async function enter() {
     S.view = "loading"; render();
     try { await loadAll(); } catch (e) { toast("Could not load your data. Check your signal."); }
-    var pend = store.get("walkies-pending-join");
+    var pend = store.get("walkies-pending-pack");
     if (pend) {
-      store.set("walkies-pending-join", "");
-      if ((S.teams || []).length < 3) {
-        var jr = await sb.rpc("join_workplace", { p_code: pend });
-        if (jr.error) S.msg = "That invite code did not work. Ask for a new one."; else { store.set("walkies-onboarded-" + S.user.id, "1"); await loadAll(); toast("Welcome to " + jr.data.name + "!"); }
-      }
+      store.set("walkies-pending-pack", "");
+      var jr = await sb.rpc("join_pack", { p_code: pend });
+      if (jr.error) S.msg = jr.error.message; else { await loadRivals(); S.tab = "rivals"; toast("You joined " + jr.data[0].name + "!"); }
     }
-    var seen = store.get("walkies-onboarded-" + S.user.id);
-    S.view = (!(S.teams || []).length && !seen) ? "join" : "app";
+    S.view = "app";
     if (S.view === "app" && !S.profile.dog_id && !store.get("walkies-dog-seen-" + S.user.id) && (S.dogs || []).length) { store.set("walkies-dog-seen-" + S.user.id, "1"); S.dogview = { list: true }; }
     S.pubInvite = null;
     var pdl = store.get("walkies-pending-duel");
@@ -416,26 +402,13 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       if (r.error) { S.msg = r.error.message; return render(); }
       S.recovery = false; S.msg = ""; toast("Password updated"); await enter();
     },
-    async wizTeam(f) {
-      S.wizMsg = "";
-      var r = await sb.rpc("create_workplace", { p_name: f.tname.value, p_industry: "Other", p_bracket: f.tsize.value });
-      if (r.error) { S.wizMsg = r.error.message.indexOf("check") > -1 ? "Please use a team name of 2 to 60 characters." : r.error.message; return render(); }
-      var w = S.wiz; await loadAll(); S.wiz = w; w.options = []; w.loading = true; render();
-      toast("Team created: " + r.data.name + ". Team code " + r.data.join_code);
-      sb.rpc("duel_options", { p_kind: "team" }).then(function (o) { if (S.wiz) { S.wiz.options = o.data || []; S.wiz.loading = false; render(); } });
-    },
-    async meNewTeam(f) {
-      var r = await sb.rpc("create_workplace", { p_name: f.nname.value, p_industry: "Other", p_bracket: f.nsize.value });
-      if (r.error) { S.msg = r.error.message.indexOf("check") > -1 ? "Please use a team name of 2 to 60 characters." : r.error.message; return render(); }
-      S.msg = ""; var t = S.tab; await finishJoin(); if (t === "me") { S.tab = "me"; render(); } toast("Team created. Share code " + r.data.join_code);
-    },
-    async renameTeam(f) {
-      var r = await sb.rpc("rename_team_id", { p_id: f.tid.value, p_name: f.rname.value });
-      if (r.error) return toast(r.error.message);
-      await loadAll(); render(); toast("Team renamed");
-    },
     async makeDuel(f) {
       var w = S.wiz; S.wizMsg = "";
+      if (w.kind === "pack") {
+        var pr = await sb.rpc("create_pack", { p_name: f.pname.value, p_days: w.days });
+        if (pr.error) { S.wizMsg = pr.error.message; return render(); }
+        S.wiz = null; await loadRivals(); openPack(pr.data[0].id); toast("Pack war started! Invite your people."); return;
+      }
       if (w.kind === "person" && w.mode === "link") {
         var lr = await sb.rpc("create_link_duel", { p_days: w.days });
         if (lr.error) { S.wizMsg = lr.error.message; return render(); }
@@ -444,13 +417,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       w.opp = f.opp.value; w.random = f.random.checked;
       var r = await sb.rpc("start_duel", { p_kind: w.kind, p_opponent: w.opp || "", p_days: w.days, p_random: w.random, p_team: null });
       if (r.error) { S.wizMsg = r.error.message; return render(); }
-      var person = w.kind === "person"; S.wiz = null; await loadRivals(); render(); toast(person ? "Challenge sent!" : "Challenge sent! Their team captain needs to accept.");
-    },
-    async makeCup(f) {
-      S.cupMsg = "";
-      var r = await sb.rpc("create_tournament", { p_name: f.cname.value, p_kind: "team", p_size: Number(f.csize.value), p_round_days: Number(f.cdays.value) });
-      if (r.error) { S.cupMsg = r.error.message; return render(); }
-      S.cupform = false; await loadRivals(); render(); toast("World Cup created. Invite others to join!");
+      var person = w.kind === "person"; S.wiz = null; await loadRivals(); render(); toast("Challenge sent!");
     },
     async savePrivacy(f) {
       store.set("walkies-race-alerts-" + S.user.id, f.alerts.checked ? "1" : "0");
@@ -463,19 +430,11 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       if (r.error) return toast("Could not save that");
       await loadAll(); render(); toast("Saved");
     },
-    async joinCode(f) {
-      var r = await sb.rpc("join_workplace", { p_code: f.code.value });
-      if (r.error) { S.msg = r.error.message; return render(); }
-      store.set("walkies-onboarded-" + S.user.id, "1"); S.msg = ""; toast("Welcome to " + r.data.name + "!"); var t = S.tab; await finishJoin(); if (t === "rivals" || t === "me") { S.tab = t; render(); }
+    async joinPack(f) {
+      var r = await sb.rpc("join_pack", { p_code: f.code.value });
+      if (r.error) { S.packMsg = r.error.message; return render(); }
+      S.packMsg = ""; await loadRivals(); openPack(r.data[0].id); toast("You joined " + r.data[0].name + "!");
     },
-    async createTeam(f) {
-      var r = await sb.rpc("create_workplace", { p_name: f.wname.value, p_industry: f.industry.value, p_bracket: f.bracket.value });
-      if (r.error) { S.msg = r.error.message.indexOf("check") > -1 ? "Please use a team name of 2 to 60 characters." : r.error.message; return render(); }
-      store.set("walkies-onboarded-" + S.user.id, "1"); S.msg = ""; toast("Pack created. Share code " + r.data.join_code); var t = S.tab; await finishJoin(); if (t === "rivals") { S.tab = "rivals"; render(); }
-    },
-    async solo() { store.set("walkies-onboarded-" + S.user.id, "1"); S.view = "app"; render(); },
-    async makeHome(id) { var r = await sb.rpc("set_home_team", { p_id: id }); if (r.error) { toast(r.error.message); return; } await loadTeams(); await loadBoard(); render(); toast("Home team updated"); },
-    async leave(id) { await sb.rpc("leave_team", { p_id: id }); var t = S.tab; await finishJoin(); if (t === "me") { S.tab = "me"; render(); } toast("You left the team"); },
     async saveNames(f) {
       var r = await sb.from("profiles").update({ display_name: f.dname.value.trim() || "Walker" }).eq("user_id", S.user.id);
       if (r.error) return toast("Your name must be 1 to 40 characters");
@@ -498,13 +457,14 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       render();
     }
   };
-  async function finishJoin() { await loadAll(); S.view = "app"; S.tab = "today"; render(); }
-
-  function inviteLink(code) { return ORIGIN + "/?join=" + encodeURIComponent(code); }
-  function inviteText(team, link) { return "Join my team " + team + " on Walkies! Every step you walk fills a bowl of food for a shelter dog. Tap to join: " + link; }
-  function mailtoInvite(team, code) {
-    return "mailto:?subject=" + encodeURIComponent("Join my team on Walkies") + "&body=" + encodeURIComponent(inviteText(team, inviteLink(code)));
+  async function openPack(id) {
+    S.tab = "rivals"; S.pview = { id: id, loading: true, rows: [] }; render(); window.scrollTo(0, 0);
+    var r = await sb.rpc("pack_board", { p_id: id });
+    if (S.pview && S.pview.id === id) { S.pview.rows = r.data || []; S.pview.loading = false; render(); }
   }
+
+  function packLink(code) { return ORIGIN + "/?pack=" + encodeURIComponent(code); }
+  function packText(name, days, link) { return "Join my Walkies pack war \"" + name + "\"! Most steps in " + days + " days wins, and every step also fills a bowl for a shelter dog. Tap to join: " + link; }
 
   // ---- views ----
   function topbar(chip) { return '<header class="top"><div class="brand">' + PAW + 'Walkies</div>' + (chip ? '<div class="chip">' + chip + '</div>' : "") + '</header>'; }
@@ -561,17 +521,6 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       '<div class="gap8"><label for="password">New password (8 or more characters)</label><input id="password" name="password" type="password" minlength="8" autocomplete="new-password" required></div>' +
       '<div class="gap8"><label for="password2">Type it again</label><input id="password2" name="password2" type="password" minlength="8" autocomplete="new-password" required></div>' +
       (S.msg ? '<p class="err" role="alert">' + esc(S.msg) + '</p>' : "") + '<button class="btn coral">Save new password</button></form></div></div>';
-  }
-  function viewJoin() {
-    return '<div class="app">' + topbar("") + '<div class="stack"><div><h1 class="h1">Who are you walking with?</h1><p class="muted">Walk with your workplace to join the league, or walk on your own.</p></div>' +
-      (S.msg ? '<p class="err" role="alert">' + esc(S.msg) + '</p>' : "") +
-      '<form class="card stack" data-form="joinCode"><div class="gap8"><label for="code">Join with a workplace code</label><input id="code" name="code" placeholder="Example: A1B2C3" autocapitalize="characters" required></div><button class="btn coral">Join my team</button></form>' +
-      '<form class="card stack" data-form="createTeam"><div class="h2">Start your team</div>' +
-      '<div class="gap8"><label for="wname">Team name</label><input id="wname" name="wname" minlength="2" maxlength="60" placeholder="Example: The Bluegum Walkers" required></div>' +
-      '<div class="gap8"><label for="industry">Industry</label><select id="industry" name="industry">' + INDUSTRIES.map(function (i) { return "<option>" + esc(i) + "</option>"; }).join("") + '</select></div>' +
-      '<input type="hidden" id="bracket" name="bracket" value="Pack">' +
-      '<button class="btn">Create team</button></form>' +
-      '<button class="btn light" data-act="solo">Walk on my own for now</button></div></div>';
   }
   function dayLine() {
     var ci = challengeInfo(); if (!ci || ci.state !== "on") return "";
@@ -643,7 +592,6 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   function raceEntries(tab) {
     var list;
     if (tab === "Pup") list = (S.walkers || []).map(function (w) { return { name: w.display_name, steps: Number(w.steps), me: w.is_me }; });
-    else list = (S.allTeams || []).filter(function (r) { return teamTier(r) === tab; }).map(function (r) { return { name: r.name, steps: Number(r.steps_per_member), me: r.is_mine }; });
     list.sort(function (a, b) { return b.steps - a.steps; });
     list.forEach(function (e, i) { e.rank = i + 1; });
     // keep the track readable: me and the 3 racers directly in front of me (or the 3 behind if I lead). With no me, the top 4.
@@ -679,7 +627,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   }
   function raceView(tab) {
     var r = raceEntries(tab);
-    if (!r.all.length || (tab === "Pup" && !r.me)) return '<div class="card"><b>' + (tab === "Pup" ? "Join the walker leaderboard to race." : "No teams to race yet.") + '</b><p class="muted">' + (tab === "Pup" ? "Tap Show me on the list view, and your kart will appear on the track." : "Start a team and it will show up on the track.") + '</p></div>';
+    if (!r.all.length || (tab === "Pup" && !r.me)) return '<div class="card"><b>' + "Join the walker leaderboard to race." + '</b><p class="muted">' + "Tap Show me on the list view, and your kart will appear on the track." + '</p></div>';
     var mySteps = r.me ? r.me.steps : null, th = RACE_TH;
     S.raceData = { entries: r.shown.slice().sort(function (x, y) { return (x.me ? 1 : 0) - (y.me ? 1 : 0); }), mySteps: mySteps, me: r.me };
     var line = "";
@@ -791,11 +739,6 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var out = { pup: null, teams: [] }, ws = (S.walkers || []).map(function (w) { return { n: w.display_name, s: Number(w.steps), me: w.is_me }; }).sort(function (a, b) { return b.s - a.s; });
     var mi = ws.findIndex(function (w) { return w.me; });
     if (mi > -1) out.pup = { label: "you", rank: mi + 1, steps: ws[mi].s, rows: ws, ahead: ws.slice(0, mi).map(function (w) { return w.n; }) };
-    (S.allTeams || []).filter(function (r) { return r.is_mine; }).forEach(function (m) {
-      var rows = (S.allTeams || []).filter(function (r) { return teamTier(r) === teamTier(m); }).map(function (r) { return { n: r.name, s: Number(r.steps_per_member), me: r.workplace_id === m.workplace_id }; }).sort(function (a, b) { return b.s - a.s; });
-      var ti = rows.findIndex(function (w) { return w.me; });
-      out.teams.push({ label: m.name, rank: ti + 1, steps: rows[ti].s, rows: rows, ahead: rows.slice(0, ti).map(function (w) { return w.n; }) });
-    });
     return out;
   }
   function checkRaceAlerts() {
@@ -845,23 +788,8 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     return '<div class="card stack racenews" style="gap:6px"><b>Race news</b>' + news.map(function (n) { return '<div style="font-size:14px">' + (n.t === "bad" ? "\uD83D\uDEA8 " : n.t === "good" ? "\uD83C\uDF89 " : "\uD83D\uDC40 ") + esc(n.text) + ' <span class="muted" style="font-size:12px">' + timeAgo(n.at) + '</span></div>'; }).join("") + '</div>';
   }
   function timeAgo(t) { var m = Math.round((Date.now() - t) / 60000); return m < 1 ? "just now" : m < 60 ? m + " min ago" : Math.round(m / 60) + " h ago"; }
-  function teamTier(r) { return "Pack"; }
-  // One team: who is in it and what each person has contributed this month. Everyone can see this.
-  function viewTeam() {
-    var tv = S.teamview, row = (S.allTeams || []).filter(function (r) { return r.workplace_id === tv.id; })[0] || {}, mem = tv.members || [], mine = !!row.is_mine;
-    var total = mem.reduce(function (a, m) { return a + Number(m.steps); }, 0) || 1, bowls = mem.reduce(function (a, m) { return a + m.bowls; }, 0);
-    var head = '<div class="between"><button class="linkbtn" data-act="teamback">\u2039 Leaderboard</button></div><div><h1 class="h1">' + esc(row.name || "Team") + '</h1><p class="muted">' + (row.members || mem.length) + ((row.members || mem.length) === 1 ? " walker" : " walkers") + '</p></div>';
-    var list;
-    if (tv.loading) list = '<p class="muted">Loading\u2026</p>';
-    else if (!mem.length) list = '<div class="card"><b>No walkers yet.</b></div>';
-    else list = '<div class="h2">Who contributed</div>' + mem.map(function (m, i) {
-      return '<div class="lb ' + (m.is_me ? "mine" : "") + '" style="grid-template-columns:auto minmax(0,1fr) auto"><div class="rank">' + (i + 1) + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (m.is_me ? "You: " : "") + esc(m.display_name) + (m.is_captain ? ' <span class="tag">Captain</span>' : "") + '</div><div style="font-size:13px">' + m.bowls + (m.bowls === 1 ? " dog bowl" : " dog bowls") + '</div></div><div><div class="num">' + fmt(m.steps) + '</div><div style="font-size:12px;text-align:right">steps</div></div></div>';
-    }).join("");
-    return topbar("") + '<div class="stack">' + head + '<div class="stack" style="gap:10px">' + list + '</div></div>';
-  }
   function viewPacks() {
-    var tab = S.bracket || "Pup";
-    var chips = BOARD_TABS.map(function (b) { return '<button class="pill" aria-pressed="' + (tab === b[0]) + '" data-bracket="' + b[0] + '">' + b[0] + '</button>'; }).join("");
+    var tab = "Pup";
     var body = "", race = S.boardView === "race";
     var vt = '<div class="seg" role="group" aria-label="View"><button aria-pressed="' + (!race) + '" data-bview="list" aria-label="List view"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor"/></svg></button><button aria-pressed="' + race + '" data-bview="race" aria-label="Race view"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h14l-2.5 4 2.5 4H5"/><path d="M9 4v8M13 4v8" stroke-width="1.4"/></svg></button></div>';
     if (race) body = raceView(tab);
@@ -871,44 +799,17 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
         (ws.length ? ws.map(function (w, i) {
           return '<div class="lb ' + (w.is_me ? "mine" : (i === 0 ? "first" : "")) + '"><div class="rank">' + (i + 1) + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (w.is_me ? "You: " : "") + esc(w.display_name) + '</div><div style="font-size:13px">' + w.bowls + (w.bowls === 1 ? " bowl" : " bowls") + '</div></div><div><div class="num">' + fmt(w.steps) + '</div><div style="font-size:12px;text-align:right">steps</div></div></div>';
         }).join("") : '<div class="card"><b>No walkers here yet.</b><p class="muted">Be the first. Tap Show me to join the leaderboard.</p></div>');
-    } else {
-      var rows = (S.allTeams || []).filter(function (r) { return teamTier(r) === tab; }), mine = rows.filter(function (r) { return r.is_mine; })[0], mineIdx = rows.indexOf(mine);
-      body = (rows.length ? rows.map(function (r, i) {
-        return '<button class="lb tap ' + (r.is_mine ? "mine" : (i === 0 ? "first" : "")) + '" data-team="' + esc(r.workplace_id) + '"><div class="rank">' + (i + 1) + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (r.is_mine ? "Your team: " : "") + esc(r.name) + '</div><div style="font-size:13px">' + r.members + (r.members === 1 ? " walker" : " walkers") + ' \u00b7 ' + esc(r.industry) + '</div></div><div><div class="num">' + fmt(r.steps_per_member) + '</div><div style="font-size:12px;text-align:right">steps each</div></div><span class="chev" aria-hidden="true">\u203a</span></button>';
-      }).join("") : '<div class="card"><b>No teams here yet.</b><p class="muted">Start a team in Rivals, share the code with your workmates and be the first on the board.</p></div>');
-      if (mine && mineIdx > 0) { var above = rows[mineIdx - 1]; body += '<div class="card" style="border-style:dashed"><b>Catch ' + esc(above.name) + '</b> and your team moves up a place. Only <b>' + fmt(Math.max(1, above.steps_per_member - mine.steps_per_member + 1)) + '</b> more steps each.</div>'; }
     }
-    return topbar("") + '<div class="stack"><div class="between"><h1 class="h1">Leaderboard</h1>' + vt + '</div>' + raceNewsCard() + '<div class="chips" role="group" aria-label="Leaderboard">' + chips + '</div><div class="stack" style="gap:10px">' + body + '</div></div>';
+    return topbar("") + '<div class="stack"><div class="between"><h1 class="h1">Leaderboard</h1>' + vt + '</div>' + raceNewsCard() + '<div class="stack" style="gap:10px">' + body + '</div></div>';
   }
   function viewImpact() {
     var i = S.impact || {}, commKg = (i.community_bowls || 0) * BOWL_KG, myKg = (i.my_bowls || 0) * BOWL_KG;
-    var team = (S.teams || []).length ? S.teams.filter(function (t) { return (S.teams.length < 2) || t.id === S.home; }).map(function (t) {
-      var kg = (t.bowls || 0) * BOWL_KG, pct = Math.min(100, Math.round(kg / TEAM_GOAL_KG * 100));
-      return '<div class="card stack" style="gap:10px"><div class="between"><div style="font-weight:800">Goal: ' + TEAM_GOAL_KG + ' kg unlocks a dog visit</div><div class="muted" style="font-size:14px">' + Math.max(0, Math.round(TEAM_GOAL_KG - kg)) + ' kg to go</div></div><div class="bar"><i style="width:' + pct + '%"></i></div><p class="muted" style="font-size:14px">' + esc(t.name) + ' has unlocked ' + (Math.round(kg * 10) / 10) + ' kg so far. Reach the goal and a shelter dog and its handler come to your office to say thanks.</p></div>';
-    }).join("") : '<div class="card"><b>Walking solo</b><p class="muted">Join or start a team from the Me tab to unlock an office dog visit together.</p></div>';
     return topbar("") + '<div class="stack"><h1 class="h1">Impact</h1>' +
       '<div class="hero" style="align-items:flex-start;text-align:left"><div class="eyebrow">Food unlocked by the Walkies community this month</div><div><span class="big" style="font-size:64px">' + (Math.round(commKg * 10) / 10) + '</span> <b style="font-size:20px">kg</b></div><div>' + fmt(i.community_bowls) + ' bowls from ' + fmt(i.community_walkers) + ' walkers. You unlocked ' + (i.my_bowls || 0) + ' (' + (Math.round(myKg * 10) / 10) + ' kg).</div></div>' +
-      team +
       dogImpactCard() + '<div class="card"><b>Delivery proof</b><p class="muted" style="font-size:14px">Photos and delivery dockets from our rescue partners will show up here once the first food goes out.</p></div>' +
       '<div class="card row" style="border-color:var(--cyan)"><div style="flex:1;font-size:14px"><b>Want to add a bowl?</b> Friends and family will soon be able to sponsor your steps.</div><button class="btn small" style="background:var(--pink);color:var(--dark)" data-act="sponsor">Tell me</button></div></div>';
   }
   function openAttr(k, dflt) { var o = S.openDet || {}; return (k in o ? o[k] : dflt) ? " open" : ""; }
-  function myTeams() {
-    var teams = S.teams || [], full = teams.length >= 3;
-    var blocks = teams.map(function (t) {
-      var mates = (S.matesBy || {})[t.id] || [];
-      var list = mates.length ? '<div class="h2" style="font-size:15px;margin-top:4px">Teammates</div><ul class="mates">' + mates.map(function (m) { return '<li><span>' + esc(m.display_name) + (m.is_me ? " (you)" : "") + '</span>' + (m.is_captain ? '<span class="tag">Captain</span>' : "") + '</li>'; }).join("") + '</ul>' : "";
-      return '<div class="card stack" style="gap:10px"><div class="between"><div class="h2" style="margin:0">' + esc(t.name) + '</div><span class="muted" style="font-size:14px">' + t.members + (t.members === 1 ? " walker" : " walkers") + '</span></div>' + (teams.length > 1 ? (t.id === S.home ? '<div><span class="tag">Home team</span> <span class="muted" style="font-size:13px">Your steps count here</span></div>' : '<div class="row" style="flex-wrap:wrap"><span class="muted" style="font-size:13px;flex:1">Not competing</span><button class="btn small light" data-act="makehome" data-tid="' + esc(t.id) + '">Make home team</button></div>') : "") + renameForm(t.name, t.id) + list +
-        '<p class="muted" style="font-size:14px">Workmates join with this code:</p><div style="font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:.12em">' + esc(t.join_code) + '</div><div class="row" style="flex-wrap:wrap"><button class="btn small" data-act="invite" data-code="' + esc(t.join_code) + '" data-team="' + esc(t.name) + '">Invite workmates</button><a class="btn small light" href="' + mailtoInvite(t.name, t.join_code) + '">Email invite</a><button class="btn small light" data-act="copy" data-code="' + esc(t.join_code) + '">Copy code</button><button class="btn small light" data-act="leave" data-tid="' + esc(t.id) + '">Leave team</button></div></div>';
-    }).join("");
-    var homeNote = teams.length > 1 ? '<p class="muted" style="font-size:14px">Only your home team counts for the leaderboard and challenges. You can switch in the first 3 days of each month.</p>' : "";
-    var join = full ? '<p class="muted" style="font-size:14px">You are in 3 teams, the most you can be in. Leave one to join another.</p>' :
-      '<form class="stack" data-form="joinCode" style="gap:12px"><p class="muted" style="font-size:14px;margin:0">' + (teams.length ? "Join another team with its code." : "You are not in a team yet. Enter the code from your team to join it.") + '</p>' +
-      (S.msg ? '<p class="err" role="alert">' + esc(S.msg) + '</p>' : "") +
-      '<div class="gap8"><label for="code">Team code</label><input id="code" name="code" placeholder="Example: A1B2C3" autocapitalize="characters" required></div><button class="btn ' + (teams.length ? "light" : "coral") + '">Join team</button></form>' +
-      '<form class="stack" data-form="meNewTeam" style="gap:12px"><p class="muted" style="font-size:14px;margin:0">Or start a new team and share its code.</p><div class="gap8"><label for="nname">Team name</label><input id="nname" name="nname" minlength="2" maxlength="60" placeholder="Example: The Bluegum Walkers" required></div><input type="hidden" id="nsize" name="nsize" value="Pack"><button class="btn light">Start team</button></form>';
-    return '<details class="drop" data-det="teams"' + openAttr("teams", !teams.length) + '><summary>My teams' + (teams.length ? ' <span class="muted" style="font-weight:600;font-size:14px">' + teams.length + '</span>' : "") + '</summary><div class="stack" style="gap:12px;margin-top:10px">' + homeNote + blocks + join + '</div></details>';
-  }
   var PRIVACY_CONTACT = "";
   function policyHtml() {
     var contact = PRIVACY_CONTACT ? '<a href="mailto:' + esc(PRIVACY_CONTACT) + '">' + esc(PRIVACY_CONTACT) + '</a>' : "the Walkies team";
@@ -916,7 +817,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       '<p><b>Last updated:</b> October 2026. This is a plain-English summary of how Walkies handles your information. It follows the Australian Privacy Principles in the <i>Privacy Act 1988</i> (Cth).</p>' +
       '<h4>What we collect</h4><ul><li>Your email address and password (the password is stored securely by our sign-in provider and we cannot read it).</li><li>Your display name, your team and the shelter dog you choose.</li><li>The step counts you type in, by day. We do not collect your location, contacts or health records.</li><li>Your challenges (who you challenged and the results).</li></ul>' +
       '<h4>Why we collect it</h4><p>To run the app: count your steps, work out your bowls, show team leaderboards and run tug of wars. We only use it for that unless you agree to something else.</p>' +
-      '<h4>Who can see it</h4><ul><li>Other walkers can see your display name, your steps this month and your dog bowls, on the walker leaderboard and on your teams\' pages.</li><li>A rival in a tug of war sees your name and your step total for that challenge, not your daily steps.</li><li>The walker leaderboard (Pup) shows everyone by default. You can take yourself off it at any time in Privacy settings.</li><li>We do not sell your information or show ads.</li></ul>' +
+      '<h4>Who can see it</h4><ul><li>Other walkers can see your display name, your steps this month and your dog bowls, on the walker leaderboard and in pack wars you join.</li><li>A rival in a tug of war sees your name and your step total for that challenge, not your daily steps.</li><li>The walker leaderboard (Pup) shows everyone by default. You can take yourself off it at any time in Privacy settings.</li><li>We do not sell your information or show ads.</li></ul>' +
       '<h4>Marketing</h4><p>We only send marketing messages if you tick the box in Privacy settings. Every message will have a working unsubscribe link, in line with the <i>Spam Act 2003</i> (Cth). You can turn it off at any time in Me, then Privacy settings. Messages about your account (like a password reset) are not marketing.</p>' +
       '<h4>Where it is stored</h4><p>Your data is stored with Supabase in Sydney, Australia. The app is delivered through Vercel. Both only handle data to provide the service to us.</p>' +
       '<h4>Keeping it safe</h4><p>Information is sent over an encrypted connection, and each person can only read their own step records. We keep your information while you have an account.</p>' +
@@ -938,7 +839,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   function viewMe() {
     return topbar("") + '<div class="stack"><h1 class="h1">Me</h1>' +
       '<form class="card stack" data-form="saveNames" data-autosave><div class="gap8"><label for="dname">Your name</label><input id="dname" name="dname" value="' + esc(S.profile.display_name) + '" maxlength="40" required></div></form>' +
-      myTeams() + rivalForm() +
+      rivalForm() +
       privacySection() +
       '<button class="btn light" data-act="signout">Sign out</button><p class="muted" style="font-size:13px;text-align:center">' + esc(S.user.email) + ' \u00b7 version ' + esc(window.WALKIES_VERSION || "dev") + '</p></div>';
   }
@@ -1013,101 +914,51 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   // A person challenge or a team challenge each count as one. Requests waiting for you do not count.
   function challengeCount() {
     var d = (S.duels || []).filter(function (x) { return !x.finished && (x.status === "active" || (x.status === "pending" && !x.incoming)); }).length;
-    return d;
+    return d + (S.packs || []).filter(function (k) { return !k.finished; }).length;
   }
   function todayTug() {
     var act = (S.duels || []).filter(function (x) { return x.status === "active" && !x.finished; });
     if (!act.length) return '<div class="card row"><div style="flex:1"><b>Pick a rival</b><p class="muted" style="font-size:14px">Take on a person or a team in a tug of war.</p></div><button class="btn small" data-tab="rivals">Rivals</button></div>';
     return act.slice(0, 2).map(tugCard).join("") + (act.length > 2 ? '<button class="linkbtn" data-tab="rivals">See all ' + act.length + ' tug of wars \u203a</button>' : "");
   }
-  function cupCard(c) {
-    var state = c.status === "open" ? c.entries + " of " + c.size + " sides in" : c.status === "running" ? "In play" : "Finished";
-    var acts = '<button class="btn small light" data-cup-view="' + c.id + '">View</button>';
-    if (c.status === "open" && !c.i_am_in) acts = '<button class="btn small coral" data-cup-join="' + c.id + '">Join with my ' + KIND_LABEL[c.kind].toLowerCase() + '</button>' + acts;
-    if (c.status === "open" && c.is_mine && c.entries >= 2) acts += '<button class="btn small light" data-cup-start="' + c.id + '">Kick off now</button>';
-    return '<div class="card cup"><div class="between"><div class="h2">' + esc(c.name) + '</div><span class="tag">' + (c.status === "finished" ? "Done" : state) + '</span></div>' +
-      '<p class="muted" style="font-size:14px">' + KIND_LABEL[c.kind] + 's · ' + c.size + ' sides · ' + c.round_days + (c.round_days === 1 ? " day" : " days") + ' a round' + (c.i_am_in ? " · you are in" : "") + '</p>' +
-      (c.champion ? '<p>Champion: <b style="color:var(--yellow)">' + esc(c.champion) + '</b></p>' : "") +
-      '<div class="row" style="flex-wrap:wrap">' + acts + '</div></div>';
-  }
-  function packSection() {
-    var i = S.impact || {};
-    if ((S.teams || []).length) return "";
-    return '<div class="h2" style="margin-top:8px">Create a pack</div><p class="muted" style="font-size:14px;margin-top:-8px">A pack is your team. Start one, share the code, then challenge other packs in a tug of war.</p>' +
-      (S.msg ? '<p class="err" role="alert">' + esc(S.msg) + '</p>' : "") +
-      '<form class="card stack" data-form="createTeam"><div class="gap8"><label for="wname">Pack name</label><input id="wname" name="wname" minlength="2" maxlength="60" placeholder="Example: The Bluegum Walkers" required></div>' +
-      '<div class="gap8"><label for="industry">Industry</label><select id="industry" name="industry">' + INDUSTRIES.map(function (x) { return "<option>" + esc(x) + "</option>"; }).join("") + '</select></div>' +
-      '<input type="hidden" id="bracket" name="bracket" value="Pack">' +
-      '<button class="btn coral">Create pack</button></form>' +
-      '<form class="card stack" data-form="joinCode"><div class="gap8"><label for="code">Or join a pack with its code</label><input id="code" name="code" placeholder="Example: A1B2C3" autocapitalize="characters" required></div><button class="btn light">Join pack</button></form>';
+  function packCard(k) {
+    var when = k.finished ? "Finished" : k.days_left + (k.days_left === 1 ? " day left" : " days left");
+    var line = k.finished ? (k.my_rank === 1 ? "You won this pack war!" : "You finished #" + k.my_rank + ".") : "You are #" + k.my_rank + " of " + k.members;
+    return '<button class="tug tap" style="text-align:left;width:100%" data-pack="' + esc(k.id) + '"><div class="between"><span class="tug-tag">' + TROPHY + ' Pack war</span><span class="muted" style="font-size:13px;white-space:nowrap">' + when + '</span></div>' +
+      '<div class="h2" style="margin:6px 0 2px">' + esc(k.name) + '</div><div class="muted" style="font-size:14px">' + walkers(k.members) + ' \u00b7 ' + fmt(k.my_steps) + ' steps from you</div><p class="tug-line">' + line + '</p></button>';
   }
   function viewRivals() {
-    var duels = S.duels || [], inc = duels.filter(function (d) { return d.incoming; }), mine = duels.filter(function (d) { return !d.incoming; });
-    return topbar("") + '<div class="stack"><div><h1 class="h1">Challenges</h1><p class="muted">Pick a rival and pull the bone your way.</p></div>' +
+    var duels = S.duels || [], inc = duels.filter(function (d) { return d.incoming; }), mine = duels.filter(function (d) { return !d.incoming; }), packs = S.packs || [];
+    return topbar("") + '<div class="stack"><div><h1 class="h1">Challenges</h1><p class="muted">Pull the bone from a rival, or start a pack war with your people.</p></div>' +
       (inc.length ? '<div class="h2">Challenges for you</div>' + inc.map(tugCard).join("") : "") +
-      '<div class="between"><div class="h2">Your tug of wars</div><span class="tag">Challenges ' + challengeCount() + ' of ' + MAX_CHALLENGES + '</span></div>' +
-      (mine.length ? mine.map(tugCard).join("") : '<div class="card"><b>No tug of wars yet.</b><p class="muted" style="font-size:14px">Challenge a person or a team. Everyone starts from zero when it begins.</p></div>') +
-      (challengeCount() >= MAX_CHALLENGES ? '<button class="btn" disabled>You have 3 challenges. Finish one to start another.</button>' : '<button class="btn coral" data-act="wiz">Challenge a rival</button>') +
-      packSection() + '</div>';
+      '<div class="between"><div class="h2">Your challenges</div><span class="tag">Challenges ' + challengeCount() + ' of ' + MAX_CHALLENGES + '</span></div>' +
+      ((mine.length || packs.length) ? mine.map(tugCard).join("") + packs.map(packCard).join("") : '<div class="card"><b>Nothing on yet.</b><p class="muted" style="font-size:14px">Challenge a person to a tug of war, or start a pack war and invite your people. Everyone starts from zero.</p></div>') +
+      (challengeCount() >= MAX_CHALLENGES ? '<button class="btn" disabled>You have 3 challenges. Finish one to start another.</button>' : '<button class="btn coral" data-act="wiz">Start a challenge</button>') +
+      '<form class="card stack" data-form="joinPack"><div class="gap8"><label for="code">Got a pack war code?</label><input id="code" name="code" placeholder="Example: A1B2C3" autocapitalize="characters" autocomplete="off" required></div>' + (S.packMsg ? '<p class="err" role="alert">' + esc(S.packMsg) + '</p>' : "") + '<button class="btn light">Join pack war</button></form></div>';
   }
-  function roundName(r, total) { var left = total - r; return left === 0 ? "Final" : left === 1 ? "Semi-finals" : left === 2 ? "Quarter-finals" : "Round " + r; }
-  function viewCup() {
-    var v = S.tview, info = v.info, ms = v.matches, total = ms.reduce(function (a, m) { return Math.max(a, m.rnd); }, 0);
-    var cup = (S.cups || []).filter(function (c) { return c.id === v.id; })[0] || {};
-    var last = ms.filter(function (m) { return m.rnd === total; })[0];
-    var champ = last && last.winner_ref ? (last.winner_ref === last.a_ref ? last.a_label : last.b_label) : null;
-    var head = '<button class="linkbtn" data-act="cupback">‹ All rivals</button><div><h1 class="h1">' + esc(info.name) + '</h1><p class="muted">' + KIND_LABEL[info.kind] + 's · ' + info.size + ' sides · ' + info.round_days + ' days a round</p></div>';
-    var body;
-    if (info.status === "open") {
-      var acts = "";
-      if (!cup.i_am_in) acts += '<button class="btn coral" data-cup-join="' + v.id + '">Join with my ' + KIND_LABEL[info.kind].toLowerCase() + '</button>';
-      if (info.is_mine && info.entries.length >= 2) acts += '<button class="btn light" data-cup-start="' + v.id + '">Kick off now with ' + info.entries.length + ' sides</button>';
-      body = '<div class="card"><b>' + info.entries.length + ' of ' + info.size + ' sides in</b><p class="muted" style="font-size:14px">The bracket is drawn at random when it is full or when the organiser kicks off.</p><ul style="margin:8px 0 0;padding-left:20px">' + info.entries.map(function (e) { return '<li>' + esc(e) + '</li>'; }).join("") + '</ul></div>' + acts;
-    } else {
-      var rounds = "";
-      for (var r = 1; r <= total; r++) {
-        rounds += '<div class="h2" style="margin-top:6px">' + roundName(r, total) + '</div>' + ms.filter(function (m) { return m.rnd === r; }).map(function (m) {
-          var aw = m.winner_ref && m.winner_ref === m.a_ref, bw = m.winner_ref && m.winner_ref === m.b_ref;
-          var started = new Date(m.starts_on + "T00:00:00") <= new Date();
-          var side = function (label, avg, win) { return '<div class="side ' + (win ? "win" : (label ? "" : "tbd")) + '"><span>' + (win ? "✓ " : "") + esc(label || "To be decided") + '</span><span class="mono">' + (label && started ? fmt(avg) : "") + '</span></div>'; };
-          return '<div class="match"><span class="tag">' + fmtDay(m.starts_on) + ' to ' + fmtDay(m.ends_on) + '</span>' + side(m.a_label, m.a_avg, aw) + side(m.b_label || (m.rnd === 1 && m.a_ref ? "Bye" : ""), m.b_avg, bw) + '</div>';
-        }).join("");
-      }
-      body = (champ ? '<div class="champ"><div class="eyebrow" style="color:var(--yellow)">Champions</div><div class="h1" style="margin-top:4px">' + esc(champ) + '</div></div>' : "") + '<p class="muted" style="font-size:14px">Scores are steps per walker in each round.</p>' + rounds;
-    }
-    return topbar("") + '<div class="stack">' + head + body + '</div>';
-  }
-  function renameForm(name, id) {
-    return '<form class="gap8" data-form="renameTeam"><input type="hidden" name="tid" value="' + esc(id) + '"><label for="rname-' + esc(id) + '">Team name</label><div class="row"><input id="rname-' + esc(id) + '" name="rname" value="' + esc(name) + '" maxlength="60" minlength="2" required><button class="btn small light">Rename</button></div></form>';
-  }
-  // A team tug of war is team against team, so a team needs a name before it can challenge anyone.
-  function teamFirstSheet() {
-    var w = S.wiz;
-    var kinds = KINDS.map(function (k) { return '<button type="button" class="pill" aria-pressed="' + (w.kind === k[0]) + '" data-wkind="' + k[0] + '">' + k[1] + '</button>'; }).join("");
-    return '<div class="sheet-bg" data-act="closewiz"><form class="sheet" data-form="wizTeam" role="dialog" aria-modal="true" aria-label="Name your team" style="max-height:92vh;overflow:auto"><div class="h2">Challenge a rival</div>' +
-      '<div class="chips" role="group" aria-label="Who to challenge">' + kinds + '</div>' +
-      '<p>A team tug of war is <b>team against team</b>. Name your team first. Your workmates join with your team code.</p>' +
-      '<div class="gap8"><label for="tname">Team name</label><input id="tname" name="tname" minlength="2" maxlength="60" placeholder="Example: The Bluegum Walkers" autocomplete="off" required></div>' +
-      '<input type="hidden" id="tsize" name="tsize" value="Pack">' +
-      (S.wizMsg ? '<p class="err" role="alert">' + esc(S.wizMsg) + '</p>' : "") +
-      '<button class="btn coral">Create team and continue</button><button type="button" class="btn light" data-act="closewiz">Cancel</button></form></div>';
+  function viewPack() {
+    var v = S.pview, k = (S.packs || []).filter(function (x) { return x.id === v.id; })[0] || {}, rows = v.rows || [];
+    var head = '<div class="between"><button class="linkbtn" data-act="packback">\u2039 Challenges</button></div><div><h1 class="h1">' + esc(k.name || "Pack war") + '</h1><p class="muted">' + (k.finished ? "Finished" : (k.days_left || 0) + ((k.days_left || 0) === 1 ? " day left" : " days left")) + ' \u00b7 ' + walkers(k.members || rows.length) + ' \u00b7 steps count from when each person joined</p></div>';
+    var list = v.loading ? '<p class="muted">Loading\u2026</p>' : rows.map(function (m, i) {
+      return '<div class="lb ' + (m.is_me ? "mine" : (i === 0 ? "first" : "")) + '"><div class="rank">' + (i + 1) + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (m.is_me ? "You: " : "") + esc(m.display_name) + '</div><div style="font-size:13px">' + m.bowls + (m.bowls === 1 ? " bowl" : " bowls") + '</div></div><div><div class="num">' + fmt(m.steps) + '</div></div></div>';
+    }).join("");
+    var inv = k.finished ? "" : '<div class="card stack" style="gap:10px"><div class="muted" style="font-size:14px">Invite people with this code or link:</div><div style="font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:.12em">' + esc(k.join_code || "") + '</div><div class="row" style="flex-wrap:wrap"><button class="btn small coral" data-act="sharepack">Invite people</button><button class="btn small light" data-act="copy" data-code="' + esc(k.join_code || "") + '">Copy code</button></div></div>';
+    return topbar("") + '<div class="stack">' + head + inv + '<div class="stack" style="gap:10px">' + list + '</div><button class="btn light" data-act="leavepack">Leave this pack war</button></div>';
   }
   function wizSheet() {
-    if (S.wiz.kind === "team" && !(S.teams || []).length) return teamFirstSheet();
-    var w = S.wiz, person = w.kind === "person", link = person && w.mode === "link";
+    var w = S.wiz, person = w.kind === "person", pack = w.kind === "pack", link = person && w.mode === "link";
     var kinds = KINDS.map(function (k) { return '<button type="button" class="pill" aria-pressed="' + (w.kind === k[0]) + '" data-wkind="' + k[0] + '">' + k[1] + '</button>'; }).join("");
     var days = [3, 7, 14].map(function (n) { return '<button type="button" class="pill" aria-pressed="' + (w.days === n) + '" data-wdays="' + n + '">' + n + ' days</button>'; }).join("");
     var modes = person ? '<div class="chips" role="group" aria-label="How to reach them"><button type="button" class="pill" aria-pressed="' + (!link) + '" data-wmode="code">Use a rival code</button><button type="button" class="pill" aria-pressed="' + link + '" data-wmode="link">Send a link</button></div>' : "";
-    var who = link ? '<p class="muted" style="font-size:14px">We make a link with your challenge inside. Send it to anyone. When they open it and accept, the tug of war starts and you both begin from zero.</p>' : person
+    var who = pack ? '<div class="gap8"><label for="pname">Name your pack war</label><input id="pname" name="pname" value="' + esc(w.pname || "") + '" minlength="2" maxlength="40" placeholder="Example: Friday Office Dash" autocomplete="off" required></div><p class="muted" style="font-size:14px">Invite individual people with a code or link. Everyone is ranked by steps from the moment they join, and the most steps wins.</p>' : link ? '<p class="muted" style="font-size:14px">We make a link with your challenge inside. Send it to anyone. When they open it and accept, the tug of war starts and you both begin from zero.</p>' : person
       ? '<div class="gap8"><label for="opp">Their rival code</label><input id="opp" name="opp" value="' + esc(w.opp) + '" placeholder="Example: K3P9XZ" autocapitalize="characters" autocomplete="off"></div><p class="muted" style="font-size:13px">Ask for the code on their Me tab. They must accept before it starts.</p>'
       : '<div class="gap8"><label for="opp">Who do you want to take on?</label><select id="opp" name="opp"><option value="">' + (w.loading ? "Loading…" : (w.options.length ? "Choose one" : "No one to challenge yet")) + '</option>' + w.options.map(function (o) { return '<option value="' + esc(o.ref) + '"' + (o.ref === w.opp ? " selected" : "") + '>' + esc(o.label) + ' (' + o.members + ')</option>'; }).join("") + '</select></div>';
-    var asTeam = "";
-    var rnd = link ? "" : '<label class="check"><input type="checkbox" name="random"' + (w.random ? " checked" : "") + '> ' + (person ? "Pick a random walker for me (only people who opted in)" : "Surprise me with a random rival") + '</label>';
-    return '<div class="sheet-bg" data-act="closewiz"><form class="sheet" data-form="makeDuel" role="dialog" aria-modal="true" aria-label="Challenge a rival" style="max-height:92vh;overflow:auto"><div class="h2">Challenge a rival</div>' +
-      '<div class="chips" role="group" aria-label="Who to challenge">' + kinds + '</div>' + modes + asTeam + who + rnd +
+    var rnd = (link || pack) ? "" : '<label class="check"><input type="checkbox" name="random"' + (w.random ? " checked" : "") + '> ' + (person ? "Pick a random walker for me (only people who opted in)" : "Surprise me with a random rival") + '</label>';
+    return '<div class="sheet-bg" data-act="closewiz"><form class="sheet" data-form="makeDuel" role="dialog" aria-modal="true" aria-label="Start a challenge" style="max-height:92vh;overflow:auto"><div class="h2">Start a challenge</div>' +
+      '<div class="chips" role="group" aria-label="Who to challenge">' + kinds + '</div>' + (pack ? "" : modes) + who + rnd +
       '<div class="gap8"><label>How long?</label><div class="chips">' + days + '</div></div>' +
       (S.wizMsg ? '<p class="err" role="alert">' + esc(S.wizMsg) + '</p>' : "") +
-      '<button class="btn coral">' + (link ? "Create challenge link" : person ? "Send challenge" : "Start tug of war") + '</button><button type="button" class="btn light" data-act="closewiz">Cancel</button></form></div>';
+      '<button class="btn coral">' + (pack ? "Start pack war" : link ? "Create challenge link" : "Send challenge") + '</button><button type="button" class="btn light" data-act="closewiz">Cancel</button></form></div>';
   }
   function duelLink(tok) { return ORIGIN + "/?duel=" + encodeURIComponent(tok); }
   function shareDuel(tok, days) {
@@ -1121,15 +972,6 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     else if (v.mine) body = '<p>This is your own challenge link. Send it to someone else.</p><button class="btn" data-act="closeinvite">Close</button>';
     else body = '<p><b>' + esc(v.challenger) + '</b> challenged you to a <b>' + v.days + '-day</b> tug of war. Whoever walks the most steps wins the bone. You both start from zero when you accept.</p>' + (S.inviteMsg ? '<p class="err" role="alert">' + esc(S.inviteMsg) + '</p>' : "") + '<button class="btn coral" data-act="acceptinvite">Accept the challenge</button><button class="btn light" data-act="closeinvite">Not now</button>';
     return '<div class="sheet-bg" data-act="closeinvite"><div class="sheet" role="dialog" aria-modal="true" aria-label="Challenge"><div class="h2">You have been challenged!</div>' + body + '</div></div>';
-  }
-  function cupSheet() {
-    return '<div class="sheet-bg" data-act="closecup"><form class="sheet" data-form="makeCup" role="dialog" aria-modal="true" aria-label="Start a World Cup" style="max-height:92vh;overflow:auto"><div class="h2">Start a World Cup</div>' +
-      '<p class="muted" style="font-size:14px">Sides join until it is full, then the knockout draw is made at random. Winners are decided by steps per walker.</p>' +
-      '<div class="gap8"><label for="cname">Name</label><input id="cname" name="cname" maxlength="40" placeholder="Example: Spring Dog Bowl" required></div>' +
-      '<div class="gap8"><label for="csize">How many sides?</label><select id="csize" name="csize"><option value="4">4</option><option value="8" selected>8</option><option value="16">16</option></select></div>' +
-      '<div class="gap8"><label for="cdays">Days per round</label><select id="cdays" name="cdays"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="5">5</option><option value="7">7</option></select></div>' +
-      (S.cupMsg ? '<p class="err" role="alert">' + esc(S.cupMsg) + '</p>' : "") +
-      '<button class="btn coral">Create World Cup</button><button type="button" class="btn light" data-act="closecup">Cancel</button></form></div>';
   }
   function rivalForm() {
     var p = S.profile;
@@ -1198,8 +1040,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     if (S.view === "loading") html = '<div class="app">' + topbar("") + '<p class="muted" role="status">Loading your bowl…</p></div>';
     else if (S.view === "auth") html = viewAuth() + (popupOn() ? inviteAuthSheet() : "");
     else if (S.view === "reset") html = viewReset();
-    else if (S.view === "join") html = viewJoin();
-    else html = '<div class="app">' + (S.dogview ? (S.dogview.id ? viewDog : viewDogs) : S.tab === "rivals" ? (S.tview ? viewCup : viewRivals) : ({ today: viewToday, packs: (S.teamview ? viewTeam : viewPacks), impact: viewImpact, me: viewMe }[S.tab]))() + '</div>' + nav() + (S.sheet ? sheet() : "") + (S.wiz ? wizSheet() : "") + (S.invite ? inviteSheet() : "") + (S.cupform ? cupSheet() : "") + (S.celebrate ? celebrate() : "");
+    else html = '<div class="app">' + (S.dogview ? (S.dogview.id ? viewDog : viewDogs) : S.tab === "rivals" ? (S.pview ? viewPack : viewRivals) : ({ today: viewToday, packs: viewPacks, impact: viewImpact, me: viewMe }[S.tab]))() + '</div>' + nav() + (S.sheet ? sheet() : "") + (S.wiz ? wizSheet() : "") + (S.invite ? inviteSheet() : "") + (S.celebrate ? celebrate() : "");
     root.innerHTML = html;
     if (S.sheet) { var el = $("#steps"); if (el) { el.focus(); updatePreview(); } }
     if (S.celebrate) { confetti(); var d = $(".cel-done"); if (d) d.focus(); }
@@ -1250,15 +1091,14 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   document.addEventListener("click", function (e) {
     var t = e.target;
     var tab = t.closest("[data-tab]");
-    if (tab) { S.dogview = null; S.msg = ""; if (tab.dataset.tab === "packs" && S.tab !== "packs") { S.boardView = "list"; S.cam = null; } S.teamview = null; S.tab = tab.dataset.tab; render(); window.scrollTo(0, 0); if (S.tab === "packs") loadBoard().then(render); if (S.tab === "impact") loadImpact().then(render); if (S.tab === "rivals") loadRivals().then(render); return; }
+    if (tab) { S.dogview = null; S.msg = ""; if (tab.dataset.tab === "packs" && S.tab !== "packs") { S.boardView = "list"; S.cam = null; } S.pview = null; S.tab = tab.dataset.tab; render(); window.scrollTo(0, 0); if (S.tab === "packs") loadBoard().then(render); if (S.tab === "impact") loadImpact().then(render); if (S.tab === "rivals") loadRivals().then(render); return; }
     var cel = t.closest("[data-cel]");
     if (cel) { S.celebrate = { bowls: bowlsFor(Number(cel.dataset.cel)), count: 1, steps: Number(cel.dataset.cel) }; render(); return; }
     var wk = t.closest("[data-wkind]");
     if (wk && S.wiz) {
       var w = S.wiz, wf = $("form[data-form=makeDuel]");
       if (wf && wf.random) w.random = wf.random.checked;
-      w.kind = wk.dataset.wkind; w.mode = w.kind === "person" ? "link" : "code"; w.opp = ""; w.options = []; S.wizMsg = "";
-      if (w.kind !== "person") { w.loading = true; sb.rpc("duel_options", { p_kind: w.kind }).then(function (r) { w.options = r.data || []; w.loading = false; render(); }); } else w.loading = false;
+      w.kind = wk.dataset.wkind; w.mode = "link"; w.opp = ""; w.options = []; S.wizMsg = ""; w.loading = false;
       render(); return;
     }
     var pm = t.closest("[data-pmode]");
@@ -1266,15 +1106,10 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var wm = t.closest("[data-wmode]");
     if (wm && S.wiz) { S.wiz.mode = wm.dataset.wmode; S.wizMsg = ""; render(); return; }
     var wd = t.closest("[data-wdays]");
-    if (wd && S.wiz) { var wf2 = $("form[data-form=makeDuel]"); if (wf2 && wf2.opp) { S.wiz.opp = wf2.opp.value; S.wiz.random = wf2.random.checked; } S.wiz.days = Number(wd.dataset.wdays); render(); return; }
+    if (wd && S.wiz) { var wf2 = $("form[data-form=makeDuel]"); if (wf2 && wf2.opp) { S.wiz.opp = wf2.opp.value; S.wiz.random = wf2.random.checked; } if (wf2 && wf2.pname) S.wiz.pname = wf2.pname.value; S.wiz.days = Number(wd.dataset.wdays); render(); return; }
     var da = t.closest("[data-duel]");
     if (da) { sb.rpc("respond_duel", { p_id: da.dataset.duel, p_accept: da.dataset.ans === "1" }).then(function (r) { if (r.error) toast(r.error.message); return loadRivals(); }).then(render); return; }
-    var cj = t.closest("[data-cup-join]");
-    if (cj) { var cid = cj.dataset.cupJoin; sb.rpc("join_tournament", { p_id: cid }).then(function (r) { if (r.error) { toast(r.error.message); return; } toast("You are in!"); return loadRivals().then(function () { if (S.tview) return openCup(cid); }); }).then(render); return; }
-    var cs = t.closest("[data-cup-start]");
-    if (cs) { var sid = cs.dataset.cupStart; sb.rpc("start_tournament_now", { p_id: sid }).then(function (r) { if (r.error) { toast(r.error.message); return; } toast("Kick off! The bracket is drawn."); return loadRivals().then(function () { return openCup(sid); }); }).then(render); return; }
-    var cv = t.closest("[data-cup-view]");
-    if (cv) { openCup(cv.dataset.cupView); return; }
+    var pkc = t.closest("[data-pack]"); if (pkc) { openPack(pkc.dataset.pack); return; }
     var dg = t.closest("[data-dog]");
     if (dg) { openDog(dg.dataset.dog); return; }
     var pd = t.closest("[data-pickdog]");
@@ -1286,7 +1121,6 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var br = t.closest("[data-bracket]");
     if (br) { S.bracket = br.dataset.bracket || "Pup"; S.cam = null; render(); return; }
     var cb = t.closest("[data-cam]"); if (cb && S.cam) { var k = cb.dataset.cam; var zt = S.cam.zt != null ? S.cam.zt : S.cam.z; if (k === "in") tweenCam({ z: Math.min(2.4, zt * 1.3) }); else if (k === "out") tweenCam({ z: Math.max(0.7, zt / 1.3) }); else if (S.raceData && S.raceData.myY != null) tweenCam({ fy: S.raceData.myY, fx: Math.max(220, S.raceData.myX) }); return; }
-    var tr = t.closest("[data-team]"); if (tr && S.tab === "packs") { var tid = tr.dataset.team; S.teamview = { id: tid, loading: true, members: [] }; render(); window.scrollTo(0, 0); sb.rpc("team_detail", { p_id: tid }).then(function (r) { if (S.teamview && S.teamview.id === tid) { S.teamview.members = r.data || []; S.teamview.loading = false; render(); } }); return; }
     var bv = t.closest("[data-bview]"); if (bv) { S.boardView = bv.dataset.bview; S.cam = null; render(); window.scrollTo(0, 0); return; }
     var a = t.closest("[data-act]"); if (!a) return;
     if (a.classList.contains("sheet-bg") && t !== a) return;
@@ -1297,21 +1131,19 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     else if (act === "resend") {
       sb.auth.resend({ type: "signup", email: S.confirmEmail, options: { emailRedirectTo: ORIGIN + "/" } }).then(function (r) { toast(r.error ? r.error.message : "Confirmation email sent"); });
     }
-    else if (act === "invite") {
-      var link = inviteLink(a.dataset.code), text = inviteText(a.dataset.team, link);
-      if (navigator.share) navigator.share({ title: "Join my team on Walkies", text: text, url: link }).catch(function () {});
-      else { try { navigator.clipboard.writeText(text); toast("Invite copied. Paste it into a message."); } catch (x) { toast(link); } }
-    }
     else if (act === "sheet") { S.sheet = true; S.stepMsg = ""; S.stepVal = ""; render(); }
     else if (act === "dogs") { S.dogview = { list: true }; render(); window.scrollTo(0, 0); }
     else if (act === "dogback") { S.dogview = null; render(); }
-    else if ((act === "wiz" || act === "wizlink" || act === "cupnew") && challengeCount() >= MAX_CHALLENGES) { toast("You already have 3 challenges. Finish one before starting another."); }
-    else if (act === "wiz") { S.wiz = { kind: "team", opp: "", random: false, days: 7, options: [], loading: true }; S.wizMsg = ""; sb.rpc("duel_options", { p_kind: "team" }).then(function (r) { if (S.wiz) { S.wiz.options = r.data || []; S.wiz.loading = false; render(); } }); render(); }
+    else if ((act === "wiz" || act === "wizlink") && challengeCount() >= MAX_CHALLENGES) { toast("You already have 3 challenges. Finish one before starting another."); }
+    else if (act === "wiz") { S.wiz = { kind: "person", mode: "link", opp: "", random: false, days: 7, options: [], loading: false }; S.wizMsg = ""; render(); }
     else if (act === "closewiz") { S.wiz = null; render(); }
-    else if (act === "cupnew") { S.cupform = true; S.cupMsg = ""; render(); }
-    else if (act === "closecup") { S.cupform = false; render(); }
-    else if (act === "cupback") { S.tview = null; render(); }
-    else if (act === "wizlink") { S.tab = "rivals"; S.dogview = null; S.tview = null; S.wiz = { kind: "person", mode: "link", opp: "", random: false, days: 7, options: [], loading: false }; S.wizMsg = ""; render(); window.scrollTo(0, 0); }
+    else if (act === "packback") { S.pview = null; render(); window.scrollTo(0, 0); }
+    else if (act === "sharepack") {
+      var pk = (S.packs || []).filter(function (x) { return S.pview && x.id === S.pview.id; })[0];
+      if (pk) { var plink = packLink(pk.join_code), ptext = packText(pk.name, pk.days_left, plink); if (navigator.share) navigator.share({ title: "Walkies pack war", text: ptext, url: plink }).catch(function () {}); else { try { navigator.clipboard.writeText(ptext); toast("Invite copied. Paste it into a message."); } catch (x) { toast(plink); } } }
+    }
+    else if (act === "leavepack") { if (S.pview && confirm("Leave this pack war?")) { sb.rpc("leave_pack", { p_id: S.pview.id }).then(function () { S.pview = null; return loadRivals(); }).then(render); } }
+    else if (act === "wizlink") { S.tab = "rivals"; S.dogview = null; S.pview = null; S.wiz = { kind: "person", mode: "link", opp: "", random: false, days: 7, options: [], loading: false }; S.wizMsg = ""; render(); window.scrollTo(0, 0); }
     else if (act === "acceptinvite") {
       sb.rpc("accept_link_duel", { p_token: S.invite.token }).then(function (r) {
         if (r.error) { S.inviteMsg = r.error.message; render(); return; }
@@ -1323,14 +1155,11 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     else if (act === "closesheet") { S.sheet = false; render(); }
     else if (act === "closecel") { S.celebrate = null; render(); }
     else if (act === "celimpact") { S.celebrate = null; S.tab = "impact"; render(); }
-    else if (act === "solo") actions.solo();
-    else if (act === "gojoin") { S.view = "join"; S.msg = ""; render(); }
     else if (act === "makehome") { if (confirm("Make this your home team? Only your home team counts for the leaderboard and challenges, and you can only switch in the first 3 days of a month.")) actions.makeHome(a.dataset.tid); }
     else if (act === "leave") { if (confirm("Leave your team? Your steps stay with you.")) actions.leave(a.dataset.tid); }
     else if (act === "copy") { try { navigator.clipboard.writeText(a.dataset.code); toast("Code copied"); } catch (x) { toast("Code: " + a.dataset.code); } }
     else if (act === "sponsor") toast("Coming soon: friends and family will be able to sponsor your bowls.");
     else if (act === "pat") { S.bounce = true; render(); toast((myDog() ? myDog().name : "Your dog") + " wags their tail!"); setTimeout(function () { S.bounce = false; }, 600); }
-    else if (act === "teamback") { S.teamview = null; render(); window.scrollTo(0, 0); }
     else if (act === "joinboard") { sb.from("profiles").update({ show_on_leaderboard: true }).eq("user_id", S.user.id).then(function (r) { if (r.error) return toast("Could not save that"); S.profile.show_on_leaderboard = true; return loadBoard().then(render); }); }
     else if (act === "signout") { sb.auth.signOut().then(function () { S.user = null; S.view = "auth"; S.mode = "signin"; S.tab = "today"; render(); }); }
   });
@@ -1340,7 +1169,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   });
   if ("serviceWorker" in navigator) {
     var hadController = !!navigator.serviceWorker.controller;
-    navigator.serviceWorker.addEventListener("controllerchange", function () { if (hadController && !S.sheet && !S.wiz && !S.cupform) location.reload(); });
+    navigator.serviceWorker.addEventListener("controllerchange", function () { if (hadController && !S.sheet && !S.wiz) location.reload(); });
     window.addEventListener("load", function () { navigator.serviceWorker.register("/sw.js").then(function (reg) { reg.update().catch(function () {}); }).catch(function () {}); });
   }
   setInterval(function () { if (S.view === "app" && S.user && !document.hidden && !S.celebrate && !S.sheet) loadBoard().then(function (n) { if (n && S.tab === "packs" && S.boardView !== "race") render(); }).catch(function () {}); }, 60000);
