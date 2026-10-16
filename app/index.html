@@ -950,13 +950,13 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   }
   function viewPack() {
     var v = S.pview, k = (S.packs || []).filter(function (x) { return x.id === v.id; })[0] || {}, rows = v.rows || [];
-    var head = '<div class="between"><button class="linkbtn" data-act="packback">\u2039 Challenges</button></div><div><h1 class="h1">' + esc(k.name || "Pack war") + '</h1><p class="muted">' + (k.finished ? "Finished" : (k.days_left || 0) + ((k.days_left || 0) === 1 ? " day left" : " days left")) + ' \u00b7 ' + walkers(k.members || rows.length) + ' \u00b7 steps count from when each person joined</p></div>';
+    var head = '<div class="between"><button class="linkbtn" data-act="packback">\u2039 Challenges</button></div><div><h1 class="h1">' + esc(k.name || "Pack war") + '</h1></div>';
     var list = v.loading ? '<p class="muted">Loading\u2026</p>' : rows.map(function (m, i) {
       return '<div class="lb ' + (m.is_me ? "mine" : (i === 0 ? "first" : "")) + '"><div class="rank">' + (i + 1) + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (m.is_me ? "You: " : "") + esc(m.display_name) + '</div><div style="font-size:13px">' + m.bowls + (m.bowls === 1 ? " bowl" : " bowls") + '</div></div><div><div class="num">' + fmt(m.steps) + '</div></div></div>';
     }).join("");
     var inv = k.finished ? "" : '<div class="card stack" style="gap:10px"><div class="muted" style="font-size:14px">Invite people with this code or link:</div><div style="font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:.12em">' + esc(k.join_code || "") + '</div><div class="row" style="flex-wrap:wrap"><button class="btn small coral" data-act="sharepack">Invite people</button><button class="btn small light" data-act="copy" data-code="' + esc(k.join_code || "") + '">Copy code</button></div></div>';
     var ren = '<form class="gap8" data-form="renamePack"><input type="hidden" name="pid" value="' + esc(v.id) + '"><label for="rpname">Pack war name</label><div class="row"><input id="rpname" name="pname" value="' + esc(k.name || "") + '" maxlength="40" minlength="2" required><button class="btn small light">Rename</button></div></form>';
-    return topbar("") + '<div class="stack">' + head + inv + ren + '<div class="stack" style="gap:10px">' + list + '</div><button class="btn light" data-act="leavepack">Leave this pack war</button></div>';
+    return topbar("") + '<div class="stack">' + head + '<div class="stack" style="gap:10px">' + list + '</div>' + inv + ren + '</div>';
   }
   function wizSheet() {
     var w = S.wiz, person = w.kind === "person", pack = w.kind === "pack", link = person && w.mode === "link";
@@ -1155,7 +1155,6 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       var pk = (S.packs || []).filter(function (x) { return S.pview && x.id === S.pview.id; })[0];
       if (pk) { var plink = packLink(pk.join_code), ptext = packText(pk.name, pk.days_left, plink); if (navigator.share) navigator.share({ title: "Walkies pack war", text: ptext, url: plink }).catch(function () {}); else { try { navigator.clipboard.writeText(ptext); toast("Invite copied. Paste it into a message."); } catch (x) { toast(plink); } } }
     }
-    else if (act === "leavepack") { if (S.pview && confirm("Leave this pack war?")) { sb.rpc("leave_pack", { p_id: S.pview.id }).then(function () { S.pview = null; return loadRivals(); }).then(render); } }
     else if (act === "wizlink") { S.tab = "rivals"; S.dogview = null; S.pview = null; S.wiz = { kind: "person", mode: "link", opp: "", random: false, days: 7, options: [], loading: false }; S.wizMsg = ""; render(); window.scrollTo(0, 0); }
     else if (act === "acceptinvite") {
       sb.rpc("accept_link_duel", { p_token: S.invite.token }).then(function (r) {
