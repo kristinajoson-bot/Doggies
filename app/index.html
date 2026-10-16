@@ -115,6 +115,7 @@ option{background:var(--surface);color:var(--fg)}
 .sheet-bg{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center}
 .sheet{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:28px 28px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
 .seg{display:flex;flex:none;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px}.seg button{border:0;background:none;color:var(--muted);font:inherit;font-weight:700;font-size:14px;padding:7px 12px;border-radius:999px;white-space:nowrap}.seg button[aria-pressed=true]{background:#f4f2fa;color:#050507}
+.gallery{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}.gallery::-webkit-scrollbar{display:none}.gallery img{flex:0 0 88%;height:360px;object-fit:cover;object-position:50% 30%;border-radius:24px;scroll-snap-align:center;border:1px solid var(--line)}.gallery img:only-child{flex-basis:100%}
 .race{border:1px solid var(--line);border-radius:24px;overflow:hidden}
 .game{position:relative;height:min(68vh,540px);overflow:hidden;overflow:clip;perspective:560px;perspective-origin:50% 38%;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
 .game .world{position:absolute;left:50%;top:0;width:0;height:0;transform-style:preserve-3d;transform-origin:0 0}
@@ -1153,11 +1154,17 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     return topbar("") + '<div class="stack"><button class="linkbtn" data-act="dogback">‹ Back</button><div><h1 class="h1">Meet a dog</h1><p class="muted">Choose who your bowls feed. You can change your mind any time.</p></div>' + pool + list +
       '<p class="muted" style="font-size:13px">Sample dogs show how profiles will look. Real shelter dogs will appear here once our shelter partners join.</p></div>';
   }
+  // A swipeable row of photos when a dog has them, otherwise the round picture.
+  function dogGallery(d) {
+    var ph = (d.photos && d.photos.length) ? d.photos : (d.photo_url ? [d.photo_url] : []);
+    if (!ph.length) return dogAvatar(d, 96);
+    return '<div class="gallery" role="group" aria-label="Photos of ' + esc(d.name) + '" style="width:100%">' + ph.map(function (u, i) { return '<img src="' + esc(u) + '" alt="' + esc(d.name) + ' photo ' + (i + 1) + '" loading="' + (i ? "lazy" : "eager") + '">'; }).join("") + '</div>' + (ph.length > 1 ? '<div class="muted" style="font-size:12px">Swipe for more photos</div>' : "");
+  }
   function viewDog() {
     var d = dogById(S.dogview.id); if (!d) return topbar("") + '<div class="stack"><button class="linkbtn" data-act="dogback">‹ Back</button><p class="muted">We could not find that dog.</p></div>';
     var sh = S.shelters[d.shelter_id] || {}, mine = S.profile.dog_id === d.id, notes = S.dogview.notes || [];
     return topbar("") + '<div class="stack"><button class="linkbtn" data-act="dogback">‹ Back</button>' +
-      '<div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">' + dogAvatar(d, 96) + '<h1 class="h1">' + esc(d.name) + '</h1><div class="muted">' + esc([d.age, d.breed].filter(Boolean).join(" · ")) + '</div>' + (sh.name ? '<div class="muted" style="font-size:14px">' + esc(sh.name) + (sh.city ? ", " + esc(sh.city) : "") + '</div>' : "") + (d.is_demo ? '<span class="sample">Sample dog</span>' : "") + '</div>' +
+      '<div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">' + dogGallery(d) + '<h1 class="h1">' + esc(d.name) + '</h1><div class="muted">' + esc([d.age, d.breed].filter(Boolean).join(" · ")) + '</div>' + (sh.name ? '<div class="muted" style="font-size:14px">' + esc(sh.name) + (sh.city ? ", " + esc(sh.city) : "") + '</div>' : "") + (d.is_demo ? '<span class="sample">Sample dog</span>' : "") + '</div>' +
       (d.story ? '<div class="card"><p>' + esc(d.story) + '</p></div>' : "") +
       (mine ? '<div class="card" style="border-color:var(--green)"><b style="color:var(--green)">✓ You walk for ' + esc(d.name) + '</b><p class="muted" style="font-size:14px">Every bowl you unlock goes to ' + esc(d.name) + '.</p></div>' : '<button class="btn coral" data-pickdog="' + d.id + '">Walk for ' + esc(d.name) + '</button>') +
       '<div class="h2">Thank-you notes</div>' + (notes.length ? notes.map(function (n) { return '<div class="note"><p>' + esc(n.body) + '</p><div class="muted" style="font-size:12px">' + fmtDay(String(n.created_at).slice(0, 10)) + '</div></div>'; }).join("") : '<p class="muted" style="font-size:14px">No notes yet. The shelter team will post a thank-you here when food arrives.</p>') +
