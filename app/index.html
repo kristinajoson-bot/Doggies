@@ -313,6 +313,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   }
   async function loadTeams() {
     var r = await sb.rpc("my_teams"); S.teams = r.data || []; S.matesBy = {};
+    var hr = await sb.rpc("my_home_team"); S.home = hr.data || null;
     await Promise.all(S.teams.map(function (t) { return sb.rpc("team_mates_of", { p_id: t.id }).then(function (m) { S.matesBy[t.id] = m.data || []; }); }));
   }
   function canAccept(d) { return d.kind !== "team" || (S.teams || []).some(function (t) { return t.is_captain && t.name === d.my_label; }); }
@@ -441,7 +442,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
         S.wiz = null; await loadRivals(); render(); toast("Link ready. Tap Share link on your challenge."); return;
       }
       w.opp = f.opp.value; w.random = f.random.checked;
-      var r = await sb.rpc("start_duel", { p_kind: w.kind, p_opponent: w.opp || "", p_days: w.days, p_random: w.random, p_team: w.kind === "team" ? (f.mteam ? f.mteam.value : ((S.teams || [])[0] || {}).id || null) : null });
+      var r = await sb.rpc("start_duel", { p_kind: w.kind, p_opponent: w.opp || "", p_days: w.days, p_random: w.random, p_team: null });
       if (r.error) { S.wizMsg = r.error.message; return render(); }
       var person = w.kind === "person"; S.wiz = null; await loadRivals(); render(); toast(person ? "Challenge sent!" : "Challenge sent! Their team captain needs to accept.");
     },
@@ -473,6 +474,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       store.set("walkies-onboarded-" + S.user.id, "1"); S.msg = ""; toast("Pack created. Share code " + r.data.join_code); var t = S.tab; await finishJoin(); if (t === "rivals") { S.tab = "rivals"; render(); }
     },
     async solo() { store.set("walkies-onboarded-" + S.user.id, "1"); S.view = "app"; render(); },
+    async makeHome(id) { var r = await sb.rpc("set_home_team", { p_id: id }); if (r.error) { toast(r.error.message); return; } await loadTeams(); await loadBoard(); render(); toast("Home team updated"); },
     async leave(id) { await sb.rpc("leave_team", { p_id: id }); var t = S.tab; await finishJoin(); if (t === "me") { S.tab = "me"; render(); } toast("You left the team"); },
     async saveNames(f) {
       var r = await sb.from("profiles").update({ display_name: f.dname.value.trim() || "Walker" }).eq("user_id", S.user.id);
@@ -880,7 +882,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   }
   function viewImpact() {
     var i = S.impact || {}, commKg = (i.community_bowls || 0) * BOWL_KG, myKg = (i.my_bowls || 0) * BOWL_KG;
-    var team = (S.teams || []).length ? S.teams.map(function (t) {
+    var team = (S.teams || []).length ? S.teams.filter(function (t) { return (S.teams.length < 2) || t.id === S.home; }).map(function (t) {
       var kg = (t.bowls || 0) * BOWL_KG, pct = Math.min(100, Math.round(kg / TEAM_GOAL_KG * 100));
       return '<div class="card stack" style="gap:10px"><div class="between"><div style="font-weight:800">Goal: ' + TEAM_GOAL_KG + ' kg unlocks a dog visit</div><div class="muted" style="font-size:14px">' + Math.max(0, Math.round(TEAM_GOAL_KG - kg)) + ' kg to go</div></div><div class="bar"><i style="width:' + pct + '%"></i></div><p class="muted" style="font-size:14px">' + esc(t.name) + ' has unlocked ' + (Math.round(kg * 10) / 10) + ' kg so far. Reach the goal and a shelter dog and its handler come to your office to say thanks.</p></div>';
     }).join("") : '<div class="card"><b>Walking solo</b><p class="muted">Join or start a team from the Me tab to unlock an office dog visit together.</p></div>';
@@ -896,15 +898,16 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var blocks = teams.map(function (t) {
       var mates = (S.matesBy || {})[t.id] || [];
       var list = mates.length ? '<div class="h2" style="font-size:15px;margin-top:4px">Teammates</div><ul class="mates">' + mates.map(function (m) { return '<li><span>' + esc(m.display_name) + (m.is_me ? " (you)" : "") + '</span>' + (m.is_captain ? '<span class="tag">Captain</span>' : "") + '</li>'; }).join("") + '</ul>' : "";
-      return '<div class="card stack" style="gap:10px"><div class="between"><div class="h2" style="margin:0">' + esc(t.name) + '</div><span class="muted" style="font-size:14px">' + t.members + (t.members === 1 ? " walker" : " walkers") + '</span></div>' + (t.is_captain ? renameForm(t.name, t.id) : "") + list +
+      return '<div class="card stack" style="gap:10px"><div class="between"><div class="h2" style="margin:0">' + esc(t.name) + '</div><span class="muted" style="font-size:14px">' + t.members + (t.members === 1 ? " walker" : " walkers") + '</span></div>' + (teams.length > 1 ? (t.id === S.home ? '<div><span class="tag">Home team</span> <span class="muted" style="font-size:13px">Your steps count here</span></div>' : '<div class="row" style="flex-wrap:wrap"><span class="muted" style="font-size:13px;flex:1">Not competing</span><button class="btn small light" data-act="makehome" data-tid="' + esc(t.id) + '">Make home team</button></div>') : "") + (t.is_captain ? renameForm(t.name, t.id) : "") + list +
         '<p class="muted" style="font-size:14px">Workmates join with this code:</p><div style="font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:.12em">' + esc(t.join_code) + '</div><div class="row" style="flex-wrap:wrap"><button class="btn small" data-act="invite" data-code="' + esc(t.join_code) + '" data-team="' + esc(t.name) + '">Invite workmates</button><a class="btn small light" href="' + mailtoInvite(t.name, t.join_code) + '">Email invite</a><button class="btn small light" data-act="copy" data-code="' + esc(t.join_code) + '">Copy code</button><button class="btn small light" data-act="leave" data-tid="' + esc(t.id) + '">Leave team</button></div></div>';
     }).join("");
+    var homeNote = teams.length > 1 ? '<p class="muted" style="font-size:14px">Only your home team counts for the leaderboard and challenges. You can switch in the first 3 days of each month.</p>' : "";
     var join = full ? '<p class="muted" style="font-size:14px">You are in 3 teams, the most you can be in. Leave one to join another.</p>' :
       '<form class="stack" data-form="joinCode" style="gap:12px"><p class="muted" style="font-size:14px;margin:0">' + (teams.length ? "Join another team with its code." : "You are not in a team yet. Enter the code from your team to join it.") + '</p>' +
       (S.msg ? '<p class="err" role="alert">' + esc(S.msg) + '</p>' : "") +
       '<div class="gap8"><label for="code">Team code</label><input id="code" name="code" placeholder="Example: A1B2C3" autocapitalize="characters" required></div><button class="btn ' + (teams.length ? "light" : "coral") + '">Join team</button></form>' +
       '<form class="stack" data-form="meNewTeam" style="gap:12px"><p class="muted" style="font-size:14px;margin:0">Or start a new team and share its code.</p><div class="gap8"><label for="nname">Team name</label><input id="nname" name="nname" minlength="2" maxlength="60" placeholder="Example: The Bluegum Walkers" required></div><input type="hidden" id="nsize" name="nsize" value="Pack"><button class="btn light">Start team</button></form>';
-    return '<details class="drop" data-det="teams"' + openAttr("teams", !teams.length) + '><summary>My teams' + (teams.length ? ' <span class="muted" style="font-weight:600;font-size:14px">' + teams.length + '</span>' : "") + '</summary><div class="stack" style="gap:12px;margin-top:10px">' + blocks + join + '</div></details>';
+    return '<details class="drop" data-det="teams"' + openAttr("teams", !teams.length) + '><summary>My teams' + (teams.length ? ' <span class="muted" style="font-weight:600;font-size:14px">' + teams.length + '</span>' : "") + '</summary><div class="stack" style="gap:12px;margin-top:10px">' + homeNote + blocks + join + '</div></details>';
   }
   var PRIVACY_CONTACT = "";
   function policyHtml() {
@@ -1098,7 +1101,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var who = link ? '<p class="muted" style="font-size:14px">We make a link with your challenge inside. Send it to anyone. When they open it and accept, the tug of war starts and you both begin from zero.</p>' : person
       ? '<div class="gap8"><label for="opp">Their rival code</label><input id="opp" name="opp" value="' + esc(w.opp) + '" placeholder="Example: K3P9XZ" autocapitalize="characters" autocomplete="off"></div><p class="muted" style="font-size:13px">Ask for the code on their Me tab. They must accept before it starts.</p>'
       : '<div class="gap8"><label for="opp">Who do you want to take on?</label><select id="opp" name="opp"><option value="">' + (w.loading ? "Loading…" : (w.options.length ? "Choose one" : "No one to challenge yet")) + '</option>' + w.options.map(function (o) { return '<option value="' + esc(o.ref) + '"' + (o.ref === w.opp ? " selected" : "") + '>' + esc(o.label) + ' (' + o.members + ')</option>'; }).join("") + '</select></div>';
-    var asTeam = (!person && (S.teams || []).length > 1) ? '<div class="gap8"><label for="mteam">Challenge as</label><select id="mteam" name="mteam">' + S.teams.map(function (t) { return '<option value="' + esc(t.id) + '">' + esc(t.name) + '</option>'; }).join("") + '</select></div>' : "";
+    var asTeam = "";
     var rnd = link ? "" : '<label class="check"><input type="checkbox" name="random"' + (w.random ? " checked" : "") + '> ' + (person ? "Pick a random walker for me (only people who opted in)" : "Surprise me with a random rival") + '</label>';
     return '<div class="sheet-bg" data-act="closewiz"><form class="sheet" data-form="makeDuel" role="dialog" aria-modal="true" aria-label="Challenge a rival" style="max-height:92vh;overflow:auto"><div class="h2">Challenge a rival</div>' +
       '<div class="chips" role="group" aria-label="Who to challenge">' + kinds + '</div>' + modes + asTeam + who + rnd +
@@ -1322,6 +1325,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     else if (act === "celimpact") { S.celebrate = null; S.tab = "impact"; render(); }
     else if (act === "solo") actions.solo();
     else if (act === "gojoin") { S.view = "join"; S.msg = ""; render(); }
+    else if (act === "makehome") { if (confirm("Make this your home team? Only your home team counts for the leaderboard and challenges, and you can only switch in the first 3 days of a month.")) actions.makeHome(a.dataset.tid); }
     else if (act === "leave") { if (confirm("Leave your team? Your steps stay with you.")) actions.leave(a.dataset.tid); }
     else if (act === "copy") { try { navigator.clipboard.writeText(a.dataset.code); toast("Code copied"); } catch (x) { toast("Code: " + a.dataset.code); } }
     else if (act === "sponsor") toast("Coming soon: friends and family will be able to sponsor your bowls.");
