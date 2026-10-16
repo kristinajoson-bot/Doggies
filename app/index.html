@@ -87,8 +87,8 @@ option{background:var(--surface);color:var(--fg)}
 .lb.mine .rank{background:var(--pink);border-color:var(--pink);color:var(--dark)}
 .num{font-family:var(--display);font-weight:800;font-size:22px;text-align:right}
 .nav{position:fixed;left:0;right:0;bottom:0;background:rgba(0,0,0,.9);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:8px 10px calc(14px + env(safe-area-inset-bottom));z-index:10}
-.nav-in{max-width:440px;margin:0 auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px}
-.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:48px;border:0;border-radius:14px;background:none;color:var(--muted);font-weight:700;font-size:12px}
+.nav-in{max-width:440px;margin:0 auto;display:flex;justify-content:space-evenly;align-items:center}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:48px;padding:0 4px;border:0;border-radius:14px;background:none;color:var(--muted);font-weight:700;font-size:12px}
 .tab[aria-selected="true"]{color:var(--fg)}
 .tab svg{width:22px;height:22px}
 .tab[aria-selected="true"] svg{color:var(--pink);filter:drop-shadow(0 0 6px rgba(255,46,154,.8))}
@@ -114,7 +114,7 @@ option{background:var(--surface);color:var(--fg)}
 @keyframes rise{from{transform:translateY(30px);opacity:0}}
 .sheet-bg{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center}
 .sheet{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:28px 28px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
-.seg{display:flex;flex:none;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px}.seg button{border:0;background:none;color:var(--muted);font:inherit;font-weight:700;font-size:14px;padding:7px 12px;border-radius:999px;white-space:nowrap}.seg button[aria-pressed=true]{background:#f4f2fa;color:#050507}
+.seg{display:flex;flex:none;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px}.seg button{border:0;background:none;color:var(--muted);display:grid;place-items:center;width:42px;height:34px;border-radius:999px}.seg button[aria-pressed=true]{background:#f4f2fa;color:#050507}
 .gallery{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}.gallery::-webkit-scrollbar{display:none}.gallery img{flex:0 0 88%;height:360px;object-fit:cover;object-position:50% 30%;border-radius:24px;scroll-snap-align:center;border:1px solid var(--line)}.gallery img:only-child{flex-basis:100%}
 .race{border:1px solid var(--line);border-radius:24px;overflow:hidden}
 .game{position:relative;height:min(68vh,540px);overflow:hidden;overflow:clip;perspective:560px;perspective-origin:50% 38%;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
@@ -846,7 +846,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var tab = S.bracket || "Pup";
     var chips = BOARD_TABS.map(function (b) { return '<button class="pill" aria-pressed="' + (tab === b[0]) + '" data-bracket="' + b[0] + '">' + b[0] + '</button>'; }).join("");
     var body = "", race = S.boardView === "race";
-    var vt = '<div class="seg" role="group" aria-label="View"><button aria-pressed="' + (!race) + '" data-bview="list">List</button><button aria-pressed="' + race + '" data-bview="race">\uD83C\uDFC1 Race</button></div>';
+    var vt = '<div class="seg" role="group" aria-label="View"><button aria-pressed="' + (!race) + '" data-bview="list" aria-label="List view"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor"/></svg></button><button aria-pressed="' + race + '" data-bview="race" aria-label="Race view"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h14l-2.5 4 2.5 4H5"/><path d="M9 4v8M13 4v8" stroke-width="1.4"/></svg></button></div>';
     if (race) body = raceView(tab);
     else if (tab === "Pup") {
       var ws = S.walkers || [], meIn = ws.some(function (w) { return w.is_me; });
