@@ -333,7 +333,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var tk = {}; (l.data || []).forEach(function (x) { tk[x.id] = x.invite_token; });
     S.duels = (a.data || []).map(function (d) { d.invite_token = tk[d.id] || null; return d; });
   }
-  async function loadBoard() { var r = await sb.rpc("leaderboard", { p_bracket: null }), w = await sb.rpc("walker_board"); S.allTeams = r.data || []; S.walkers = w.data || []; S.board = S.allTeams; try { return checkRaceAlerts(); } catch (e) { console.error("alerts", e); return 0; } }
+  async function loadBoard() { var r = await sb.rpc("pack_leaderboard"), w = await sb.rpc("walker_board"); S.packBoard = r.data || []; S.walkers = w.data || []; try { return checkRaceAlerts(); } catch (e) { console.error("alerts", e); return 0; } }
 
   async function boot() {
     var r = await sb.auth.getSession();
@@ -592,6 +592,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   function raceEntries(tab) {
     var list;
     if (tab === "Pup") list = (S.walkers || []).map(function (w) { return { name: w.display_name, steps: Number(w.steps), me: w.is_me }; });
+    else list = (S.packBoard || []).map(function (k) { return { name: k.name, steps: Number(k.steps_per_member), me: k.is_mine }; });
     list.sort(function (a, b) { return b.steps - a.steps; });
     list.forEach(function (e, i) { e.rank = i + 1; });
     // keep the track readable: me and the 3 racers directly in front of me (or the 3 behind if I lead). With no me, the top 4.
@@ -627,7 +628,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   }
   function raceView(tab) {
     var r = raceEntries(tab);
-    if (!r.all.length || (tab === "Pup" && !r.me)) return '<div class="card"><b>' + "Join the walker leaderboard to race." + '</b><p class="muted">' + "Tap Show me on the list view, and your kart will appear on the track." + '</p></div>';
+    if (!r.all.length || !r.me) return tab === "Pup" ? '<div class="card"><b>Join the walker leaderboard to race.</b><p class="muted">Tap Show me on the list view, and your kart will appear on the track.</p></div>' : '<div class="card"><b>Join a pack war to race.</b><p class="muted">Start or join one in Challenges and your pack will appear on the track.</p></div>';
     var mySteps = r.me ? r.me.steps : null, th = RACE_TH;
     S.raceData = { entries: r.shown.slice().sort(function (x, y) { return (x.me ? 1 : 0) - (y.me ? 1 : 0); }), mySteps: mySteps, me: r.me };
     var line = "";
@@ -789,18 +790,24 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   }
   function timeAgo(t) { var m = Math.round((Date.now() - t) / 60000); return m < 1 ? "just now" : m < 60 ? m + " min ago" : Math.round(m / 60) + " h ago"; }
   function viewPacks() {
-    var tab = "Pup";
+    var tab = S.bracket || "Pup";
+    var chips = [["Pup", "Walkers"], ["Pack", "Packs"]].map(function (b) { return '<button class="pill" aria-pressed="' + (tab === b[0]) + '" data-bracket="' + b[0] + '">' + b[1] + '</button>'; }).join("");
     var body = "", race = S.boardView === "race";
     var vt = '<div class="seg" role="group" aria-label="View"><button aria-pressed="' + (!race) + '" data-bview="list" aria-label="List view"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor"/></svg></button><button aria-pressed="' + race + '" data-bview="race" aria-label="Race view"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h14l-2.5 4 2.5 4H5"/><path d="M9 4v8M13 4v8" stroke-width="1.4"/></svg></button></div>';
     if (race) body = raceView(tab);
-    else if (tab === "Pup") {
+    else if (tab === "Pack") {
+      var pks = S.packBoard || [];
+      body = pks.length ? pks.map(function (k, i) {
+        return '<' + (k.is_mine ? 'button data-pack="' + esc(k.id) + '"' : "div") + ' class="lb ' + (k.is_mine ? "mine tap" : (i === 0 ? "first" : "")) + '"><div class="rank">' + (i + 1) + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (k.is_mine ? "Your pack: " : "") + esc(k.name) + '</div><div style="font-size:13px">' + walkers(k.members) + ' \u00b7 ' + k.days_left + (k.days_left === 1 ? " day left" : " days left") + '</div></div><div><div class="num">' + fmt(k.steps_per_member) + '</div><div style="font-size:12px;text-align:right">steps each</div></div></' + (k.is_mine ? "button" : "div") + '>';
+      }).join("") : '<div class="card"><b>No pack wars running.</b><p class="muted">Start one in Challenges and invite your people. Packs are ranked by steps per walker.</p></div>';
+    } else if (tab === "Pup") {
       var ws = S.walkers || [], meIn = ws.some(function (w) { return w.is_me; });
       body = (meIn ? "" : '<div class="card row" style="border-color:var(--cyan)"><div style="flex:1;font-size:14px"><b>Join the walker leaderboard?</b> Your name and monthly steps will show to other walkers. You can change this in Privacy settings.</div><button class="btn small" data-act="joinboard">Show me</button></div>') +
         (ws.length ? ws.map(function (w, i) {
           return '<div class="lb ' + (w.is_me ? "mine" : (i === 0 ? "first" : "")) + '"><div class="rank">' + (i + 1) + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (w.is_me ? "You: " : "") + esc(w.display_name) + '</div><div style="font-size:13px">' + w.bowls + (w.bowls === 1 ? " bowl" : " bowls") + '</div></div><div><div class="num">' + fmt(w.steps) + '</div><div style="font-size:12px;text-align:right">steps</div></div></div>';
         }).join("") : '<div class="card"><b>No walkers here yet.</b><p class="muted">Be the first. Tap Show me to join the leaderboard.</p></div>');
     }
-    return topbar("") + '<div class="stack"><div class="between"><h1 class="h1">Leaderboard</h1>' + vt + '</div>' + raceNewsCard() + '<div class="stack" style="gap:10px">' + body + '</div></div>';
+    return topbar("") + '<div class="stack"><div class="between"><h1 class="h1">Leaderboard</h1>' + vt + '</div>' + raceNewsCard() + '<div class="chips" role="group" aria-label="Leaderboard">' + chips + '</div><div class="stack" style="gap:10px">' + body + '</div></div>';
   }
   function viewImpact() {
     var i = S.impact || {}, commKg = (i.community_bowls || 0) * BOWL_KG, myKg = (i.my_bowls || 0) * BOWL_KG;
