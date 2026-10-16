@@ -401,7 +401,7 @@ button.citypill{cursor:pointer}
       var d = await sb.from("step_days").select("day,steps").gte("day", S.challenge.starts_on).lte("day", S.challenge.ends_on);
       S.days = d.data || [];
     }
-    await Promise.all([loadImpact(), loadBoard(), loadRivals(), loadDogs()]);
+    await Promise.all([loadImpact(), loadBoard(), loadRivals(), loadDogs(), loadAdmin()]);
   }
   function canAccept(d) { return true; }
   async function loadImpact() { var r = await sb.rpc("impact"); S.impact = r.data && r.data[0] ? r.data[0] : null; }
@@ -419,6 +419,11 @@ button.citypill{cursor:pointer}
     if (r.error) return toast("Could not save your choice");
     await loadAll(); var d = dogById(id); S.dogview = null; render();
     toast(d ? "You are walking for " + d.name + "!" : "Your bowls will feed the Walkies pool");
+  }
+  // Campaign controls are for admins only. The database checks this too.
+  async function loadAdmin() {
+    var a = await sb.rpc("am_admin"); S.isAdmin = a.data === true;
+    if (S.isAdmin) { var l = await sb.rpc("admin_campaigns"); S.admCampaigns = l.data || []; } else S.admCampaigns = [];
   }
   async function loadRivals() {
     var a = await sb.rpc("my_duels"), l = await sb.rpc("my_links"), pk = await sb.rpc("my_packs");
@@ -519,6 +524,18 @@ button.citypill{cursor:pointer}
       var r = await sb.from("profiles").update({ marketing_opt_in: f.marketing.checked, show_on_leaderboard: f.board.checked }).eq("user_id", S.user.id);
       if (r.error) return toast("Could not save that");
       await loadAll(); render(); toast("Saved");
+    },
+    async admSave(f) {
+      var r = await sb.rpc("admin_set_campaign", { p_id: f.id.value, p_title: f.title.value, p_tagline: f.tagline.value, p_starts: f.starts.value, p_ends: f.ends.value });
+      if (r.error) return toast(r.error.message);
+      S.admEdit = null; await loadAdmin(); await loadRivals(); render(); toast("Saved");
+    },
+    async admCreate(f) {
+      var cities = f.cities.value.split(/[\n,]+/).map(function (x) { return x.trim(); }).filter(Boolean);
+      var r = await sb.rpc("admin_create_campaign", { p_format: f.format.value, p_title: f.title.value, p_tagline: f.tagline.value, p_cities: cities, p_starts: f.starts.value, p_ends: f.ends.value });
+      var em = f.querySelector(".admerr"); if (em) em.textContent = r.error ? r.error.message : "";
+      if (r.error) return;
+      S.openDet = S.openDet || {}; S.openDet.admnew = false; await loadAdmin(); render(); toast("Created. Turn it on when you are ready.");
     },
     async renamePack(f) {
       var r = await sb.rpc("rename_pack", { p_id: f.pid.value, p_name: f.pname.value });
@@ -972,10 +989,24 @@ button.citypill{cursor:pointer}
       return '<form class="gap8" data-form="renamePack" data-autosave><input type="hidden" name="pid" value="' + esc(k.id) + '"><label for="pn-' + esc(k.id) + '">Pack war name</label><input id="pn-' + esc(k.id) + '" name="pname" value="' + esc(k.name) + '" maxlength="40" minlength="2" required></form>';
     }).join("") + '</div>';
   }
+  function campKind(c) { return c.format === "cup" ? "World Cup" : (String(c.cities || "").split(",").length > 2 ? "Multi-city" : "Two cities"); }
+  function adminSection() {
+    if (!S.isAdmin) return "";
+    var ch = S.challenge || {}, list = (S.admCampaigns || []).map(function (c) {
+      var edit = S.admEdit === c.id;
+      return '<div class="card stack" style="gap:8px;background:var(--surface2)"><div class="between"><div style="font-weight:800">' + esc(c.title) + '</div><span class="chip-s" style="' + (c.active ? "color:var(--green);border-color:var(--green)" : "") + '">' + (c.active ? "On" : "Off") + '</span></div>' +
+        '<div class="muted" style="font-size:13px">' + esc(campKind(c)) + ' \u00b7 ' + esc(rangeLabel(c.starts_on, c.ends_on)) + ' \u00b7 ' + c.members + ' joined<br>' + esc(c.cities || "") + '</div>' +
+        '<div class="row" style="flex-wrap:wrap"><button class="btn small ' + (c.active ? "light" : "coral") + '" data-act="admtoggle" data-id="' + esc(c.id) + '" data-on="' + (c.active ? "0" : "1") + '">' + (c.active ? "Turn off" : "Turn on") + '</button><button class="btn small light" data-act="admedit" data-id="' + esc(c.id) + '">' + (edit ? "Close" : "Edit") + '</button></div>' +
+        (edit ? '<form class="stack" data-form="admSave" style="gap:10px"><input type="hidden" name="id" value="' + esc(c.id) + '"><div class="gap8"><label>Title</label><input name="title" value="' + esc(c.title) + '" maxlength="60" required></div><div class="gap8"><label>Tagline</label><input name="tagline" value="' + esc(c.tagline || "") + '" maxlength="140"></div><div class="row"><div class="gap8" style="flex:1"><label>Starts</label><input type="date" name="starts" value="' + esc(c.starts_on) + '" required></div><div class="gap8" style="flex:1"><label>Ends</label><input type="date" name="ends" value="' + esc(c.ends_on) + '" required></div></div><button class="btn small coral">Save</button></form>' : "") + '</div>';
+    }).join("");
+    return '<div class="card stack" style="gap:12px"><div class="h2">Campaigns</div><p class="muted" style="font-size:13px">Only admins see this. Only one campaign shows to walkers at a time, so turning one on turns the others off.</p>' + (list || '<p class="muted">No campaigns yet.</p>') +
+      '<details class="drop" data-det="admnew"' + openAttr("admnew", false) + '><summary>New campaign</summary><form class="stack" data-form="admCreate" style="gap:10px;margin-top:10px"><div class="gap8"><label>Type</label><select name="format"><option value="duel">Two cities (versus)</option><option value="multi">Multi-city (3 to 12)</option><option value="cup">World Cup (8 cities)</option></select></div><div class="gap8"><label>Title</label><input name="title" maxlength="60" placeholder="Example: Sydney vs Melbourne" required></div><div class="gap8"><label>Tagline (optional)</label><input name="tagline" maxlength="140"></div><div class="gap8"><label>Cities, one per line</label><textarea name="cities" rows="4" placeholder="Sydney&#10;Melbourne" style="width:100%;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;color:inherit;font:inherit" required></textarea></div><div class="row"><div class="gap8" style="flex:1"><label>Starts</label><input type="date" name="starts" value="' + esc(ch.starts_on || "") + '" required></div><div class="gap8" style="flex:1"><label>Ends</label><input type="date" name="ends" value="' + esc(ch.ends_on || "") + '" required></div></div>' + '<p class="err admerr" role="alert"></p><button class="btn coral">Create (starts off)</button></form></details></div>';
+  }
   function viewMe() {
     return topbar("") + '<div class="stack"><h1 class="h1">Me</h1>' +
       '<form class="card stack" data-form="saveNames" data-autosave><div class="gap8"><label for="dname">Your name</label><input id="dname" name="dname" value="' + esc(S.profile.display_name) + '" maxlength="40" required></div></form>' +
       myPacksSection() +
+      adminSection() +
       privacySection() +
       '<button class="btn light" data-act="signout">Sign out</button><p class="muted" style="font-size:13px;text-align:center">' + esc(S.user.email) + ' \u00b7 version ' + esc(window.WALKIES_VERSION || "dev") + '</p></div>';
   }
@@ -1519,6 +1550,10 @@ button.citypill{cursor:pointer}
       var cc = S.camp; if (cc) { var clink = ORIGIN + "/?campaign=" + encodeURIComponent(cc.slug), ctext = cc.title + " on Walkies! Pick your city and walk. Every step also feeds a shelter dog. Tap to join:"; if (navigator.share) navigator.share({ title: cc.title, text: ctext, url: clink }).catch(function () {}); else { try { navigator.clipboard.writeText(ctext + " " + clink); toast("Invite copied. Paste it into a message."); } catch (x) { toast(clink); } } }
     }
     else if (act === "lbpackback") { S.lbpack = null; S.scrollMe = true; render(); scrollToMe(); }
+    else if (act === "admtoggle") {
+      sb.rpc("admin_set_campaign", { p_id: a.dataset.id, p_active: a.dataset.on === "1" }).then(function (r) { if (r.error) { toast(r.error.message); return; } return loadAdmin().then(loadRivals).then(function () { render(); toast(a.dataset.on === "1" ? "Campaign is on" : "Campaign is off"); }); });
+    }
+    else if (act === "admedit") { S.admEdit = S.admEdit === a.dataset.id ? null : a.dataset.id; render(); }
     else if (act === "opencup") { S.cupPage = true; render(); window.scrollTo(0, 0); }
     else if (act === "cupback") { S.cupPage = false; render(); window.scrollTo(0, 0); }
     else if (act === "packall") { S.packAll = S.packAll || {}; S.packAll[a.dataset.pid] = !S.packAll[a.dataset.pid]; render(); }
