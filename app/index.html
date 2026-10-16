@@ -19,7 +19,7 @@
 html,body{margin:0;min-height:100%}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.4;-webkit-font-smoothing:antialiased}
 button,input,select{font:inherit;color:inherit}
-button{cursor:pointer}
+button{cursor:pointer;touch-action:manipulation}
 a{color:inherit}
 h1,h2,p{margin:0}
 :focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
@@ -86,9 +86,9 @@ option{background:var(--surface);color:var(--fg)}
 .lb.first .rank{background:var(--cyan);border-color:var(--cyan);color:var(--dark)}
 .lb.mine .rank{background:var(--pink);border-color:var(--pink);color:var(--dark)}
 .num{font-family:var(--display);font-weight:800;font-size:22px;text-align:right}
-.nav{position:fixed;left:0;right:0;bottom:0;background:rgba(0,0,0,.9);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:8px 10px calc(14px + env(safe-area-inset-bottom));z-index:10}
+.nav{position:fixed;left:0;right:0;bottom:0;background:rgba(0,0,0,.9);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:6px 10px calc(10px + env(safe-area-inset-bottom));z-index:10}
 .nav-in{max-width:440px;margin:0 auto;display:flex;justify-content:space-evenly;align-items:center}
-.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:48px;padding:0 4px;border:0;border-radius:14px;background:none;color:var(--muted);font-weight:700;font-size:12px}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:52px;min-width:56px;padding:0 4px;touch-action:manipulation;-webkit-tap-highlight-color:transparent;border:0;border-radius:14px;background:none;color:var(--muted);font-weight:700;font-size:12px}
 .tab[aria-selected="true"]{color:var(--fg)}
 .tab svg{width:22px;height:22px}
 .tab[aria-selected="true"] svg{color:var(--pink);filter:drop-shadow(0 0 6px rgba(255,46,154,.8))}
@@ -1391,12 +1391,18 @@ button.citypill{cursor:pointer}
     }).join("") + '</div></nav>';
   }
   function render() {
-    var root = $("#root"), html;
+    var root = $("#root"), html, keepNav = null;
+    // The tab bar is kept as it is between renders, so a tap that lands while the page redraws is not lost.
+    if (S.view === "app") { keepNav = root.querySelector(":scope > .nav"); if (keepNav) keepNav.parentNode.removeChild(keepNav); }
     if (S.view === "loading") html = '<div class="app">' + topbar("") + '<p class="muted" role="status">Loading your bowl…</p></div>';
     else if (S.view === "auth") html = viewAuth() + (popupOn() ? inviteAuthSheet() : "");
     else if (S.view === "reset") html = viewReset();
     else html = '<div class="app">' + (S.dogview ? (S.dogview.id ? viewDog : viewDogs) : S.tab === "rivals" ? (S.cupPage && S.camp && S.camp.cup ? viewCupPage : viewRivals) : ({ today: viewToday, packs: viewPacks, impact: viewImpact, me: viewMe }[S.tab]))() + '</div>' + nav() + (S.sheet ? sheet() : "") + (S.wiz ? wizSheet() : "") + (S.invite ? inviteSheet() : "") + (S.celebrate ? celebrate() : "");
-    root.innerHTML = html;
+    root.innerHTML = keepNav ? html.replace(/<nav class="nav"[\s\S]*?<\/nav>/, "") : html;
+    if (keepNav) {
+      var appEl = root.querySelector(".app"); root.insertBefore(keepNav, appEl ? appEl.nextSibling : null);
+      keepNav.querySelectorAll(".tab").forEach(function (b) { b.setAttribute("aria-selected", String(b.dataset.tab === S.tab)); });
+    }
     if (S.sheet) { var el = $("#steps"); if (el) { el.focus(); updatePreview(); } }
     if (S.celebrate) { confetti(); var d = $(".cel-done"); if (d) d.focus(); }
     if (S.tab === "packs" && S.boardView === "race") placeRace();
