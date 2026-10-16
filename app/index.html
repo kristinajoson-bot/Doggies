@@ -107,15 +107,14 @@ option{background:var(--surface);color:var(--fg)}
 .sp{position:absolute;transform-origin:50% 100%;transform:translate(-50%,-100%) rotateX(var(--untilt)) scale(var(--s,1));line-height:1;white-space:nowrap;pointer-events:none}
 .sp.kart{transform:translate(-50%,-100%) translateZ(3px) rotateX(var(--untilt)) scale(var(--s,1));transition:left 1.6s cubic-bezier(.2,.8,.2,1),top 1.6s cubic-bezier(.2,.8,.2,1)}
 .shd{position:absolute;width:40px;height:16px;margin:-8px 0 0 -20px;border-radius:50%;background:rgba(0,0,0,.38);transition:left 1.6s cubic-bezier(.2,.8,.2,1),top 1.6s cubic-bezier(.2,.8,.2,1)}
-.stop{width:84px;height:26px}
-.stop .lvl{position:absolute;left:50%;top:0;transform:translateX(-50%);display:flex;align-items:center;gap:6px;font-family:var(--display);font-weight:800;font-size:12px;color:#fff;background:rgba(21,19,28,.88);padding:3px 9px 3px 7px;border-radius:999px;border:1.5px solid rgba(255,255,255,.7)}
-.stop .mb{position:relative;display:inline-block;width:20px;height:11px;margin-top:5px;border-radius:2px 2px 11px 11px;background:#8d8aa6;border-top:2.5px solid #fff;box-sizing:border-box}
-.stop .mb::before{content:"";position:absolute;left:3px;top:-8px;width:12px;height:6px;border-radius:12px 12px 0 0;background:#b8692f;display:none}
-.stop.on .mb{background:var(--pink)}.stop.on .mb::before{display:block}
+.stop{width:70px;height:64px}
+.stop .sb{position:absolute;left:50%;top:0;transform:translateX(-50%);width:56px;height:38px}
+.stop .sb svg{display:block;width:100%;height:100%;overflow:visible}
+.stop .lvl{position:absolute;left:50%;bottom:0;transform:translateX(-50%);font-family:var(--display);font-weight:800;font-size:12px;color:#fff;background:rgba(21,19,28,.88);padding:1px 9px;border-radius:999px;border:1.5px solid rgba(255,255,255,.7)}
 .stop.on .lvl{color:var(--green);border-color:var(--green)}
 .stop.next .lvl{border-color:var(--yellow);color:var(--yellow)}
-.stop.goal{width:96px}.stop.goal .lvl{font-size:13px;border-color:var(--yellow);color:var(--yellow)}
-.stop.goal .mb{background:#f4c542}.stop.goal .mb::before{display:block;background:none;content:"\1F9B4";font-size:13px;top:-12px;left:2px;width:auto;height:auto;border-radius:0}
+.stop.goal{width:96px;height:88px}.stop.goal .sb{width:84px;height:57px}.stop.goal .lvl{font-size:13px;border-color:var(--yellow);color:var(--yellow)}
+.stop .bone{position:absolute;left:50%;top:-12px;transform:translateX(-50%) rotate(-12deg);font-size:26px;z-index:1}
 .cam{position:absolute;right:10px;bottom:10px;display:flex;flex-direction:column;gap:8px;z-index:3}
 .cam-btn{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:rgba(13,12,18,.82);color:#fff;font-size:22px;font-weight:700;display:grid;place-items:center}
 .kart{width:52px;height:52px}
@@ -721,7 +720,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     MILESTONES.forEach(function (m, k) {
       var pt = at((k + 1) / 10), on = data.mySteps != null && data.mySteps >= m, goal = k === 9, label = m >= 1000 ? m / 1000 + "k" : m;
       var next = !on && (k === 0 || (data.mySteps != null && data.mySteps >= MILESTONES[k - 1]));
-      sprite("stop" + (on ? " on" : "") + (next ? " next" : "") + (goal ? " goal" : ""), pt.x, pt.y, '<span class="lvl"><i class="mb"></i>' + label + '</span>', "");
+      sprite("stop" + (on ? " on" : "") + (next ? " next" : "") + (goal ? " goal" : ""), pt.x, pt.y, '<div class="sb">' + (goal ? '<b class="bone">\uD83E\uDDB4</b>' : "") + bowlSvg(on || goal ? 1 : 0, false) + '</div><span class="lvl">' + label + '</span>', "");
     });
     // racers
     var prev = [], off = [0, 26, -26, 48, -48];
