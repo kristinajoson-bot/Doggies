@@ -104,28 +104,26 @@ option{background:var(--surface);color:var(--fg)}
 .game .world{position:absolute;left:50%;top:0;width:0;height:0;transform-style:preserve-3d;transform-origin:0 0}
 .game .plane{position:absolute;left:0;top:0;transform-style:preserve-3d}
 .game .plane svg{position:absolute;left:0;top:0;pointer-events:none}
-.sp{position:absolute;transform-origin:50% 100%;transform:translate(-50%,-100%) rotateX(var(--untilt));line-height:1;white-space:nowrap;pointer-events:none}
-.sp.kart{transform:translate(-50%,-100%) translateZ(3px) rotateX(var(--untilt));transition:left 1.6s cubic-bezier(.2,.8,.2,1),top 1.6s cubic-bezier(.2,.8,.2,1)}
+.sp{position:absolute;transform-origin:50% 100%;transform:translate(-50%,-100%) rotateX(var(--untilt)) scale(var(--s,1));line-height:1;white-space:nowrap;pointer-events:none}
+.sp.kart{transform:translate(-50%,-100%) translateZ(3px) rotateX(var(--untilt)) scale(var(--s,1));transition:left 1.6s cubic-bezier(.2,.8,.2,1),top 1.6s cubic-bezier(.2,.8,.2,1)}
 .shd{position:absolute;width:40px;height:16px;margin:-8px 0 0 -20px;border-radius:50%;background:rgba(0,0,0,.38);transition:left 1.6s cubic-bezier(.2,.8,.2,1),top 1.6s cubic-bezier(.2,.8,.2,1)}
 .stop{display:flex;flex-direction:column;align-items:center;gap:2px}
-.stop .toy{display:grid;place-items:center;width:42px;height:42px;font-size:24px;border-radius:50%;background:rgba(20,18,30,.78);border:2px solid rgba(255,255,255,.55)}
+.stop .toy{display:grid;place-items:center;width:34px;height:34px;font-size:19px;border-radius:50%;background:rgba(20,18,30,.78);border:2px solid rgba(255,255,255,.55)}
 .stop .lvl{font-family:var(--display);font-weight:800;font-size:11px;color:#fff;background:rgba(20,18,30,.78);padding:1px 7px;border-radius:999px}
 .stop.on .toy{border-color:var(--green);box-shadow:0 0 14px var(--green)}
 .stop.on .lvl{color:var(--green)}
-.stop.goal .toy{width:64px;height:64px;font-size:40px;border-color:var(--yellow);box-shadow:0 0 22px var(--yellow)}
+.stop.goal .toy{width:52px;height:52px;font-size:32px;border-color:var(--yellow);box-shadow:0 0 22px var(--yellow)}
 .cam{position:absolute;right:10px;bottom:10px;display:flex;flex-direction:column;gap:8px;z-index:3}
 .cam-btn{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:rgba(13,12,18,.82);color:#fff;font-size:22px;font-weight:700;display:grid;place-items:center}
-.kart{width:84px;height:112px}
-.kart .kb{position:absolute;left:4px;top:48px;width:76px;height:64px}.kart .kt{display:block;width:100%;height:100%;overflow:visible}
-.kart .plate{position:absolute;left:50%;top:16px;transform:translateX(-50%);display:block;font-family:var(--display);font-weight:800;padding:2px 9px;border-radius:999px;border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.35)}
-.kart .ini{font-size:13px;color:#050507}
-.kart.me .kb{transform:scale(1.25);transform-origin:50% 100%;filter:drop-shadow(0 0 8px var(--pink)) drop-shadow(0 0 14px var(--pink))}
-.kart.me .plate{border-color:#fff;box-shadow:0 0 0 2px var(--pink),0 0 14px var(--pink);top:4px;transform:translateX(-50%) scale(1.15)}
-.kart .crown{position:absolute;right:-6px;top:-18px;font-size:20px;transform:rotate(18deg)}
+.kart{width:52px;height:52px}
+.kart .tok{position:absolute;inset:0;display:grid;place-items:center;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.35)}
+.kart .ini{font-family:var(--display);font-weight:800;font-size:15px;color:#050507}
+.kart.me .tok{box-shadow:0 0 0 3px var(--pink),0 0 16px var(--pink)}
+.kart .crown{position:absolute;right:-8px;top:-14px;font-size:20px;transform:rotate(18deg)}
 .kart .you{position:absolute;left:50%;top:calc(100% + 4px);transform:translateX(-50%);background:var(--pink);color:#050507;font-family:var(--display);font-weight:800;font-size:11px;letter-spacing:.08em;padding:2px 8px;border-radius:999px}
 .sp.hill{opacity:.95}.sp.sky{opacity:.95}
 .sp.arch{width:100px;height:90px}
-.arch .arch-b{position:absolute;left:0;right:0;top:0;height:28px;background:repeating-conic-gradient(#fff 0 25%,#111 0 50%) 0 0/14px 14px;border:2px solid #fff;border-radius:6px;color:#fff;font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:.14em;display:grid;place-items:center;text-shadow:0 1px 3px #000}
+.arch .arch-b{position:absolute;left:0;right:0;top:0;height:28px;background:#1b1928;border:2px solid #fff;border-radius:6px;color:#fff;font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:.14em;display:grid;place-items:center;text-shadow:0 1px 3px #000}
 .arch .arch-p{position:absolute;left:4px;top:26px;width:8px;height:64px;background:#e8362d;border-radius:3px}.arch .arch-p.r{left:auto;right:4px}
 @media (prefers-reduced-motion:reduce){.sp.kart,.shd{transition:none}}
 .sheet{position:relative}.sheet::before{content:"";align-self:center;width:44px;height:5px;border-radius:3px;background:var(--line);margin:-8px 0 4px;flex:none}
@@ -668,18 +666,11 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       (r.all.length > r.shown.length ? '<p class="muted" style="font-size:13px;text-align:center">Showing you and the three racers in front of you. Drag to look around, pinch to zoom. Switch to List to see everyone.</p>' : '<p class="muted" style="font-size:13px;text-align:center">Drag to look around, pinch to zoom.</p>');
   }
   function rng(seed) { var a = seed >>> 0; return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-  function kartSvg(col) {
-    return '<div class="kb"><svg class="kt" viewBox="0 0 64 54" aria-hidden="true"><ellipse cx="32" cy="50" rx="26" ry="4" fill="rgba(0,0,0,.3)"/>' +
-      '<rect x="4" y="26" width="12" height="22" rx="5" fill="#15131c"/><rect x="48" y="26" width="12" height="22" rx="5" fill="#15131c"/><rect x="8" y="32" width="4" height="10" rx="2" fill="#888"/><rect x="52" y="32" width="4" height="10" rx="2" fill="#888"/>' +
-      '<path d="M12 30 h40 a6 6 0 0 1 6 6 v6 a6 6 0 0 1 -6 6 h-40 a6 6 0 0 1 -6 -6 v-6 a6 6 0 0 1 6 -6z" fill="' + col + '" stroke="#fff" stroke-width="2"/><rect x="14" y="36" width="36" height="4" rx="2" fill="rgba(255,255,255,.55)"/>' +
-      '<rect x="12" y="24" width="40" height="5" rx="2.5" fill="#15131c"/>' +
-      '<text x="32" y="25" font-size="26" text-anchor="middle">\uD83D\uDC36</text></svg></div>';
-  }
   function applyCam(anim) {
     var g = document.querySelector(".race .game"), w = g && g.querySelector(".world"); if (!w) return;
     var c = S.cam, H = g.clientHeight || 520;
     c.z = Math.max(0.7, Math.min(2.4, c.z)); c.fy = Math.max(RACE_H * 0.12, Math.min(RACE_H - 110, c.fy)); c.fx = Math.max(220, Math.min(RACE_W - 220, c.fx == null ? CX : c.fx));
-    w.style.transition = "none";
+    w.style.transition = "none"; g.style.setProperty("--s", Math.pow(c.z, -0.55).toFixed(3));
     w.style.transform = "translateY(" + Math.round(H * 0.66) + "px) rotateX(" + TILT + "deg) scale(" + c.z.toFixed(3) + ") translate(" + (-c.fx).toFixed(1) + "px," + (-c.fy).toFixed(1) + "px)";
   }
   // Camera moves are tweened here, not with a CSS transition: a CSS transition on this 3D layer drifts when the page scrolls.
@@ -696,29 +687,21 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   function placeRace() {
     var plane = document.querySelector(".race .plane"), data = S.raceData; if (!plane || !data) return;
     var th = RACE_TH, d = racePath();
-    var ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg"); svg.setAttribute("width", RACE_W); svg.setAttribute("height", RACE_H); svg.setAttribute("viewBox", "0 0 " + RACE_W + " " + RACE_H);
-    var stripes = ""; for (var y = 0; y < RACE_H; y += 70) if ((y / 70) % 2) stripes += '<rect x="0" y="' + y + '" width="' + RACE_W + '" height="70" fill="' + th.ground2 + '"/>';
+    var ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg"); svg.setAttribute("width", RACE_W); svg.setAttribute("height", RACE_H); svg.setAttribute("viewBox", "0 0 " + RACE_W + " " + RACE_H); svg.style.overflow = "visible";
     svg.innerHTML = '<defs><pattern id="chk" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#fff"/><rect width="6" height="6" fill="#111"/><rect x="6" y="6" width="6" height="6" fill="#111"/></pattern></defs>' +
-      '<rect width="' + RACE_W + '" height="' + RACE_H + '" fill="' + th.ground + '"/>' + stripes +
-      '<path id="road" d="' + d + '" fill="none" stroke="#fff" stroke-width="82" stroke-linecap="round"/><path d="' + d + '" fill="none" stroke="' + th.road + '" stroke-width="70" stroke-linecap="round"/>' +
-      '<path d="' + d + '" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="3" stroke-dasharray="12 18"/>';
+      '<rect x="-3000" y="-3000" width="' + (RACE_W + 6000) + '" height="' + (RACE_H + 6000) + '" fill="' + th.ground + '"/>' +
+      '<path id="road" d="' + d + '" fill="none" stroke="#fff" stroke-width="82" stroke-linecap="round"/><path d="' + d + '" fill="none" stroke="' + th.road + '" stroke-width="70" stroke-linecap="round"/>';
     plane.innerHTML = ""; plane.appendChild(svg);
     var road = svg.querySelector("#road"), L = road.getTotalLength();
     function at(p) { return road.getPointAtLength(Math.max(0, Math.min(1, p)) * L); }
     var samples = []; for (var s = 0; s <= L; s += 9) { var q = road.getPointAtLength(s); samples.push([q.x, q.y]); }
     // start and finish lines
     var p0 = at(0), p1 = at(1);
-    var padRand = rng(L | 0), pads = "";
-    for (var bi = 0; bi < 4; bi++) {
-      var bp = 0.1 + (bi + padRand() * 0.6) * 0.2, a1 = at(bp - 0.003), b1 = at(bp + 0.003), ang = Math.atan2(b1.y - a1.y, b1.x - a1.x) * 180 / Math.PI + 90, bq = at(bp);
-      pads += '<g transform="translate(' + bq.x.toFixed(1) + ',' + bq.y.toFixed(1) + ') rotate(' + ang.toFixed(1) + ')"><path d="M-16,10 L0,-10 L16,10 L9,10 L0,-3 L-9,10Z" fill="#ffe14a" stroke="#ff9d00" stroke-width="2"/></g>';
-    }
-    svg.insertAdjacentHTML("beforeend", pads);
     svg.insertAdjacentHTML("beforeend", '<rect x="' + (p0.x - 30) + '" y="' + (p0.y - 4) + '" width="60" height="8" fill="url(#chk)"/><rect x="' + (p1.x - 32) + '" y="' + (p1.y - 6) + '" width="64" height="12" fill="url(#chk)"/>');
     function sprite(cls, x, y, html, style) { var el = document.createElement("div"); el.className = "sp " + cls; el.style.left = x.toFixed(1) + "px"; el.style.top = y.toFixed(1) + "px"; if (style) el.style.cssText += style; el.innerHTML = html; plane.appendChild(el); return el; }
     // calm scenery: a few trees and bushes, well away from the road, plus soft hills and clouds
     var rand = rng(4242), placed = [], tries = 0;
-    while (placed.length < 26 && tries++ < 2600) {
+    while (placed.length < 18 && tries++ < 2600) {
       var x = 20 + rand() * (RACE_W - 40), y = 90 + rand() * (RACE_H - 170);
       if (samples.some(function (q) { return Math.hypot(q[0] - x, q[1] - y) < 92; })) continue;
       if (placed.some(function (q) { return Math.hypot(q[0] - x, q[1] - y) < 120; })) continue;
@@ -732,7 +715,8 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     // checkpoints with a toy each
     MILESTONES.forEach(function (m, k) {
       var pt = at((k + 1) / 10), on = data.mySteps != null && data.mySteps >= m, goal = k === 9, label = m >= 1000 ? m / 1000 + "k" : m;
-      sprite("stop" + (on ? " on" : "") + (goal ? " goal" : ""), pt.x, pt.y, '<span class="toy">' + TOYS[k] + '</span><span class="lvl">' + label + '</span>', "");
+      var next = !on && (k === 0 || (data.mySteps != null && data.mySteps >= MILESTONES[k - 1]));
+      sprite("stop" + (on ? " on" : "") + (goal ? " goal" : ""), pt.x, pt.y, '<span class="toy">' + TOYS[k] + '</span>' + (next || goal ? '<span class="lvl">' + label + '</span>' : ""), "");
     });
     // racers
     var prev = [], off = [0, 26, -26, 48, -48];
@@ -742,7 +726,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       var tx2 = pt.x + nx * o, ty2 = pt.y + ny * o;
       var col = e.me ? "#ff2e9a" : KART_COLORS[Math.abs(Array.from(e.name).reduce(function (acc, c) { return acc * 31 + c.charCodeAt(0); }, 7)) % KART_COLORS.length];
       var st = at(0), shadow = document.createElement("div"); shadow.className = "shd"; shadow.style.left = st.x + "px"; shadow.style.top = st.y + "px"; plane.appendChild(shadow);
-      var el = sprite("kart" + (e.me ? " me" : ""), st.x, st.y, '<span class="plate" style="background:' + col + '"><b class="ini">' + esc(initials(e.name)) + '</b></span>' + kartSvg(col) + (e.rank === 1 ? '<span class="crown">👑</span>' : "") + (e.me ? '<span class="you">YOU</span>' : ""), "");
+      var el = sprite("kart" + (e.me ? " me" : ""), st.x, st.y, '<span class="tok" style="background:' + col + '"><b class="ini">' + esc(initials(e.name)) + '</b></span>' + (e.rank === 1 ? '<span class="crown">👑</span>' : "") + (e.me ? '<span class="you">YOU</span>' : ""), "");
       el.dataset.p = p.toFixed(4); el.dataset.rank = e.rank; el.setAttribute("aria-label", e.name + ", " + ordinal(e.rank) + ", " + fmt(e.steps) + " steps");
       if (e.me) { data.myY = ty2; data.myX = tx2; }
       requestAnimationFrame(function () { requestAnimationFrame(function () { el.style.left = tx2.toFixed(1) + "px"; el.style.top = ty2.toFixed(1) + "px"; shadow.style.left = tx2.toFixed(1) + "px"; shadow.style.top = ty2.toFixed(1) + "px"; }); });
@@ -751,6 +735,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     if (S.cam.fy == null) { S.cam.fy = data.myY != null ? data.myY : at(0.3).y; S.cam.fx = data.myX != null ? data.myX : at(0.3).x; }
     applyCam(false);
   }
+  document.addEventListener("gesturestart", function (e) { if (e.target.closest && e.target.closest(".race .game")) e.preventDefault(); });
   (function () {
     var ptrs = {}, startDist = 0, startZ = 1;
     function inGame(e) { return e.target.closest && e.target.closest(".race .game") && !e.target.closest(".cam"); }
