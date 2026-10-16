@@ -235,8 +235,6 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   var KIND_LABEL = { person: "Person", team: "Team", state: "State", city: "City" };
   S.pubInvite = null; S.pubClosed = false; S.draft = { name: "", email: "" }; S.invite = null; S.inviteMsg = ""; S.dogs = []; S.shelters = {}; S.dogTotals = {}; S.dogview = null; S.stepVal = ""; S.stepMsg = ""; S.duels = []; S.cups = []; S.wiz = null; S.cupform = false; S.tview = null; S.wizMsg = ""; S.cupMsg = "";
   try {
-    var qr = new URLSearchParams(location.search).get("rival");
-    if (qr) { store.set("walkies-pending-rival", qr.trim().slice(0, 12).toUpperCase()); history.replaceState(null, "", location.pathname); }
     var qd = new URLSearchParams(location.search).get("duel");
     if (qd) { store.set("walkies-pending-duel", qd.trim().toLowerCase().slice(0, 16)); history.replaceState(null, "", location.pathname); }
   } catch (e) {}
@@ -350,7 +348,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     if (pend) {
       store.set("walkies-pending-pack", "");
       var jr = await sb.rpc("join_pack", { p_code: pend });
-      if (jr.error) S.msg = jr.error.message; else { await loadRivals(); S.tab = "rivals"; toast("You joined " + jr.data[0].name + "!"); }
+      if (jr.error) toast(jr.error.message); else { await loadRivals(); S.tab = "rivals"; toast("You joined " + jr.data[0].name + "!"); }
     }
     S.view = "app";
     if (S.view === "app" && !S.profile.dog_id && !store.get("walkies-dog-seen-" + S.user.id) && (S.dogs || []).length) { store.set("walkies-dog-seen-" + S.user.id, "1"); S.dogview = { list: true }; }
@@ -367,8 +365,6 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       }
       store.set("walkies-auto-accept", "");
     }
-    var pr = store.get("walkies-pending-rival");
-    if (pr) { store.set("walkies-pending-rival", ""); S.view = "app"; S.tab = "rivals"; S.wiz = { kind: "person", opp: pr, random: false, days: 7, options: [], loading: false }; S.wizMsg = ""; }
     render();
   }
 
@@ -410,36 +406,15 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
         if (pr.error) { S.wizMsg = pr.error.message; return render(); }
         S.wiz = null; await loadRivals(); openPack(pr.data[0].id); toast("Pack war started! Invite your people."); return;
       }
-      if (w.kind === "person" && w.mode === "link") {
-        var lr = await sb.rpc("create_link_duel", { p_days: w.days });
-        if (lr.error) { S.wizMsg = lr.error.message; return render(); }
-        S.wiz = null; await loadRivals(); render(); toast("Link ready. Tap Share link on your challenge."); return;
-      }
-      w.opp = f.opp.value; w.random = f.random.checked;
-      var r = await sb.rpc("start_duel", { p_kind: w.kind, p_opponent: w.opp || "", p_days: w.days, p_random: w.random, p_team: null });
-      if (r.error) { S.wizMsg = r.error.message; return render(); }
-      var person = w.kind === "person"; S.wiz = null; await loadRivals(); render(); toast("Challenge sent!");
-    },
-    async savePrivacy(f) {
-      store.set("walkies-race-alerts-" + S.user.id, f.alerts.checked ? "1" : "0");
-      var r = await sb.from("profiles").update({ marketing_opt_in: f.marketing.checked, show_on_leaderboard: f.board.checked }).eq("user_id", S.user.id);
-      if (r.error) return toast("Could not save that");
-      await loadAll(); render(); toast("Saved");
-    },
-    async saveRival(f) {
-      var r = await sb.from("profiles").update({ open_to_rivals: f.open.checked }).eq("user_id", S.user.id);
-      if (r.error) return toast("Could not save that");
-      await loadAll(); render(); toast("Saved");
+      var lr = await sb.rpc("create_link_duel", { p_days: w.days });
+      if (lr.error) { S.wizMsg = lr.error.message; return render(); }
+      S.wiz = null; await loadRivals(); render(); toast("Link ready. Send it to your rival.");
+      if (lr.data) shareDuel(lr.data, w.days);
     },
     async renamePack(f) {
       var r = await sb.rpc("rename_pack", { p_id: f.pid.value, p_name: f.pname.value });
       if (r.error) return toast(r.error.message);
       if (S.pview) S.pview.editing = false; await loadRivals(); await loadBoard(); render(); toast("Pack war renamed");
-    },
-    async joinPack(f) {
-      var r = await sb.rpc("join_pack", { p_code: f.code.value });
-      if (r.error) { S.packMsg = r.error.message; return render(); }
-      S.packMsg = ""; await loadRivals(); openPack(r.data[0].id); toast("You joined " + r.data[0].name + "!");
     },
     async saveNames(f) {
       var r = await sb.from("profiles").update({ display_name: f.dname.value.trim() || "Walker" }).eq("user_id", S.user.id);
@@ -488,11 +463,11 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       '<label class="check"><input type="checkbox" name="marketing"' + (d.marketing ? " checked" : "") + '> Optional: send me Walkies news and offers by email. I can unsubscribe any time.</label>';
   }
   function viewAuth() {
-    var up = S.mode === "signup", fg = S.mode === "forgot", pend = store.get("walkies-pending-join");
+    var up = S.mode === "signup", fg = S.mode === "forgot", pend = store.get("walkies-pending-pack");
     var label = fg ? "Email me a reset link" : (up ? "Create my account" : "Sign in");
     return '<div class="welcome' + (popupOn() && S.pubInvite.available ? " has-popup" : "") + '"><div class="app">' + topbar("") +
       '<h1 class="h1" style="font-size:44px;line-height:1.02">Walk. Fill a bowl. Feed a rescue dog.</h1>' +
-      (store.get("walkies-pending-duel") ? '<div class="card" style="border:2px solid var(--yellow)"><b>You have been challenged to a tug of war!</b> Sign in or create an account to take it on.</div>' : "") + (pend ? '<div class="card" style="border:2px solid var(--cyan)"><b>You have been invited to a team!</b> Sign in or create an account and you will join it automatically.</div>' : '<p style="font-size:17px">Every scoop you unlock is a bowl of food for a shelter dog. Join your workplace, or walk on your own.</p>') +
+      (store.get("walkies-pending-duel") ? '<div class="card" style="border:2px solid var(--yellow)"><b>You have been challenged to a tug of war!</b> Sign in or create an account to take it on.</div>' : "") + (pend ? '<div class="card" style="border:2px solid var(--cyan)"><b>You have been invited to a pack war!</b> Sign in or create an account and you will join it automatically.</div>' : '<p style="font-size:17px">Every scoop you unlock is a bowl of food for a shelter dog. Walk on your own, or take on friends in a challenge.</p>') +
       '<form class="card stack" data-form="' + (fg ? "forgot" : "auth") + '" style="border:2px solid var(--pink);box-shadow:var(--glow);border-radius:24px">' +
       (up ? '<div class="gap8"><label for="name">Your first name</label><input id="name" name="name" autocomplete="given-name" maxlength="40" required></div>' : "") +
       '<div class="gap8"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required></div>' +
@@ -846,13 +821,12 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       '<label class="check"><input type="checkbox" name="alerts"' + (alertsOn() ? " checked" : "") + '> Tell me when someone passes me or gets close in the race.</label>' +
       '<label class="check"><input type="checkbox" name="board"' + (p.show_on_leaderboard ? " checked" : "") + '> Show my name and monthly steps on the walker leaderboard (Pup). On by default.</label>' +
       '<p class="muted" style="font-size:13px;margin:0">We only email about your account unless you tick this. Right now you are ' + (p.marketing_opt_in ? "opted in" : "not opted in") + (p.marketing_opt_in && p.marketing_opt_in_at ? " (since " + fmtDay(String(p.marketing_opt_in_at).slice(0, 10)) + ")" : "") + '.</p>' +
-      '<p class="muted" style="font-size:13px;margin:0">Random challenges and your rival code are controlled in the For rivals card above.</p></form></details>' +
+      '</form></details>' +
       '<details class="drop" data-det="policy"' + openAttr("policy", false) + '><summary>Privacy policy</summary>' + policyHtml() + '</details>';
   }
   function viewMe() {
     return topbar("") + '<div class="stack"><h1 class="h1">Me</h1>' +
       '<form class="card stack" data-form="saveNames" data-autosave><div class="gap8"><label for="dname">Your name</label><input id="dname" name="dname" value="' + esc(S.profile.display_name) + '" maxlength="40" required></div></form>' +
-      rivalForm() +
       privacySection() +
       '<button class="btn light" data-act="signout">Sign out</button><p class="muted" style="font-size:13px;text-align:center">' + esc(S.user.email) + ' \u00b7 version ' + esc(window.WALKIES_VERSION || "dev") + '</p></div>';
   }
@@ -942,12 +916,12 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   }
   function viewRivals() {
     var duels = S.duels || [], inc = duels.filter(function (d) { return d.incoming; }), mine = duels.filter(function (d) { return !d.incoming; }), packs = S.packs || [];
-    return topbar("") + '<div class="stack"><div><h1 class="h1">Challenges</h1><p class="muted">Pull the bone from a rival, or start a pack war with your people.</p></div>' +
+    return topbar("") + '<div class="stack"><div><h1 class="h1">Challenges</h1><p class="muted">Challenge anyone with a link, or start a pack war with your people.</p></div>' +
       (inc.length ? '<div class="h2">Challenges for you</div>' + inc.map(tugCard).join("") : "") +
       '<div class="between"><div class="h2">Your challenges</div><span class="tag">Challenges ' + challengeCount() + ' of ' + MAX_CHALLENGES + '</span></div>' +
-      ((mine.length || packs.length) ? mine.map(tugCard).join("") + packs.map(packCard).join("") : '<div class="card"><b>Nothing on yet.</b><p class="muted" style="font-size:14px">Challenge a person to a tug of war, or start a pack war and invite your people. Everyone starts from zero.</p></div>') +
+      ((mine.length || packs.length) ? mine.map(tugCard).join("") + packs.map(packCard).join("") : '<div class="card"><b>Nothing on yet.</b><p class="muted" style="font-size:14px">Send a tug of war link to anyone, or start a pack war and invite your people. Everyone starts from zero.</p></div>') +
       (challengeCount() >= MAX_CHALLENGES ? '<button class="btn" disabled>You have 3 challenges. Finish one to start another.</button>' : '<button class="btn coral" data-act="wiz">Start a challenge</button>') +
-      '<form class="card stack" data-form="joinPack"><div class="gap8"><label for="code">Got a pack war code?</label><input id="code" name="code" placeholder="Example: A1B2C3" autocapitalize="characters" autocomplete="off" required></div>' + (S.packMsg ? '<p class="err" role="alert">' + esc(S.packMsg) + '</p>' : "") + '<button class="btn light">Join pack war</button></form></div>';
+      '</div>';
   }
   function viewPack() {
     var v = S.pview, k = (S.packs || []).filter(function (x) { return x.id === v.id; })[0] || {}, rows = v.rows || [];
@@ -956,23 +930,20 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var list = v.loading ? '<p class="muted">Loading\u2026</p>' : rows.map(function (m, i) {
       return '<div class="lb ' + (m.is_me ? "mine" : (i === 0 ? "first" : "")) + '"><div class="rank">' + (i + 1) + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (m.is_me ? "You: " : "") + esc(m.display_name) + '</div><div style="font-size:13px">' + m.bowls + (m.bowls === 1 ? " bowl" : " bowls") + '</div></div><div><div class="num">' + fmt(m.steps) + '</div></div></div>';
     }).join("");
-    var inv = k.finished ? "" : '<div class="card stack" style="gap:10px"><div class="muted" style="font-size:14px">Invite people with this code or link:</div><div style="font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:.12em">' + esc(k.join_code || "") + '</div><div class="row" style="flex-wrap:wrap"><button class="btn small coral" data-act="sharepack">Invite people</button><button class="btn small light" data-act="copy" data-code="' + esc(k.join_code || "") + '">Copy code</button></div></div>';
+    var inv = k.finished ? "" : '<button class="btn coral" data-act="sharepack">Invite people with a link</button>';
     return topbar("") + '<div class="stack">' + head + '<div class="stack" style="gap:10px">' + list + '</div>' + inv + '</div>';
   }
   function wizSheet() {
-    var w = S.wiz, person = w.kind === "person", pack = w.kind === "pack", link = person && w.mode === "link";
+    var w = S.wiz, pack = w.kind === "pack";
     var kinds = KINDS.map(function (k) { return '<button type="button" class="pill" aria-pressed="' + (w.kind === k[0]) + '" data-wkind="' + k[0] + '">' + k[1] + '</button>'; }).join("");
     var days = [3, 7, 14].map(function (n) { return '<button type="button" class="pill" aria-pressed="' + (w.days === n) + '" data-wdays="' + n + '">' + n + ' days</button>'; }).join("");
-    var modes = person ? '<div class="chips" role="group" aria-label="How to reach them"><button type="button" class="pill" aria-pressed="' + (!link) + '" data-wmode="code">Use a rival code</button><button type="button" class="pill" aria-pressed="' + link + '" data-wmode="link">Send a link</button></div>' : "";
-    var who = pack ? '<div class="gap8"><label for="pname">Name your pack war</label><input id="pname" name="pname" value="' + esc(w.pname || "") + '" minlength="2" maxlength="40" placeholder="Example: Friday Office Dash" autocomplete="off" required></div><p class="muted" style="font-size:14px">Invite individual people with a code or link. Everyone is ranked by steps from the moment they join, and the most steps wins.</p>' : link ? '<p class="muted" style="font-size:14px">We make a link with your challenge inside. Send it to anyone. When they open it and accept, the tug of war starts and you both begin from zero.</p>' : person
-      ? '<div class="gap8"><label for="opp">Their rival code</label><input id="opp" name="opp" value="' + esc(w.opp) + '" placeholder="Example: K3P9XZ" autocapitalize="characters" autocomplete="off"></div><p class="muted" style="font-size:13px">Ask for the code on their Me tab. They must accept before it starts.</p>'
-      : '<div class="gap8"><label for="opp">Who do you want to take on?</label><select id="opp" name="opp"><option value="">' + (w.loading ? "Loading…" : (w.options.length ? "Choose one" : "No one to challenge yet")) + '</option>' + w.options.map(function (o) { return '<option value="' + esc(o.ref) + '"' + (o.ref === w.opp ? " selected" : "") + '>' + esc(o.label) + ' (' + o.members + ')</option>'; }).join("") + '</select></div>';
-    var rnd = (link || pack) ? "" : '<label class="check"><input type="checkbox" name="random"' + (w.random ? " checked" : "") + '> ' + (person ? "Pick a random walker for me (only people who opted in)" : "Surprise me with a random rival") + '</label>';
+    var who = pack ? '<div class="gap8"><label for="pname">Name your pack war</label><input id="pname" name="pname" value="' + esc(w.pname || "") + '" minlength="2" maxlength="40" placeholder="Example: Friday Office Dash" autocomplete="off" required></div><p class="muted" style="font-size:14px">You get an invite link to send to anyone. Everyone is ranked by steps from the moment they join, and the most steps wins.</p>'
+      : '<p class="muted" style="font-size:14px">We make a unique link with your challenge inside. Send it to anyone. When they open it and accept, the tug of war starts and you both begin from zero.</p>';
     return '<div class="sheet-bg" data-act="closewiz"><form class="sheet" data-form="makeDuel" role="dialog" aria-modal="true" aria-label="Start a challenge" style="max-height:92vh;overflow:auto"><div class="h2">Start a challenge</div>' +
-      '<div class="chips" role="group" aria-label="Who to challenge">' + kinds + '</div>' + (pack ? "" : modes) + who + rnd +
+      '<div class="chips" role="group" aria-label="Type of challenge">' + kinds + '</div>' + who +
       '<div class="gap8"><label>How long?</label><div class="chips">' + days + '</div></div>' +
       (S.wizMsg ? '<p class="err" role="alert">' + esc(S.wizMsg) + '</p>' : "") +
-      '<button class="btn coral">' + (pack ? "Start pack war" : link ? "Create challenge link" : "Send challenge") + '</button><button type="button" class="btn light" data-act="closewiz">Cancel</button></form></div>';
+      '<button class="btn coral">' + (pack ? "Start pack war" : "Create challenge link") + '</button><button type="button" class="btn light" data-act="closewiz">Cancel</button></form></div>';
   }
   function duelLink(tok) { return ORIGIN + "/?duel=" + encodeURIComponent(tok); }
   function shareDuel(tok, days) {
@@ -986,12 +957,6 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     else if (v.mine) body = '<p>This is your own challenge link. Send it to someone else.</p><button class="btn" data-act="closeinvite">Close</button>';
     else body = '<p><b>' + esc(v.challenger) + '</b> challenged you to a <b>' + v.days + '-day</b> tug of war. Whoever walks the most steps wins the bone. You both start from zero when you accept.</p>' + (S.inviteMsg ? '<p class="err" role="alert">' + esc(S.inviteMsg) + '</p>' : "") + '<button class="btn coral" data-act="acceptinvite">Accept the challenge</button><button class="btn light" data-act="closeinvite">Not now</button>';
     return '<div class="sheet-bg" data-act="closeinvite"><div class="sheet" role="dialog" aria-modal="true" aria-label="Challenge"><div class="h2">You have been challenged!</div>' + body + '</div></div>';
-  }
-  function rivalForm() {
-    var p = S.profile;
-    return '<form class="card stack" data-form="saveRival" data-autosave><div class="h2">For rivals</div>' +
-      '<label class="check"><input type="checkbox" name="open"' + (p.open_to_rivals ? " checked" : "") + '> Let random walkers challenge me (you can still say no)</label>' +
-      (p.rival_code ? '<div class="gap8"><div class="muted" style="font-size:14px">Your rival code. Friends can use it to challenge you.</div><div style="font-family:var(--display);font-weight:800;font-size:28px;letter-spacing:.12em">' + esc(p.rival_code) + '</div><div class="row" style="flex-wrap:wrap"><button type="button" class="btn small light" data-act="wizlink">Create a challenge link</button></div></div>' : "") + '</form>';
   }
   // ---- shelter dogs ----
   function dogById(id) { return (S.dogs || []).filter(function (d) { return d.id === id; })[0] || null; }
@@ -1117,16 +1082,13 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var wk = t.closest("[data-wkind]");
     if (wk && S.wiz) {
       var w = S.wiz, wf = $("form[data-form=makeDuel]");
-      if (wf && wf.random) w.random = wf.random.checked;
-      w.kind = wk.dataset.wkind; w.mode = "link"; w.opp = ""; w.options = []; S.wizMsg = ""; w.loading = false;
+      var wf0 = $("form[data-form=makeDuel]"); if (wf0 && wf0.pname) w.pname = wf0.pname.value; w.kind = wk.dataset.wkind; S.wizMsg = "";
       render(); return;
     }
     var pm = t.closest("[data-pmode]");
     if (pm) { var pf = $("form.in-popup"); if (pf) S.draft = { name: pf.name ? pf.name.value.trim() : "", email: pf.email.value.trim() }; S.mode = pm.dataset.pmode; S.msg = ""; S.confirmEmail = null; render(); return; }
-    var wm = t.closest("[data-wmode]");
-    if (wm && S.wiz) { S.wiz.mode = wm.dataset.wmode; S.wizMsg = ""; render(); return; }
     var wd = t.closest("[data-wdays]");
-    if (wd && S.wiz) { var wf2 = $("form[data-form=makeDuel]"); if (wf2 && wf2.opp) { S.wiz.opp = wf2.opp.value; S.wiz.random = wf2.random.checked; } if (wf2 && wf2.pname) S.wiz.pname = wf2.pname.value; S.wiz.days = Number(wd.dataset.wdays); render(); return; }
+    if (wd && S.wiz) { var wf2 = $("form[data-form=makeDuel]"); if (wf2 && wf2.pname) S.wiz.pname = wf2.pname.value; S.wiz.days = Number(wd.dataset.wdays); render(); return; }
     var da = t.closest("[data-duel]");
     if (da) { sb.rpc("respond_duel", { p_id: da.dataset.duel, p_accept: da.dataset.ans === "1" }).then(function (r) { if (r.error) toast(r.error.message); return loadRivals(); }).then(render); return; }
     var pkc = t.closest("[data-pack]"); if (pkc) { openPack(pkc.dataset.pack); return; }
@@ -1155,7 +1117,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     else if (act === "dogs") { S.dogview = { list: true }; render(); window.scrollTo(0, 0); }
     else if (act === "dogback") { S.dogview = null; render(); }
     else if ((act === "wiz" || act === "wizlink") && challengeCount() >= MAX_CHALLENGES) { toast("You already have 3 challenges. Finish one before starting another."); }
-    else if (act === "wiz") { S.wiz = { kind: "person", mode: "link", opp: "", random: false, days: 7, options: [], loading: false }; S.wizMsg = ""; render(); }
+    else if (act === "wiz") { S.wiz = { kind: "person", days: 7 }; S.wizMsg = ""; render(); }
     else if (act === "closewiz") { S.wiz = null; render(); }
     else if (act === "editpack") { if (S.pview) { S.pview.editing = true; render(); } }
     else if (act === "packback") { S.pview = null; render(); window.scrollTo(0, 0); }
@@ -1163,7 +1125,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       var pk = (S.packs || []).filter(function (x) { return S.pview && x.id === S.pview.id; })[0];
       if (pk) { var plink = packLink(pk.join_code), ptext = packText(pk.name, pk.days_left, plink); if (navigator.share) navigator.share({ title: "Walkies pack war", text: ptext, url: plink }).catch(function () {}); else { try { navigator.clipboard.writeText(ptext); toast("Invite copied. Paste it into a message."); } catch (x) { toast(plink); } } }
     }
-    else if (act === "wizlink") { S.tab = "rivals"; S.dogview = null; S.pview = null; S.wiz = { kind: "person", mode: "link", opp: "", random: false, days: 7, options: [], loading: false }; S.wizMsg = ""; render(); window.scrollTo(0, 0); }
+    else if (act === "wizlink") { S.tab = "rivals"; S.dogview = null; S.pview = null; S.wiz = { kind: "person", days: 7 }; S.wizMsg = ""; render(); window.scrollTo(0, 0); }
     else if (act === "acceptinvite") {
       sb.rpc("accept_link_duel", { p_token: S.invite.token }).then(function (r) {
         if (r.error) { S.inviteMsg = r.error.message; render(); return; }
@@ -1177,7 +1139,6 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     else if (act === "celimpact") { S.celebrate = null; S.tab = "impact"; render(); }
     else if (act === "makehome") { if (confirm("Make this your home team? Only your home team counts for the leaderboard and challenges, and you can only switch in the first 3 days of a month.")) actions.makeHome(a.dataset.tid); }
     else if (act === "leave") { if (confirm("Leave your team? Your steps stay with you.")) actions.leave(a.dataset.tid); }
-    else if (act === "copy") { try { navigator.clipboard.writeText(a.dataset.code); toast("Code copied"); } catch (x) { toast("Code: " + a.dataset.code); } }
     else if (act === "sponsor") toast("Coming soon: friends and family will be able to sponsor your bowls.");
     else if (act === "pat") { S.bounce = true; render(); toast((myDog() ? myDog().name : "Your dog") + " wags their tail!"); setTimeout(function () { S.bounce = false; }, 600); }
     else if (act === "joinboard") { sb.from("profiles").update({ show_on_leaderboard: true }).eq("user_id", S.user.id).then(function (r) { if (r.error) return toast("Could not save that"); S.profile.show_on_leaderboard = true; return loadBoard().then(render); }); }
