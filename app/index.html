@@ -115,6 +115,8 @@ option{background:var(--surface);color:var(--fg)}
 .sheet-bg{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center}
 .sheet{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:28px 28px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
 .seg{display:flex;flex:none;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px}.seg button{border:0;background:none;color:var(--muted);display:grid;place-items:center;width:42px;height:34px;border-radius:999px}.seg button[aria-pressed=true]{background:#f4f2fa;color:#050507}
+.lb.tap{grid-template-columns:36px minmax(0,1fr) auto auto;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;display:grid}.lb.tap .chev{color:var(--muted);font-size:22px;align-self:center;margin-left:6px}
+.contrib{height:6px;border-radius:6px;background:var(--line);margin:6px 0 4px;overflow:hidden}.contrib i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--pink),var(--cyan))}
 .gallery{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}.gallery::-webkit-scrollbar{display:none}.gallery img{flex:0 0 88%;height:360px;object-fit:cover;object-position:50% 30%;border-radius:24px;scroll-snap-align:center;border:1px solid var(--line)}.gallery img:only-child{flex-basis:100%}
 .race{border:1px solid var(--line);border-radius:24px;overflow:hidden}
 .game{position:relative;height:min(68vh,540px);overflow:hidden;overflow:clip;perspective:560px;perspective-origin:50% 38%;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
@@ -842,6 +844,23 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   }
   function timeAgo(t) { var m = Math.round((Date.now() - t) / 60000); return m < 1 ? "just now" : m < 60 ? m + " min ago" : Math.round(m / 60) + " h ago"; }
   function teamTier(r) { return "Pack"; }
+  // One team: who is in it and what each person has contributed this month. Only teammates see the people.
+  function viewTeam() {
+    var tv = S.teamview, row = (S.allTeams || []).filter(function (r) { return r.workplace_id === tv.id; })[0] || {}, mem = tv.members || [], mine = !!row.is_mine;
+    var total = mem.reduce(function (a, m) { return a + Number(m.steps); }, 0) || 1, bowls = mem.reduce(function (a, m) { return a + m.bowls; }, 0);
+    var head = '<div class="between"><button class="linkbtn" data-act="teamback">\u2039 Leaderboard</button></div><div><h1 class="h1">' + esc(row.name || "Team") + '</h1><p class="muted">' + (row.members || mem.length) + ((row.members || mem.length) === 1 ? " walker" : " walkers") + '</p></div>';
+    var stats = '<div class="rings"><div class="orb" aria-label="Walkers"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" class="trk"/><circle cx="50" cy="50" r="46" class="ring gold" stroke-dasharray="289" stroke-dashoffset="0"/></svg><div class="in"><b class="stat-n">' + (row.members || mem.length) + '</b><span>walkers</span></div></div>' +
+      '<div class="orb" aria-label="Total steps"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" class="trk"/><circle cx="50" cy="50" r="46" class="ring pink" stroke-dasharray="289" stroke-dashoffset="0"/></svg><div class="in"><b class="stat-n">' + fmt(mine ? total : row.total_steps) + '</b><span>steps</span></div></div>' +
+      '<div class="orb" aria-label="Dog bowls"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" class="trk"/><circle cx="50" cy="50" r="46" class="ring cyan" stroke-dasharray="289" stroke-dashoffset="0"/></svg><div class="in"><b class="stat-n bowls">' + (mine ? bowls : (row.bowls || 0)) + '</b><span>dog bowls</span></div></div></div>';
+    var list;
+    if (tv.loading) list = '<p class="muted">Loading\u2026</p>';
+    else if (!mem.length) list = '<div class="card"><b>Only teammates can see who contributed what.</b><p class="muted" style="font-size:14px">Join this team with its code to see the walkers, their steps and bowls.</p></div>';
+    else list = '<div class="h2">Who contributed</div>' + mem.map(function (m, i) {
+      var pct = Math.max(3, Math.round(Number(m.steps) / total * 100));
+      return '<div class="lb ' + (m.is_me ? "mine" : "") + '" style="grid-template-columns:auto minmax(0,1fr) auto"><div class="rank">' + (i + 1) + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (m.is_me ? "You: " : "") + esc(m.display_name) + (m.is_captain ? ' <span class="tag">Captain</span>' : "") + '</div><div class="contrib"><i style="width:' + pct + '%"></i></div><div style="font-size:13px">' + m.bowls + (m.bowls === 1 ? " dog bowl" : " dog bowls") + ' \u00b7 ' + pct + '% of the team</div></div><div><div class="num">' + fmt(m.steps) + '</div><div style="font-size:12px;text-align:right">steps</div></div></div>';
+    }).join("");
+    return topbar("") + '<div class="stack">' + head + stats + '<div class="stack" style="gap:10px">' + list + '</div></div>';
+  }
   function viewPacks() {
     var tab = S.bracket || "Pup";
     var chips = BOARD_TABS.map(function (b) { return '<button class="pill" aria-pressed="' + (tab === b[0]) + '" data-bracket="' + b[0] + '">' + b[0] + '</button>'; }).join("");
@@ -857,7 +876,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     } else {
       var rows = (S.allTeams || []).filter(function (r) { return teamTier(r) === tab; }), mine = rows.filter(function (r) { return r.is_mine; })[0], mineIdx = rows.indexOf(mine);
       body = (rows.length ? rows.map(function (r, i) {
-        return '<div class="lb ' + (r.is_mine ? "mine" : (i === 0 ? "first" : "")) + '"><div class="rank">' + (i + 1) + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (r.is_mine ? "Your team: " : "") + esc(r.name) + '</div><div style="font-size:13px">' + r.members + (r.members === 1 ? " walker" : " walkers") + ' \u00b7 ' + esc(r.industry) + '</div></div><div><div class="num">' + fmt(r.steps_per_member) + '</div><div style="font-size:12px;text-align:right">steps each</div></div></div>';
+        return '<button class="lb tap ' + (r.is_mine ? "mine" : (i === 0 ? "first" : "")) + '" data-team="' + esc(r.workplace_id) + '"><div class="rank">' + (i + 1) + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (r.is_mine ? "Your team: " : "") + esc(r.name) + '</div><div style="font-size:13px">' + r.members + (r.members === 1 ? " walker" : " walkers") + ' \u00b7 ' + esc(r.industry) + '</div></div><div><div class="num">' + fmt(r.steps_per_member) + '</div><div style="font-size:12px;text-align:right">steps each</div></div><span class="chev" aria-hidden="true">\u203a</span></button>';
       }).join("") : '<div class="card"><b>No teams here yet.</b><p class="muted">Start a team in Rivals, share the code with your workmates and be the first on the board.</p></div>');
       if (mine && mineIdx > 0) { var above = rows[mineIdx - 1]; body += '<div class="card" style="border-style:dashed"><b>Catch ' + esc(above.name) + '</b> and your team moves up a place. Only <b>' + fmt(Math.max(1, above.steps_per_member - mine.steps_per_member + 1)) + '</b> more steps each.</div>'; }
     }
@@ -898,7 +917,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       '<p><b>Last updated:</b> October 2026. This is a plain-English summary of how Walkies handles your information. It follows the Australian Privacy Principles in the <i>Privacy Act 1988</i> (Cth).</p>' +
       '<h4>What we collect</h4><ul><li>Your email address and password (the password is stored securely by our sign-in provider and we cannot read it).</li><li>Your display name, your team and the shelter dog you choose.</li><li>The step counts you type in, by day. We do not collect your location, contacts or health records.</li><li>Your challenges (who you challenged and the results).</li></ul>' +
       '<h4>Why we collect it</h4><p>To run the app: count your steps, work out your bowls, show team leaderboards and run tug of wars. We only use it for that unless you agree to something else.</p>' +
-      '<h4>Who can see it</h4><ul><li>Your teammates, in each team you are in, can see your display name.</li><li>A rival in a tug of war sees your name and your step total for that challenge, not your daily steps.</li><li>Team leaderboards show team averages, not individual steps. The walker leaderboard (Pup) shows your name and monthly step total only if you choose to join it, and you can change this at any time in Privacy settings.</li><li>We do not sell your information or show ads.</li></ul>' +
+      '<h4>Who can see it</h4><ul><li>Your teammates, in each team you are in, can see your display name, your steps this month and your dog bowls.</li><li>A rival in a tug of war sees your name and your step total for that challenge, not your daily steps.</li><li>Team leaderboards show team averages, not individual steps. The walker leaderboard (Pup) shows your name and monthly step total only if you choose to join it, and you can change this at any time in Privacy settings.</li><li>We do not sell your information or show ads.</li></ul>' +
       '<h4>Marketing</h4><p>We only send marketing messages if you tick the box in Privacy settings. Every message will have a working unsubscribe link, in line with the <i>Spam Act 2003</i> (Cth). You can turn it off at any time in Me, then Privacy settings. Messages about your account (like a password reset) are not marketing.</p>' +
       '<h4>Where it is stored</h4><p>Your data is stored with Supabase in Sydney, Australia. The app is delivered through Vercel. Both only handle data to provide the service to us.</p>' +
       '<h4>Keeping it safe</h4><p>Information is sent over an encrypted connection, and each person can only read their own step records. We keep your information while you have an account.</p>' +
@@ -1181,7 +1200,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     else if (S.view === "auth") html = viewAuth() + (popupOn() ? inviteAuthSheet() : "");
     else if (S.view === "reset") html = viewReset();
     else if (S.view === "join") html = viewJoin();
-    else html = '<div class="app">' + (S.dogview ? (S.dogview.id ? viewDog : viewDogs) : S.tab === "rivals" ? (S.tview ? viewCup : viewRivals) : ({ today: viewToday, packs: viewPacks, impact: viewImpact, me: viewMe }[S.tab]))() + '</div>' + nav() + (S.sheet ? sheet() : "") + (S.wiz ? wizSheet() : "") + (S.invite ? inviteSheet() : "") + (S.cupform ? cupSheet() : "") + (S.celebrate ? celebrate() : "");
+    else html = '<div class="app">' + (S.dogview ? (S.dogview.id ? viewDog : viewDogs) : S.tab === "rivals" ? (S.tview ? viewCup : viewRivals) : ({ today: viewToday, packs: (S.teamview ? viewTeam : viewPacks), impact: viewImpact, me: viewMe }[S.tab]))() + '</div>' + nav() + (S.sheet ? sheet() : "") + (S.wiz ? wizSheet() : "") + (S.invite ? inviteSheet() : "") + (S.cupform ? cupSheet() : "") + (S.celebrate ? celebrate() : "");
     root.innerHTML = html;
     if (S.sheet) { var el = $("#steps"); if (el) { el.focus(); updatePreview(); } }
     if (S.celebrate) { confetti(); var d = $(".cel-done"); if (d) d.focus(); }
@@ -1232,7 +1251,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   document.addEventListener("click", function (e) {
     var t = e.target;
     var tab = t.closest("[data-tab]");
-    if (tab) { S.dogview = null; S.msg = ""; if (tab.dataset.tab === "packs" && S.tab !== "packs") { S.boardView = "list"; S.cam = null; } S.tab = tab.dataset.tab; render(); window.scrollTo(0, 0); if (S.tab === "packs") loadBoard().then(render); if (S.tab === "impact") loadImpact().then(render); if (S.tab === "rivals") loadRivals().then(render); return; }
+    if (tab) { S.dogview = null; S.msg = ""; if (tab.dataset.tab === "packs" && S.tab !== "packs") { S.boardView = "list"; S.cam = null; } S.teamview = null; S.tab = tab.dataset.tab; render(); window.scrollTo(0, 0); if (S.tab === "packs") loadBoard().then(render); if (S.tab === "impact") loadImpact().then(render); if (S.tab === "rivals") loadRivals().then(render); return; }
     var cel = t.closest("[data-cel]");
     if (cel) { S.celebrate = { bowls: bowlsFor(Number(cel.dataset.cel)), count: 1, steps: Number(cel.dataset.cel) }; render(); return; }
     var wk = t.closest("[data-wkind]");
@@ -1268,6 +1287,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var br = t.closest("[data-bracket]");
     if (br) { S.bracket = br.dataset.bracket || "Pup"; S.cam = null; render(); return; }
     var cb = t.closest("[data-cam]"); if (cb && S.cam) { var k = cb.dataset.cam; var zt = S.cam.zt != null ? S.cam.zt : S.cam.z; if (k === "in") tweenCam({ z: Math.min(2.4, zt * 1.3) }); else if (k === "out") tweenCam({ z: Math.max(0.7, zt / 1.3) }); else if (S.raceData && S.raceData.myY != null) tweenCam({ fy: S.raceData.myY, fx: Math.max(220, S.raceData.myX) }); return; }
+    var tr = t.closest("[data-team]"); if (tr && S.tab === "packs") { var tid = tr.dataset.team; S.teamview = { id: tid, loading: true, members: [] }; render(); window.scrollTo(0, 0); sb.rpc("team_detail", { p_id: tid }).then(function (r) { if (S.teamview && S.teamview.id === tid) { S.teamview.members = r.data || []; S.teamview.loading = false; render(); } }); return; }
     var bv = t.closest("[data-bview]"); if (bv) { S.boardView = bv.dataset.bview; S.cam = null; render(); window.scrollTo(0, 0); return; }
     var a = t.closest("[data-act]"); if (!a) return;
     if (a.classList.contains("sheet-bg") && t !== a) return;
@@ -1310,6 +1330,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     else if (act === "copy") { try { navigator.clipboard.writeText(a.dataset.code); toast("Code copied"); } catch (x) { toast("Code: " + a.dataset.code); } }
     else if (act === "sponsor") toast("Coming soon: friends and family will be able to sponsor your bowls.");
     else if (act === "pat") { S.bounce = true; render(); toast((myDog() ? myDog().name : "Your dog") + " wags their tail!"); setTimeout(function () { S.bounce = false; }, 600); }
+    else if (act === "teamback") { S.teamview = null; render(); window.scrollTo(0, 0); }
     else if (act === "joinboard") { sb.from("profiles").update({ show_on_leaderboard: true }).eq("user_id", S.user.id).then(function (r) { if (r.error) return toast("Could not save that"); S.profile.show_on_leaderboard = true; return loadBoard().then(render); }); }
     else if (act === "signout") { sb.auth.signOut().then(function () { S.user = null; S.view = "auth"; S.mode = "signin"; S.tab = "today"; render(); }); }
   });
