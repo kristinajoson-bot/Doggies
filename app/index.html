@@ -200,8 +200,8 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
 .titlebtn{background:none;border:0;padding:0;color:inherit;font:inherit;text-align:left;display:inline-flex;align-items:center;gap:10px;cursor:pointer}.titlebtn svg{opacity:.55;flex:none}.titlein{width:100%;background:transparent;border:0;border-bottom:2px solid var(--pink);border-radius:0;padding:0 0 4px;color:inherit}
 
 .promo{padding:2px 0 4px}
-.promo-title{margin:6px 0 8px;font-family:'Bungee','Bricolage Grotesque',sans-serif;font-weight:400;font-size:40px;line-height:1;letter-spacing:.01em;text-transform:uppercase;background:linear-gradient(100deg,var(--pink) 10%,var(--yellow) 62%,var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 16px rgba(255,46,154,.35))}
-.promo-title small{display:block;font-size:21px;margin-top:6px;letter-spacing:.06em}
+.promo-title{margin:6px 0 8px;font-family:var(--display);font-weight:800;font-size:46px;line-height:1;letter-spacing:-.03em;background:linear-gradient(100deg,var(--pink) 10%,var(--yellow) 62%,var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 16px rgba(255,46,154,.35))}
+.promo-title small{display:block;font-size:26px;margin-top:4px;letter-spacing:-.02em}
 .fwrap{perspective:1200px}
 .ban{position:relative;display:flex;flex-direction:column;gap:12px;width:100%;text-align:left;border-radius:26px;padding:16px;overflow:hidden;border:2px solid var(--pink);background:radial-gradient(380px 220px at 90% -10%,rgba(255,46,154,.38),transparent 70%),linear-gradient(160deg,#1c0a1a,#0b0a12);box-shadow:var(--glow);color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .ban.pk{border-color:var(--cyan);background:radial-gradient(380px 220px at 90% -10%,rgba(35,229,255,.34),transparent 70%),linear-gradient(160deg,#07181d,#0b0a12);box-shadow:0 0 28px rgba(35,229,255,.28)}
@@ -229,7 +229,6 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
 .promo-h{font-family:'Bungee','Bricolage Grotesque',sans-serif;font-size:25px;line-height:1.05;text-transform:uppercase;max-width:72%}
 .promo-p{font-size:14.5px;color:#d9d5e8;max-width:82%}
 .promo-cta{align-self:flex-start;background:var(--fg);color:var(--dark);font-weight:800;border-radius:999px;padding:9px 16px;font-size:14px}
-.ban-back{cursor:default}
 .rowlist{display:flex;flex-direction:column;gap:8px}
 @media (prefers-reduced-motion:reduce){.ban.fo,.ban.fi{transition:none;animation:none}}
 </style>
@@ -968,8 +967,8 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   function tugBack(d) {
     var my = Number(d.my_total), rv = Number(d.rival_total), tot = my + rv;
     var share = tot > 0 ? Math.max(6, Math.min(94, Math.round(my / tot * 100))) : 50;
-    return '<div class="' + flipCls(d.id, "ban-back") + '">' +
-      '<div class="ban-top"><span class="tug-tag">' + TROPHY + ' Tug of war</span><button class="chip-s" data-flip="' + esc(d.id) + '" style="background:none;color:inherit">‹ Back</button></div>' +
+    return '<div class="' + flipCls(d.id, "ban-back") + '" data-flip="' + esc(d.id) + '" role="button" tabindex="0" aria-label="Flip back">' +
+      '<div class="ban-top"><span class="tug-tag">' + TROPHY + ' Tug of war</span></div>' +
       '<div class="tug-names"><div><div class="tug-n me">You</div><div class="mono">' + fmt(my) + '</div><div class="tug-sub" style="font-size:12px">steps</div></div><div class="tug-vs">vs</div>' +
       '<div class="tug-r"><div class="tug-n">' + esc(d.rival_label || "Waiting…") + '</div><div class="mono">' + fmt(rv) + '</div><div class="tug-sub" style="font-size:12px">steps</div></div></div>' +
       '<div class="tug-bar" role="img" aria-label="You hold ' + share + ' percent of the rope"><i style="width:' + share + '%"></i><span class="bone" style="left:calc(' + share + '% - 17px)">' + BONE + '</span></div>' +
@@ -1001,8 +1000,8 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       return '<div class="lb ' + (m.is_me ? "mine" : (m.rank === 1 ? "first" : "")) + '" style="grid-template-columns:36px auto 1fr auto"><div class="rank">' + m.rank + '</div>' + faceAv(m.dog_id, m.display_name, 30) +
         '<div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(m.display_name) + '</div><div style="font-size:13px">' + m.bowls + (m.bowls === 1 ? " bowl" : " bowls") + '</div></div><div class="num">' + fmt(m.steps) + '</div></div>';
     }).join("");
-    return '<div class="' + flipCls(k.id, "pk ban-back") + '">' +
-      '<div class="ban-top"><span class="tug-tag">' + TROPHY + ' Pack war · ' + (k.finished ? "Finished" : k.days_left + (k.days_left === 1 ? " day left" : " days left")) + '</span><button class="chip-s" data-flip="' + esc(k.id) + '" style="background:none;color:inherit">‹ Back</button></div>' +
+    return '<div class="' + flipCls(k.id, "pk ban-back") + '" data-flip="' + esc(k.id) + '" role="button" tabindex="0" aria-label="Flip back">' +
+      '<div class="ban-top"><span class="tug-tag">' + TROPHY + ' Pack war · ' + (k.finished ? "Finished" : k.days_left + (k.days_left === 1 ? " day left" : " days left")) + '</span></div>' +
       title + '<div class="rowlist">' + list + '</div>' +
       (k.finished ? "" : '<button class="btn coral" data-act="sharepack" data-pid="' + esc(k.id) + '">Invite people with a link</button>') + '</div>';
   }
