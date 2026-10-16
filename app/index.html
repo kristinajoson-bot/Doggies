@@ -265,6 +265,27 @@ button.citypill{cursor:pointer}
 .citypill.plain{--c:var(--line);border-width:1px;background:var(--surface2)}.citypill.plain i{display:none}
 .citytag{font-size:12px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 9px}
 .cupsec{display:flex;flex-direction:column;gap:10px}
+.tl{display:flex;flex-direction:column}
+.tl .row2{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+.tl .row2:first-child{border-top:0}
+.tl .dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--muted);justify-self:center}
+.tl .s-done .dot{background:var(--green);border-color:var(--green)}.tl .s-live .dot{background:var(--yellow);border-color:var(--yellow);box-shadow:0 0 10px var(--yellow)}
+.tl .nm{font-weight:800}.tl .dt{color:var(--muted);font-size:14px;white-space:nowrap}.tl .s-live .dt{color:var(--yellow)}.tl .st{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-left:6px}
+.tree{overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;padding-bottom:6px}
+.tree-in{position:relative}
+.tree svg{position:absolute;left:0;top:0;pointer-events:none}
+.tree .th{position:absolute;top:0;font-size:13px;line-height:1.2}
+.tree .th b{display:block;font-size:14px}.tree .th span{color:var(--muted);font-size:12px}
+.bm{position:absolute;background:var(--surface2);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.bm .br{flex:1;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:0 10px;font-size:13px;min-width:0}
+.bm .br+.br{border-top:1px solid var(--line)}
+.bm .bn{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bm .bn.tbd{color:var(--muted);font-weight:600;font-size:12px}
+.bm .bs{font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;color:var(--muted)}
+.bm .br.lead .bn,.bm .br.lead .bs{color:var(--yellow)}.bm.fin .br:not(.lead){opacity:.55}
+.bm.live{border-color:rgba(244,255,58,.5)}
+.fx{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;font-size:14px;padding:5px 0;align-items:center}
+.fx .r{text-align:right}.fx .m{color:var(--muted);font-family:'Geist Mono',ui-monospace,monospace;font-size:12px;text-align:center;white-space:nowrap}
+.fx .lead{color:var(--yellow);font-weight:700}
 .previewnote{font-size:12px;color:var(--yellow);text-align:center;letter-spacing:.06em;text-transform:uppercase}
 .sidetag{font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;color:var(--dark)}.sidetag.a{background:var(--pink)}.sidetag.b{background:var(--cyan)}
 @media (prefers-reduced-motion:reduce){.ban.fo,.ban.fi{transition:none;animation:none}}
@@ -405,7 +426,7 @@ button.citypill{cursor:pointer}
     var fc = await sb.rpc("duel_faces"); S.faces = {}; (fc.data || []).forEach(function (f) { S.faces[f.id] = f; });
     if (S.preview) loadPreviewCamp(); else {
       var cn = await sb.rpc("campaign_overview"); S.camp = cn.data && cn.data[0] ? cn.data[0] : null;
-      if (S.camp) { var cp = await sb.rpc("campaign_people", { p_id: S.camp.id }); S.campPeople = cp.data || []; var cc = await sb.rpc("campaign_cup", { p_id: S.camp.id }); if (cc.data && cc.data.stage) S.camp.cup = cc.data; }
+      if (S.camp) { var cp = await sb.rpc("campaign_people", { p_id: S.camp.id }); S.campPeople = cp.data || []; var cc = await sb.rpc("campaign_cup", { p_id: S.camp.id }); if (cc.data && cc.data.stage) { S.camp.cup = cc.data; var sc = await sb.rpc("campaign_cup_schedule", { p_id: S.camp.id }), fx = await sb.rpc("campaign_cup_fixtures", { p_id: S.camp.id }); S.camp.cup.schedule = sc.data || []; S.camp.cup.fixtures = fx.data || []; } }
     }
     S.packPeople = S.packPeople || {};
     await Promise.all(S.packs.map(function (k) { return sb.rpc("pack_people", { p_id: k.id }).then(function (r) { S.packPeople[k.id] = r.data || []; }); }));
@@ -886,7 +907,7 @@ button.citypill{cursor:pointer}
     if (race) body = raceView(tab);
     else if (tab === "Cup" && S.camp && S.camp.cup) {
       var cu = S.camp;
-      body = '<div class="card stack" style="gap:14px"><div class="between"><div class="h2">' + esc(cu.title) + '</div><span class="chip-s">' + esc(cupStage(cu.cup)) + '</span></div>' + knockout(cu) + '</div>' + (cu.cup.groups && cu.cup.groups.length ? '<div class="card stack" style="gap:14px"><div class="h2">Groups</div>' + groupTables(cu) + '</div>' : "");
+      body = '<div class="between"><div class="h2">' + esc(cu.title) + '</div><span class="chip-s">' + esc(cupStage(cu.cup)) + '</span></div>' + cupBody(cu, false);
     } else if (tab === "Camp" && S.camp) {
       var cps = S.campPeople || [], cm = S.camp;
       body = (cm.my_side ? "" : '<div class="card row" style="border-color:var(--yellow)"><div style="flex:1;font-size:14px"><b>' + esc(cm.title) + '</b> Pick your side to join the leaderboard.</div><button class="btn small" data-tab="rivals">Join</button></div>') +
@@ -1096,13 +1117,20 @@ button.citypill{cursor:pointer}
       S.camp.slug = "city-world-cup"; S.camp.title = "City World Cup"; S.camp.days_left = 6;
       var qf = [["h", "g", 118000, 61000], ["a", "d", 96000, 88000], ["f", "e", 101000, 70000], ["b", "c", 90500, 90100]].map(function (x) { return { a: x[0], b: x[1], as: x[2], bs: x[3], state: "done" }; });
       var sf = [{ a: "h", b: "a", as: 52300, bs: 49900, state: "live" }, { a: "f", b: "b", as: 40100, bs: 44800, state: "live" }];
-      S.camp.cup = { stage: "Semi-finals", round: "SF", champion: null, groups: [], current: sf,
-        rounds: [{ name: "Quarter-finals", matches: qf }, { name: "Semi-finals", matches: sf }, { name: "Grand final", matches: [{ a: null, b: null, as: 0, bs: 0, state: "upcoming", ta: "Winner semi-final 1", tb: "Winner semi-final 2" }] }] };
+      S.camp.cup = { stage: "Semi-finals", round: "SF", champion: null, groups: [], current: sf, fixtures: [],
+        schedule: [{ round: "QF", starts_on: "2026-10-19", ends_on: "2026-10-22", state: "done" }, { round: "SF", starts_on: "2026-10-23", ends_on: "2026-10-26", state: "live" }, { round: "F", starts_on: "2026-10-27", ends_on: "2026-10-31", state: "upcoming" }],
+        rounds: [{ name: "Quarter-finals", starts_on: "2026-10-19", ends_on: "2026-10-22", matches: qf }, { name: "Semi-finals", starts_on: "2026-10-23", ends_on: "2026-10-26", matches: sf }, { name: "Grand final", starts_on: "2026-10-27", ends_on: "2026-10-31", matches: [{ a: null, b: null, as: 0, bs: 0, state: "upcoming", ta: "Winner semi-final 1", tb: "Winner semi-final 2" }] }] };
     } else if (S.preview === "worldcup") {
       S.camp.slug = "city-world-cup"; S.camp.title = "City World Cup"; S.camp.days_left = 9;
       var semis = [{ a: "h", b: "b", as: 62400, bs: 58900, state: "live", ta: "Winner Group A", tb: "Runner-up Group B" }, { a: "f", b: "a", as: 44100, bs: 51300, state: "live", ta: "Winner Group B", tb: "Runner-up Group A" }];
-      S.camp.cup = { stage: "Semi-finals", round: "SF", champion: null, current: semis, semis: semis,
-        final: { a: null, b: null, as: 0, bs: 0, state: "upcoming", ta: "Winner semi-final 1", tb: "Winner semi-final 2" },
+      semis.forEach(function (m) { m.starts_on = "2026-10-25"; m.ends_on = "2026-10-28"; });
+      var gA = ["h", "a", "d", "g"], gB = ["f", "b", "c", "e"], fixt = [];
+      [["G1", "2026-10-16", "2026-10-18", [[0, 1], [2, 3]]], ["G2", "2026-10-19", "2026-10-21", [[0, 2], [1, 3]]], ["G3", "2026-10-22", "2026-10-24", [[0, 3], [1, 2]]]].forEach(function (md) {
+        [["A", gA], ["B", gB]].forEach(function (g) { md[3].forEach(function (pr) { fixt.push({ round: md[0], grp: g[0], a: g[1][pr[0]], b: g[1][pr[1]], as: 118000 - pr[0] * 9000, bs: 98000 - pr[1] * 7000, state: "done", starts_on: md[1], ends_on: md[2] }); }); });
+      });
+      S.camp.cup = { stage: "Semi-finals", round: "SF", champion: null, current: semis, semis: semis, fixtures: fixt,
+        schedule: [{ round: "G1", starts_on: "2026-10-16", ends_on: "2026-10-18", state: "done" }, { round: "G2", starts_on: "2026-10-19", ends_on: "2026-10-21", state: "done" }, { round: "G3", starts_on: "2026-10-22", ends_on: "2026-10-24", state: "done" }, { round: "SF", starts_on: "2026-10-25", ends_on: "2026-10-28", state: "live" }, { round: "F", starts_on: "2026-10-29", ends_on: "2026-10-31", state: "upcoming" }],
+        final: { a: null, b: null, as: 0, bs: 0, state: "upcoming", ta: "Winner semi-final 1", tb: "Winner semi-final 2", starts_on: "2026-10-29", ends_on: "2026-10-31" },
         groups: [{ name: "Group A", rows: [["h", 3, 3, 9], ["a", 3, 2, 6], ["d", 3, 1, 3], ["g", 3, 0, 0]] }, { name: "Group B", rows: [["f", 3, 3, 9], ["b", 3, 2, 6], ["c", 3, 1, 3], ["e", 3, 0, 0]] }]
           .map(function (g) { return { name: g.name, rows: g.rows.map(function (r) { return { key: r[0], p: r[1], w: r[2], d: 0, l: r[1] - r[2], pts: r[3] }; }) }; }) };
     }
@@ -1128,13 +1156,82 @@ button.citypill{cursor:pointer}
         g.rows.map(function (r, i) { return '<div class="gtab"><span class="n' + (i < 2 ? " q" : "") + '">' + (i + 1) + '</span><span class="gname">' + esc(sideName(c, r.key)) + '</span><span class="c">' + r.p + '</span><span class="c">' + r.w + '</span><span class="pts">' + r.pts + '</span></div>'; }).join("") + '</div>';
     }).join("") + '<div class="muted" style="font-size:12px">Win a match for 3 points, draw for 1. Each match is decided by steps per walker over its days. Top two in each group go through (green).</div>';
   }
-  function koRounds(k) { return k.rounds || [{ name: "Semi-finals", matches: k.semis || [] }, { name: "Grand final", matches: k.final ? [k.final] : [] }]; }
-  function knockout(c) {
-    var k = c.cup;
-    return koRounds(k).map(function (r) {
-      var live = r.matches.some(function (m) { return m.state === "live"; });
-      return '<div class="cupsec"><div class="h2" style="font-size:16px">' + esc(r.name) + (live ? '<span class="livetag">Live</span>' : "") + '</div>' + r.matches.map(function (m) { return matchCard(c, m); }).join("") + '</div>';
-    }).join("") + (k.champion ? '<div class="youon" style="margin-top:4px">Champions: <b>' + esc(sideName(c, k.champion)) + '</b></div>' : "");
+  var RNAME = { G1: "Matchday 1", G2: "Matchday 2", G3: "Matchday 3", QF: "Quarter-finals", SF: "Semi-finals", F: "Grand final" };
+  function rangeLabel(a, e) {
+    try {
+      var d1 = new Date(a + "T00:00:00"), d2 = new Date(e + "T00:00:00");
+      var m1 = d1.toLocaleDateString("en-AU", { month: "short" }), m2 = d2.toLocaleDateString("en-AU", { month: "short" });
+      return d1.getDate() + (m1 === m2 ? "" : " " + m1) + " \u2013 " + d2.getDate() + " " + m2;
+    } catch (x) { return a + " \u2013 " + e; }
+  }
+  function stateOf(a, e, explicit) { if (explicit) return explicit; var t = today(); return t > e ? "done" : t >= a ? "live" : "upcoming"; }
+  function koRounds(k) {
+    var rs = k.rounds || [{ name: "Semi-finals", matches: k.semis || [] }, { name: "Grand final", matches: k.final ? [k.final] : [] }];
+    return rs.map(function (r) { var f = r.matches[0] || {}; return { name: r.name, matches: r.matches, starts_on: r.starts_on || f.starts_on, ends_on: r.ends_on || f.ends_on }; });
+  }
+  // The knockout tree: columns of matches, each match centred between the two that feed it.
+  function bracketTree(c) {
+    var rs = koRounds(c.cup), W = rs.length <= 2 ? 140 : 150, GX = rs.length <= 2 ? 30 : 34, H = 70, GY = 14, HEAD = 46;
+    var leaves = Math.max.apply(null, rs.map(function (r) { return r.matches.length; })), totalH = HEAD + leaves * (H + GY) - GY, totalW = rs.length * W + (rs.length - 1) * GX;
+    var ys0 = []; // filled progressively so a column can read the one before it
+    rs.forEach(function (r, ri) {
+      ys0[ri] = r.matches.map(function (m, j) {
+        if (ri === 0) return HEAD + j * (H + GY) + (leaves - r.matches.length) * (H + GY) / 2;
+        var prev = rs[ri - 1].matches.length, a = ys0[ri - 1][j * 2], b = ys0[ri - 1][j * 2 + 1];
+        return prev === r.matches.length * 2 && a != null && b != null ? (a + b) / 2 : HEAD + j * (totalH - HEAD) / r.matches.length + ((totalH - HEAD) / r.matches.length - H) / 2;
+      });
+    });
+    var paths = "", cards = "", heads = "";
+    rs.forEach(function (r, ri) {
+      var x = ri * (W + GX);
+      heads += '<div class="th" style="left:' + x + 'px;width:' + W + 'px"><b>' + esc(r.name) + '</b><span>' + (r.starts_on ? esc(rangeLabel(r.starts_on, r.ends_on)) : "") + '</span></div>';
+      r.matches.forEach(function (m, j) {
+        var y = ys0[ri][j], shown = m.state !== "upcoming" && m.a && m.b, lead = !shown || m.as === m.bs ? "" : (m.as > m.bs ? "a" : "b");
+        var row = function (key, tbd, score, isLead) { return '<div class="br' + (isLead ? " lead" : "") + '">' + (key ? '<span class="bn">' + esc(sideName(c, key)) + '</span>' : '<span class="bn tbd">' + esc(tbd || "To be decided") + '</span>') + '<span class="bs">' + (shown ? fmt(score) : "") + '</span></div>'; };
+        cards += '<div class="bm' + (m.state === "live" ? " live" : "") + (m.state === "done" ? " fin" : "") + '" style="left:' + x + 'px;top:' + y + 'px;width:' + W + 'px;height:' + H + 'px">' + row(m.a, m.ta, m.as, lead === "a") + row(m.b, m.tb, m.bs, lead === "b") + '</div>';
+        if (ri < rs.length - 1) {
+          var tj = Math.floor(j / 2), ty = ys0[ri + 1] && ys0[ri + 1][tj];
+          if (ty != null && rs[ri + 1].matches.length * 2 === r.matches.length) { var x1 = x + W, x2 = x + W + GX, xm = x1 + GX / 2; paths += '<path d="M' + x1 + ' ' + (y + H / 2) + ' H' + xm + ' V' + (ty + H / 2) + ' H' + x2 + '" />'; }
+          else if (ty != null && rs[ri + 1].matches.length === r.matches.length) { paths += '<path d="M' + (x + W) + ' ' + (y + H / 2) + ' H' + (x + W + GX) + '" />'; }
+        }
+      });
+    });
+    return '<div class="tree"><div class="tree-in" style="width:' + totalW + 'px;height:' + totalH + 'px"><svg width="' + totalW + '" height="' + totalH + '" fill="none" stroke="#3a3650" stroke-width="2" stroke-linejoin="round">' + paths + '</svg>' + heads + cards + '</div></div>' +
+      (c.cup.champion ? '<div class="youon" style="margin-top:8px">Champions: <b>' + esc(sideName(c, c.cup.champion)) + '</b></div>' : "");
+  }
+  function cupTimeline(c) {
+    var k = c.cup, sch = k.schedule || [];
+    return '<div class="tl">' + sch.map(function (r) {
+      var st = stateOf(r.starts_on, r.ends_on, r.state);
+      return '<div class="row2 s-' + st + '"><span class="dot"></span><span class="nm">' + esc(RNAME[r.round] || r.round) + (st === "live" ? '<span class="st" style="color:var(--yellow)">Live</span>' : st === "done" ? '<span class="st" style="color:var(--green)">Done</span>' : "") + '</span><span class="dt">' + esc(rangeLabel(r.starts_on, r.ends_on)) + '</span></div>';
+    }).join("") + '</div>';
+  }
+  function cupFixtures(c) {
+    var fx = c.cup.fixtures || [], by = {};
+    fx.forEach(function (m) { (by[m.round] = by[m.round] || []).push(m); });
+    return Object.keys(by).sort().map(function (rd) {
+      var ms = by[rd], f = ms[0];
+      return '<div><div class="h2" style="font-size:15px;margin:2px 0">' + esc(RNAME[rd] || rd) + ' <span class="muted" style="font-size:13px;font-weight:600">' + esc(rangeLabel(f.starts_on, f.ends_on)) + '</span></div>' + ms.map(function (m) {
+        var shown = m.state !== "upcoming", la = shown && m.as > m.bs, lb = shown && m.bs > m.as;
+        return '<div class="fx"><span class="' + (la ? "lead" : "") + '">' + esc(sideName(c, m.a)) + '</span><span class="m">' + (shown ? fmt(m.as) + " \u2013 " + fmt(m.bs) : "vs") + '</span><span class="r ' + (lb ? "lead" : "") + '">' + esc(sideName(c, m.b)) + '</span></div>';
+      }).join("") + '</div>';
+    }).join("");
+  }
+  function cupJoinCard(c) {
+    if (c.my_side) return '<div class="card stack" style="gap:10px"><div class="youon">You are on Team <b>' + esc(sideName(c, c.my_side)) + '</b></div><button class="btn coral" data-act="sharecamp">Invite friends</button></div>';
+    return '<div class="card stack" style="gap:10px"><div class="h2">Join a city</div><div class="muted" style="font-size:14px">Pick your city. Your steps count for it from the moment you join, and you can\'t switch.</div><div class="citygrid">' + c.sides.map(function (x) { return '<button class="citypill plain" data-act="joincamp" data-side="' + esc(x.key) + '"><i></i>' + esc(x.label) + '</button>'; }).join("") + '</div></div>';
+  }
+  // Everything about a cup: dates, the tree, the groups. Used by the full page and the leaderboard's World Cup tab.
+  function cupBody(c, withJoin) {
+    var k = c.cup, hasGroups = k.groups && k.groups.length;
+    return '<div class="card stack" style="gap:6px"><div class="h2">Schedule</div>' + cupTimeline(c) + '</div>' +
+      '<div class="card stack" style="gap:12px"><div class="between"><div class="h2">Knockout</div><span class="muted" style="font-size:12px">Swipe \u2192</span></div>' + bracketTree(c) + '<div class="muted" style="font-size:12px">Each match is decided by steps per walker over its days.</div></div>' +
+      (hasGroups ? '<div class="card stack" style="gap:14px"><div class="h2">Group stage</div>' + groupTables(c) + '</div><div class="card stack" style="gap:8px"><div class="h2">Matches</div>' + cupFixtures(c) + '</div>' : "") +
+      (withJoin ? cupJoinCard(c) : "");
+  }
+  function viewCupPage() {
+    var c = S.camp;
+    return topbar("") + '<div class="stack"><div class="between"><button class="linkbtn" data-act="cupback">\u2039 Challenges</button></div><div><div class="eyebrow">' + esc(cupStage(c.cup)) + '</div><h1 class="h1" style="margin-top:4px">' + esc(c.title) + '</h1><p class="muted">' + c.days_left + (c.days_left === 1 ? " day left" : " days left") + '</p></div>' + cupBody(c, true) + '</div>';
   }
   function cupStage(k) { return k.round && k.round.charAt(0) === "G" ? "Group stage \u00b7 Matchday " + k.round.slice(1) : k.stage; }
   function cupFront(c) {
@@ -1143,14 +1240,9 @@ button.citypill{cursor:pointer}
     if (!cur.length) cur = k.current || [];
     var cta = mine ? '<div class="youon">You are on Team <b>' + esc(mine) + '</b></div><button class="btn coral" data-act="sharecamp">Invite friends</button>'
       : '<div class="muted" style="font-size:14px;text-align:center">Pick your city</div><div class="citygrid" style="justify-content:center">' + c.sides.map(function (x) { return '<button class="citypill plain" data-act="joincamp" data-side="' + esc(x.key) + '"><i></i>' + esc(x.label) + '</button>'; }).join("") + '</div>';
-    return '<div class="' + flipCls(c.id, "camp") + '" data-flip="' + esc(c.id) + '" role="button" tabindex="0" aria-label="Show the bracket and groups">' +
+    return '<div class="' + flipCls(c.id, "camp") + '" data-act="opencup" role="button" tabindex="0" aria-label="Open the bracket and dates">' +
       '<div class="ban-top"><span class="camp-tag">' + esc(cupStage(k)) + '</span><span class="chip-s">' + c.days_left + (c.days_left === 1 ? " day left" : " days left") + '</span></div>' +
-      '<div class="ban-name">' + esc(c.title) + '</div>' + (c.my_side && k.round && k.round.charAt(0) === "G" ? '<div class="muted" style="font-size:13px;margin-top:-6px">Your match</div>' : "") + cur.map(function (m) { return matchCard(c, m); }).join("") + cta + '</div>';
-  }
-  function cupBack(c) {
-    return '<div class="' + flipCls(c.id, "camp ban-back") + '" data-flip="' + esc(c.id) + '" role="button" tabindex="0" aria-label="Flip back">' +
-      '<div class="ban-top"><span class="camp-tag">' + esc(cupStage(c.cup)) + '</span><span class="chip-s">' + c.days_left + (c.days_left === 1 ? " day left" : " days left") + '</span></div>' +
-      '<div class="ban-name">' + esc(c.title) + '</div>' + knockout(c) + groupTables(c) + '</div>';
+      '<div class="ban-name">' + esc(c.title) + '</div>' + (c.my_side && k.round && k.round.charAt(0) === "G" ? '<div class="muted" style="font-size:13px;margin-top:-6px">Your match</div>' : "") + cur.map(function (m) { return matchCard(c, m); }).join("") + cta + '<div class="ban-foot"><span></span><span class="tap-hint">Bracket and dates \u203a</span></div></div>';
   }
   function campFront(c) {
     if (c.cup) return cupFront(c);
@@ -1178,7 +1270,6 @@ button.citypill{cursor:pointer}
     }).join("");
   }
   function campBack(c) {
-    if (c.cup) return cupBack(c);
     var two = c.sides.length === 2;
     var top;
     if (two) {
@@ -1304,7 +1395,7 @@ button.citypill{cursor:pointer}
     if (S.view === "loading") html = '<div class="app">' + topbar("") + '<p class="muted" role="status">Loading your bowl…</p></div>';
     else if (S.view === "auth") html = viewAuth() + (popupOn() ? inviteAuthSheet() : "");
     else if (S.view === "reset") html = viewReset();
-    else html = '<div class="app">' + (S.dogview ? (S.dogview.id ? viewDog : viewDogs) : S.tab === "rivals" ? viewRivals : ({ today: viewToday, packs: viewPacks, impact: viewImpact, me: viewMe }[S.tab]))() + '</div>' + nav() + (S.sheet ? sheet() : "") + (S.wiz ? wizSheet() : "") + (S.invite ? inviteSheet() : "") + (S.celebrate ? celebrate() : "");
+    else html = '<div class="app">' + (S.dogview ? (S.dogview.id ? viewDog : viewDogs) : S.tab === "rivals" ? (S.cupPage && S.camp && S.camp.cup ? viewCupPage : viewRivals) : ({ today: viewToday, packs: viewPacks, impact: viewImpact, me: viewMe }[S.tab]))() + '</div>' + nav() + (S.sheet ? sheet() : "") + (S.wiz ? wizSheet() : "") + (S.invite ? inviteSheet() : "") + (S.celebrate ? celebrate() : "");
     root.innerHTML = html;
     if (S.sheet) { var el = $("#steps"); if (el) { el.focus(); updatePreview(); } }
     if (S.celebrate) { confetti(); var d = $(".cel-done"); if (d) d.focus(); }
@@ -1356,7 +1447,7 @@ button.citypill{cursor:pointer}
   document.addEventListener("click", function (e) {
     var t = e.target;
     var tab = t.closest("[data-tab]");
-    if (tab) { S.dogview = null; S.msg = ""; if (tab.dataset.tab === "packs" && S.tab !== "packs") { S.boardView = "list"; S.cam = null; } S.lbpack = null; S.tab = tab.dataset.tab; render(); window.scrollTo(0, 0); S.scrollMe = S.tab === "packs"; scrollToMe(); if (S.tab === "packs") loadBoard().then(render); if (S.tab === "impact") loadImpact().then(render); if (S.tab === "rivals") loadRivals().then(render); return; }
+    if (tab) { S.dogview = null; S.msg = ""; if (tab.dataset.tab === "packs" && S.tab !== "packs") { S.boardView = "list"; S.cam = null; } S.lbpack = null; S.cupPage = false; S.tab = tab.dataset.tab; render(); window.scrollTo(0, 0); S.scrollMe = S.tab === "packs"; scrollToMe(); if (S.tab === "packs") loadBoard().then(render); if (S.tab === "impact") loadImpact().then(render); if (S.tab === "rivals") loadRivals().then(render); return; }
     var cel = t.closest("[data-cel]");
     if (cel) { S.celebrate = { bowls: bowlsFor(Number(cel.dataset.cel)), count: 1, steps: Number(cel.dataset.cel) }; render(); return; }
     var wk = t.closest("[data-wkind]");
@@ -1422,6 +1513,8 @@ button.citypill{cursor:pointer}
       var cc = S.camp; if (cc) { var clink = ORIGIN + "/?campaign=" + encodeURIComponent(cc.slug), ctext = cc.title + " on Walkies! Pick your city and walk. Every step also feeds a shelter dog. Tap to join:"; if (navigator.share) navigator.share({ title: cc.title, text: ctext, url: clink }).catch(function () {}); else { try { navigator.clipboard.writeText(ctext + " " + clink); toast("Invite copied. Paste it into a message."); } catch (x) { toast(clink); } } }
     }
     else if (act === "lbpackback") { S.lbpack = null; S.scrollMe = true; render(); scrollToMe(); }
+    else if (act === "opencup") { S.cupPage = true; render(); window.scrollTo(0, 0); }
+    else if (act === "cupback") { S.cupPage = false; render(); window.scrollTo(0, 0); }
     else if (act === "packall") { S.packAll = S.packAll || {}; S.packAll[a.dataset.pid] = !S.packAll[a.dataset.pid]; render(); }
     else if (act === "sharepack") {
       var pk = (S.packs || []).filter(function (x) { return x.id === a.dataset.pid; })[0];
