@@ -33,3 +33,6 @@ revoke execute on function public.duel_faces(), public.pack_people(uuid) from pu
 
 -- Pack wars: only the person who started one can rename it.
 create or replace function public.rename_pack(p_id uuid, p_name text) returns void language plpgsql security definer set search_path = public as $fn$ begin if char_length(trim(coalesce(p_name, ''))) < 2 then raise exception 'Give your pack war a name of at least 2 characters'; end if; update public.packs k set name = left(trim(p_name), 40) where k.id = p_id and k.created_by = auth.uid(); if not found then raise exception 'Only the person who started the pack war can rename it'; end if; end $fn$;
+
+-- Everyone can see who is in any pack war and their steps.
+create or replace function public.pack_people(p_id uuid) returns table(display_name text, steps bigint, bowls integer, is_me boolean, dog_id uuid, rank integer) language sql stable security definer set search_path = public as $fn$ with x as (select p.display_name as dn, public.pack_score(p_id, pm.user_id) as s, pm.user_id as uid, p.dog_id as dg from public.pack_members pm join public.profiles p on p.user_id = pm.user_id where pm.pack_id = p_id) select x.dn, x.s, public.milestone_count(x.s), x.uid = auth.uid(), x.dg, (rank() over (order by x.s desc))::int from x order by x.s desc, x.dn $fn$;
