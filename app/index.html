@@ -849,17 +849,13 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var tv = S.teamview, row = (S.allTeams || []).filter(function (r) { return r.workplace_id === tv.id; })[0] || {}, mem = tv.members || [], mine = !!row.is_mine;
     var total = mem.reduce(function (a, m) { return a + Number(m.steps); }, 0) || 1, bowls = mem.reduce(function (a, m) { return a + m.bowls; }, 0);
     var head = '<div class="between"><button class="linkbtn" data-act="teamback">\u2039 Leaderboard</button></div><div><h1 class="h1">' + esc(row.name || "Team") + '</h1><p class="muted">' + (row.members || mem.length) + ((row.members || mem.length) === 1 ? " walker" : " walkers") + '</p></div>';
-    var stats = '<div class="rings"><div class="orb" aria-label="Walkers"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" class="trk"/><circle cx="50" cy="50" r="46" class="ring gold" stroke-dasharray="289" stroke-dashoffset="0"/></svg><div class="in"><b class="stat-n">' + (row.members || mem.length) + '</b><span>walkers</span></div></div>' +
-      '<div class="orb" aria-label="Total steps"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" class="trk"/><circle cx="50" cy="50" r="46" class="ring pink" stroke-dasharray="289" stroke-dashoffset="0"/></svg><div class="in"><b class="stat-n">' + fmt(mine ? total : row.total_steps) + '</b><span>steps</span></div></div>' +
-      '<div class="orb" aria-label="Dog bowls"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" class="trk"/><circle cx="50" cy="50" r="46" class="ring cyan" stroke-dasharray="289" stroke-dashoffset="0"/></svg><div class="in"><b class="stat-n bowls">' + (mine ? bowls : (row.bowls || 0)) + '</b><span>dog bowls</span></div></div></div>';
     var list;
     if (tv.loading) list = '<p class="muted">Loading\u2026</p>';
     else if (!mem.length) list = '<div class="card"><b>No walkers yet.</b></div>';
     else list = '<div class="h2">Who contributed</div>' + mem.map(function (m, i) {
-      var pct = Math.max(3, Math.round(Number(m.steps) / total * 100));
-      return '<div class="lb ' + (m.is_me ? "mine" : "") + '" style="grid-template-columns:auto minmax(0,1fr) auto"><div class="rank">' + (i + 1) + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (m.is_me ? "You: " : "") + esc(m.display_name) + (m.is_captain ? ' <span class="tag">Captain</span>' : "") + '</div><div class="contrib"><i style="width:' + pct + '%"></i></div><div style="font-size:13px">' + m.bowls + (m.bowls === 1 ? " dog bowl" : " dog bowls") + ' \u00b7 ' + pct + '% of the team</div></div><div><div class="num">' + fmt(m.steps) + '</div><div style="font-size:12px;text-align:right">steps</div></div></div>';
+      return '<div class="lb ' + (m.is_me ? "mine" : "") + '" style="grid-template-columns:auto minmax(0,1fr) auto"><div class="rank">' + (i + 1) + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (m.is_me ? "You: " : "") + esc(m.display_name) + (m.is_captain ? ' <span class="tag">Captain</span>' : "") + '</div><div style="font-size:13px">' + m.bowls + (m.bowls === 1 ? " dog bowl" : " dog bowls") + '</div></div><div><div class="num">' + fmt(m.steps) + '</div><div style="font-size:12px;text-align:right">steps</div></div></div>';
     }).join("");
-    return topbar("") + '<div class="stack">' + head + stats + '<div class="stack" style="gap:10px">' + list + '</div></div>';
+    return topbar("") + '<div class="stack">' + head + '<div class="stack" style="gap:10px">' + list + '</div></div>';
   }
   function viewPacks() {
     var tab = S.bracket || "Pup";
