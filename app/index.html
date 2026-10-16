@@ -50,19 +50,16 @@ h1,h2,p{margin:0}
 .scoopbox{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:14px;align-items:center;width:100%;margin-top:6px}
 .scoops3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .scoopsum{text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px}
-.pawrow{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:2px;width:100%;margin-top:6px}.pc{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}.pc .scoop{width:100%}.pl{font-family:var(--display);font-weight:800;font-size:9px;color:var(--muted);letter-spacing:-.02em}.pc.on .pl{color:var(--green)}.pc.next .pl{color:var(--pink)}.pc.next .scoop{animation:nudge 1.6s ease-in-out infinite}@keyframes nudge{50%{transform:translateY(-3px)}}
-.hud{display:grid;grid-template-columns:minmax(0,1fr) 124px;gap:10px;align-items:center;width:100%;margin-top:4px}
-.coin{position:absolute;top:-4px;right:6%;z-index:2;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 30% 28%,#fff2a8,#ffc21a 60%,#f09a00);border:3px solid #fff7d1;box-shadow:0 0 18px rgba(255,194,26,.65),inset 0 -4px 6px rgba(0,0,0,.15)}
-.coin b{font-family:var(--display);font-weight:800;font-size:30px;color:#3b2a00;line-height:1}
-.bowlcol{position:relative;padding-top:20px}.bowlcol .cap{font-family:var(--display);font-weight:800;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-.orbs{display:flex;flex-direction:column;align-items:center;gap:10px}
-.orb{position:relative;border-radius:50%;background:radial-gradient(circle at 35% 28%,#2b2148,#0d0c12 72%)}
-.orb.big{width:124px;height:124px;filter:drop-shadow(0 0 12px rgba(255,46,154,.45))}.orb.sm{width:92px;height:92px;filter:drop-shadow(0 0 10px rgba(35,229,255,.35))}
+.pawrow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px 10px;width:100%;margin-top:6px;padding:0 6px}.pc{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}.pc .scoop{width:100%}.pl{font-family:var(--display);font-weight:800;font-size:12px;color:var(--muted)}.pc.on .pl{color:var(--green)}.pc.next .pl{color:var(--pink)}.pc.next .scoop{animation:nudge 1.6s ease-in-out infinite}@keyframes nudge{50%{transform:translateY(-3px)}}
+.rings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%;margin-top:4px}
+.bigbowl{display:flex;justify-content:center;margin:-14px 0 0}.bigbowl svg{display:block;width:100%;max-width:240px;height:auto}
+.orb{position:relative;width:100%;aspect-ratio:1/1;border-radius:50%;background:radial-gradient(circle at 35% 28%,#2b2148,#0d0c12 72%)}
+.orb:nth-child(1){filter:drop-shadow(0 0 10px rgba(255,194,26,.4))}.orb:nth-child(2){filter:drop-shadow(0 0 10px rgba(255,46,154,.45))}.orb:nth-child(3){filter:drop-shadow(0 0 10px rgba(35,229,255,.35))}
 .orb svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
-.orb .trk{fill:none;stroke:#2a2736;stroke-width:7}.orb .ring{fill:none;stroke-width:7;stroke-linecap:round}.orb .ring.pink{stroke:var(--pink)}.orb .ring.cyan{stroke:var(--cyan)}
-.orb .in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;text-align:center}
-.orb .in b{font-family:var(--display);font-weight:800;line-height:1;color:#fff}.orb.big .in b{font-size:25px}.orb.sm .in b{font-size:19px}
-.orb .in span{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.orb .trk{fill:none;stroke:#2a2736;stroke-width:7}.orb .ring{fill:none;stroke-width:7;stroke-linecap:round}.orb .ring.pink{stroke:var(--pink)}.orb .ring.cyan{stroke:var(--cyan)}.orb .ring.gold{stroke:#ffc21a}
+.orb .in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center}
+.orb .in b{font-family:var(--display);font-weight:800;line-height:1;color:#fff;font-size:21px}.orb .in b.bowls{font-size:36px;color:#ffd24a}
+.orb .in span{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
 .scoopbox.top{margin-top:4px}.bowlcol{display:flex;flex-direction:column;align-items:center;gap:0;min-width:0}.bowlcol svg{display:block;width:100%;max-width:230px;height:auto;margin-top:-6px}
 .scoopsum .sumline{width:36px;height:2px;border-radius:2px;background:var(--line);margin:8px 0}
 .scoop{display:block;aspect-ratio:1/1;padding:0;border:0;background:none}
@@ -596,9 +593,11 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     return topbar("") + '<div class="stack">' +
       dogCard() +
       '<div class="hero"><div class="eyebrow">Dog bowls this month</div>' +
-      '<div class="hud"><div class="bowlcol"><div class="coin" aria-label="' + done + ' dog bowls"><b>' + done + '</b></div>' + bowlSvg(steps / 150000, true) + '<div class="cap">dog ' + (done === 1 ? "bowl" : "bowls") + '</div></div>' +
-      '<div class="orbs"><div class="orb big" aria-label="Steps today"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" class="trk"/><circle cx="50" cy="50" r="46" class="ring pink" stroke-dasharray="289" stroke-dashoffset="0"/></svg><div class="in"><b class="stat-n today">' + fmt(todaySteps()) + '</b><span>steps today</span></div></div>' +
-      '<div class="orb sm" aria-label="Steps this month"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" class="trk"/><circle cx="50" cy="50" r="46" class="ring cyan" stroke-dasharray="289" stroke-dashoffset="' + Math.round(289 * (1 - pct / 100)) + '"/></svg><div class="in"><b class="stat-n month">' + fmt(steps) + '</b><span>this month</span></div></div></div></div>' +
+      '<div class="rings">' +
+      '<div class="orb" aria-label="Dog bowls"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" class="trk"/><circle cx="50" cy="50" r="46" class="ring gold" stroke-dasharray="289" stroke-dashoffset="' + Math.round(289 * (1 - done / 10)) + '"/></svg><div class="in"><b class="stat-n bowls">' + done + '</b><span>dog bowls</span></div></div>' +
+      '<div class="orb" aria-label="Steps today"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" class="trk"/><circle cx="50" cy="50" r="46" class="ring pink" stroke-dasharray="289" stroke-dashoffset="' + 0 + '"/></svg><div class="in"><b class="stat-n today">' + fmt(todaySteps()) + '</b><span>steps today</span></div></div>' +
+      '<div class="orb" aria-label="Steps this month"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" class="trk"/><circle cx="50" cy="50" r="46" class="ring cyan" stroke-dasharray="289" stroke-dashoffset="' + Math.round(289 * (1 - Math.min(1, steps / 150000))) + '"/></svg><div class="in"><b class="stat-n month">' + fmt(steps) + '</b><span>this month</span></div></div>' + '</div>' +
+      '<div class="bigbowl">' + bowlSvg(steps / 150000, true) + '</div>' +
       '<div class="pawrow">' + scoops + '</div>' +
       '<div class="bar" style="margin-top:2px" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100"><i style="width:' + pct + '%"></i></div>' +
       '<div style="font-size:15px">' + nextLine + '</div>' + dayLine() + '</div>' +
