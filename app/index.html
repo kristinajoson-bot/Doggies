@@ -99,6 +99,7 @@ option{background:var(--surface);color:var(--fg)}
 @keyframes rise{from{transform:translateY(30px);opacity:0}}
 .sheet-bg{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;justify-content:center}
 .sheet{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:28px 28px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
+.seg{display:flex;flex:none;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px}.seg button{border:0;background:none;color:var(--muted);font:inherit;font-weight:700;font-size:14px;padding:7px 12px;border-radius:999px;white-space:nowrap}.seg button[aria-pressed=true]{background:#f4f2fa;color:#050507}
 .race{border:1px solid var(--line);border-radius:24px;overflow:hidden}
 .game{position:relative;height:min(68vh,540px);overflow:hidden;overflow:clip;perspective:560px;perspective-origin:50% 38%;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
 .game .world{position:absolute;left:50%;top:0;width:0;height:0;transform-style:preserve-3d;transform-origin:0 0}
@@ -824,7 +825,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     var tab = S.bracket || "Pup";
     var chips = BOARD_TABS.map(function (b) { return '<button class="pill" aria-pressed="' + (tab === b[0]) + '" data-bracket="' + b[0] + '">' + b[0] + '</button>'; }).join("");
     var body = "", race = S.boardView === "race";
-    var vt = '<div class="chips" role="group" aria-label="View"><button class="pill" aria-pressed="' + (!race) + '" data-bview="list">List</button><button class="pill" aria-pressed="' + race + '" data-bview="race">\uD83C\uDFC1 Race</button></div>';
+    var vt = '<div class="seg" role="group" aria-label="View"><button aria-pressed="' + (!race) + '" data-bview="list">List</button><button aria-pressed="' + race + '" data-bview="race">\uD83C\uDFC1 Race</button></div>';
     if (race) body = raceView(tab);
     else if (tab === "Pup") {
       var ws = S.walkers || [], meIn = ws.some(function (w) { return w.is_me; });
@@ -839,7 +840,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
       }).join("") : '<div class="card"><b>No teams here yet.</b><p class="muted">Start a team in Rivals, share the code with your workmates and be the first on the board.</p></div>');
       if (mine && mineIdx > 0) { var above = rows[mineIdx - 1]; body += '<div class="card" style="border-style:dashed"><b>Catch ' + esc(above.name) + '</b> and your team moves up a place. Only <b>' + fmt(Math.max(1, above.steps_per_member - mine.steps_per_member + 1)) + '</b> more steps each.</div>'; }
     }
-    return topbar("") + '<div class="stack"><h1 class="h1">Leaderboard</h1>' + raceNewsCard() + '<div class="chips" role="group" aria-label="Leaderboard">' + chips + '</div>' + vt + '<div class="stack" style="gap:10px">' + body + '</div></div>';
+    return topbar("") + '<div class="stack"><div class="between"><h1 class="h1">Leaderboard</h1>' + vt + '</div>' + raceNewsCard() + '<div class="chips" role="group" aria-label="Leaderboard">' + chips + '</div><div class="stack" style="gap:10px">' + body + '</div></div>';
   }
   function viewImpact() {
     var i = S.impact || {}, commKg = (i.community_bowls || 0) * BOWL_KG, myKg = (i.my_bowls || 0) * BOWL_KG;
@@ -1205,7 +1206,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   document.addEventListener("click", function (e) {
     var t = e.target;
     var tab = t.closest("[data-tab]");
-    if (tab) { S.dogview = null; S.msg = ""; S.tab = tab.dataset.tab; render(); window.scrollTo(0, 0); if (S.tab === "packs") loadBoard().then(render); if (S.tab === "impact") loadImpact().then(render); if (S.tab === "rivals") loadRivals().then(render); return; }
+    if (tab) { S.dogview = null; S.msg = ""; if (tab.dataset.tab === "packs" && S.tab !== "packs") { S.boardView = "list"; S.cam = null; } S.tab = tab.dataset.tab; render(); window.scrollTo(0, 0); if (S.tab === "packs") loadBoard().then(render); if (S.tab === "impact") loadImpact().then(render); if (S.tab === "rivals") loadRivals().then(render); return; }
     var cel = t.closest("[data-cel]");
     if (cel) { S.celebrate = { bowls: bowlsFor(Number(cel.dataset.cel)), count: 1, steps: Number(cel.dataset.cel) }; render(); return; }
     var wk = t.closest("[data-wkind]");
