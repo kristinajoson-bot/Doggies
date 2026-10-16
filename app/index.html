@@ -197,6 +197,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
 .bounce{animation:bounce .5s}
 @keyframes bounce{40%{transform:translateY(-8px) rotate(-6deg)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.titlebtn{background:none;border:0;padding:0;color:inherit;font:inherit;text-align:left;display:inline-flex;align-items:center;gap:10px;cursor:pointer}.titlebtn svg{opacity:.55;flex:none}.titlein{width:100%;background:transparent;border:0;border-bottom:2px solid var(--pink);border-radius:0;padding:0 0 4px;color:inherit}
 </style>
 </head>
 <body>
@@ -433,7 +434,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     async renamePack(f) {
       var r = await sb.rpc("rename_pack", { p_id: f.pid.value, p_name: f.pname.value });
       if (r.error) return toast(r.error.message);
-      await loadRivals(); await loadBoard(); render(); toast("Pack war renamed");
+      if (S.pview) S.pview.editing = false; await loadRivals(); await loadBoard(); render(); toast("Pack war renamed");
     },
     async joinPack(f) {
       var r = await sb.rpc("join_pack", { p_code: f.code.value });
@@ -950,13 +951,13 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
   }
   function viewPack() {
     var v = S.pview, k = (S.packs || []).filter(function (x) { return x.id === v.id; })[0] || {}, rows = v.rows || [];
-    var head = '<div class="between"><button class="linkbtn" data-act="packback">\u2039 Challenges</button></div><div><h1 class="h1">' + esc(k.name || "Pack war") + '</h1></div>';
+    var title = v.editing ? '<form data-form="renamePack"><input type="hidden" name="pid" value="' + esc(v.id) + '"><input id="rpname" name="pname" class="titlein" value="' + esc(k.name || "") + '" maxlength="40" minlength="2" required aria-label="Pack war name" autocomplete="off"></form>' : '<button class="titlebtn" data-act="editpack" aria-label="Rename pack war">' + esc(k.name || "Pack war") + ' <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>';
+    var head = '<div class="between"><button class="linkbtn" data-act="packback">\u2039 Challenges</button></div><h1 class="h1">' + title + '</h1>';
     var list = v.loading ? '<p class="muted">Loading\u2026</p>' : rows.map(function (m, i) {
       return '<div class="lb ' + (m.is_me ? "mine" : (i === 0 ? "first" : "")) + '"><div class="rank">' + (i + 1) + '</div><div style="min-width:0"><div style="font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (m.is_me ? "You: " : "") + esc(m.display_name) + '</div><div style="font-size:13px">' + m.bowls + (m.bowls === 1 ? " bowl" : " bowls") + '</div></div><div><div class="num">' + fmt(m.steps) + '</div></div></div>';
     }).join("");
     var inv = k.finished ? "" : '<div class="card stack" style="gap:10px"><div class="muted" style="font-size:14px">Invite people with this code or link:</div><div style="font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:.12em">' + esc(k.join_code || "") + '</div><div class="row" style="flex-wrap:wrap"><button class="btn small coral" data-act="sharepack">Invite people</button><button class="btn small light" data-act="copy" data-code="' + esc(k.join_code || "") + '">Copy code</button></div></div>';
-    var ren = '<form class="gap8" data-form="renamePack"><input type="hidden" name="pid" value="' + esc(v.id) + '"><label for="rpname">Pack war name</label><div class="row"><input id="rpname" name="pname" value="' + esc(k.name || "") + '" maxlength="40" minlength="2" required><button class="btn small light">Rename</button></div></form>';
-    return topbar("") + '<div class="stack">' + head + '<div class="stack" style="gap:10px">' + list + '</div>' + inv + ren + '</div>';
+    return topbar("") + '<div class="stack">' + head + '<div class="stack" style="gap:10px">' + list + '</div>' + inv + '</div>';
   }
   function wizSheet() {
     var w = S.wiz, person = w.kind === "person", pack = w.kind === "pack", link = person && w.mode === "link";
@@ -1058,6 +1059,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     if (S.sheet) { var el = $("#steps"); if (el) { el.focus(); updatePreview(); } }
     if (S.celebrate) { confetti(); var d = $(".cel-done"); if (d) d.focus(); }
     if (S.tab === "packs" && S.boardView === "race") placeRace();
+    if (S.pview && S.pview.editing) { var pin = $("#rpname"); if (pin && document.activeElement !== pin) { pin.focus(); pin.select(); } }
   }
 
   // ---- events ----
@@ -1094,6 +1096,11 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     });
   })();
   // Settings save themselves as soon as a box is ticked or a field is changed.
+  document.addEventListener("focusout", function (e) {
+    if (!e.target || e.target.id !== "rpname" || !S.pview || !S.pview.editing) return;
+    var k = (S.packs || []).filter(function (x) { return x.id === S.pview.id; })[0] || {}, val = e.target.value.trim();
+    if (val.length >= 2 && val !== k.name) actions.renamePack(e.target.form); else { S.pview.editing = false; render(); }
+  });
   document.addEventListener("change", function (e) {
     var f = e.target.closest ? e.target.closest("form[data-autosave]") : null; if (!f) return;
     if (f.checkValidity && !f.checkValidity()) { f.reportValidity(); return; }
@@ -1150,6 +1157,7 @@ details.drop{background:var(--surface);border:1px solid var(--line);border-radiu
     else if ((act === "wiz" || act === "wizlink") && challengeCount() >= MAX_CHALLENGES) { toast("You already have 3 challenges. Finish one before starting another."); }
     else if (act === "wiz") { S.wiz = { kind: "person", mode: "link", opp: "", random: false, days: 7, options: [], loading: false }; S.wizMsg = ""; render(); }
     else if (act === "closewiz") { S.wiz = null; render(); }
+    else if (act === "editpack") { if (S.pview) { S.pview.editing = true; render(); } }
     else if (act === "packback") { S.pview = null; render(); window.scrollTo(0, 0); }
     else if (act === "sharepack") {
       var pk = (S.packs || []).filter(function (x) { return S.pview && x.id === S.pview.id; })[0];
