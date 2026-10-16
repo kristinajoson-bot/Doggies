@@ -1112,11 +1112,9 @@ button.citypill{cursor:pointer}
       '<div class="ban-name">' + esc(c.title) + '</div>' + k.semis.map(function (m) { return matchCard(c, m); }).join("") + cta + '</div>';
   }
   function cupBack(c) {
-    var rows = S.campPeople || [], all = S.packAll && S.packAll[c.id], shown = all ? rows : rows.slice(0, 3);
-    var more = rows.length > 3 ? '<button class="btn light small" data-act="packall" data-pid="' + esc(c.id) + '">' + (all ? "Show top 3" : "Show all " + rows.length) + '</button>' : "";
     return '<div class="' + flipCls(c.id, "camp ban-back") + '" data-flip="' + esc(c.id) + '" role="button" tabindex="0" aria-label="Flip back">' +
       '<div class="ban-top"><span class="camp-tag">World Cup \u00b7 ' + esc(c.cup.stage) + '</span><span class="chip-s">' + c.days_left + (c.days_left === 1 ? " day left" : " days left") + '</span></div>' +
-      '<div class="ban-name">' + esc(c.title) + '</div>' + knockout(c) + groupTables(c) + '<div class="h2" style="font-size:16px">Top walkers</div><div class="rowlist">' + campPeopleRows(c, shown) + '</div>' + more + '</div>';
+      '<div class="ban-name">' + esc(c.title) + '</div>' + knockout(c) + groupTables(c) + '</div>';
   }
   function campFront(c) {
     if (c.cup) return cupFront(c);
@@ -1145,8 +1143,7 @@ button.citypill{cursor:pointer}
   }
   function campBack(c) {
     if (c.cup) return cupBack(c);
-    var two = c.sides.length === 2, rows = S.campPeople || [], all = S.packAll && S.packAll[c.id], shown = all ? rows : rows.slice(0, 3);
-    var more = rows.length > 3 ? '<button class="btn light small" data-act="packall" data-pid="' + esc(c.id) + '">' + (all ? "Show top 3" : "Show all " + rows.length) + '</button>' : "";
+    var two = c.sides.length === 2;
     var top;
     if (two) {
       var a = standings(c).filter(function (x) { return x.key === c.sides[0].key; })[0], b = standings(c).filter(function (x) { return x.key === c.sides[1].key; })[0], tot = a.avg + b.avg, share = tot > 0 ? Math.max(6, Math.min(94, Math.round(a.avg / tot * 100))) : 50;
@@ -1155,8 +1152,7 @@ button.citypill{cursor:pointer}
     } else top = '<div class="ban-name">' + esc(c.title) + '</div><div class="rowlist" style="gap:12px">' + cityStandings(c) + '</div>';
     return '<div class="' + flipCls(c.id, "camp ban-back") + '" data-flip="' + esc(c.id) + '" role="button" tabindex="0" aria-label="Flip back">' +
       '<div class="ban-top"><span class="camp-tag">Campaign of the month</span><span class="chip-s">' + c.days_left + (c.days_left === 1 ? " day left" : " days left") + '</span></div>' + top +
-      '<div class="muted" style="font-size:13px;text-align:center">The city with the most steps per walker wins</div>' +
-      '<div class="rowlist">' + campPeopleRows(c, shown) + '</div>' + more + '</div>';
+      '<div class="muted" style="font-size:13px;text-align:center">The city with the most steps per walker wins</div></div>';
   }
   function campBanner(c) { return '<div class="fwrap">' + (S.flip && S.flip[c.id] ? campBack(c) : campFront(c)) + '</div>'; }
   var PAW_ART = '<svg width="110" height="110" viewBox="0 0 120 120" fill="rgba(255,255,255,.13)" aria-hidden="true"><ellipse cx="60" cy="80" rx="25" ry="21"/><ellipse cx="27" cy="52" rx="10" ry="13"/><ellipse cx="47" cy="31" rx="10" ry="13"/><ellipse cx="73" cy="31" rx="10" ry="13"/><ellipse cx="93" cy="52" rx="10" ry="13"/></svg>';
