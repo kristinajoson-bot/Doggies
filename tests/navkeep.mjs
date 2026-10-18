@@ -1,0 +1,17 @@
+import { open } from "./stepsharness.mjs";
+const r = []; const check = (n, ok, d = "") => { r.push(ok); console.log((ok ? "PASS " : "FAIL ") + n + (d ? "  [" + d + "]" : "")); };
+const { page, browser, errors } = await open({ seed: { 0: 3000 } });
+await page.evaluate(() => { window.__nav = document.querySelector(".nav"); });
+await page.click("[data-tab=rivals]"); await page.waitForTimeout(300);
+await page.click("[data-tab=packs]"); await page.waitForTimeout(300);
+await page.click("[data-tab=me]"); await page.waitForTimeout(300);
+check("the same tab bar element survives every render", await page.evaluate(() => window.__nav === document.querySelector(".nav") && document.body.contains(window.__nav)));
+check("selected tab follows the page", await page.evaluate(() => document.querySelector(".tab[aria-selected=true]").dataset.tab === "me"));
+check("only one tab bar", (await page.locator(".nav").count()) === 1);
+await page.click("[data-tab=today]"); await page.waitForTimeout(300);
+check("tabs still switch pages", /Add steps|steps/i.test(await page.innerText("body")) && await page.evaluate(() => document.querySelector(".tab[aria-selected=true]").dataset.tab === "today"));
+const box = await page.locator(".tab").first().boundingBox();
+check("tab hit area is at least 52px tall", box.height >= 52, String(box.height));
+check("no page errors", errors.length === 0, errors.join("|"));
+console.log(r.filter(Boolean).length + " of " + r.length + " passed");
+await browser.close();

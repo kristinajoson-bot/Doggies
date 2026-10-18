@@ -1,0 +1,31 @@
+import { open } from "./stepsharness.mjs";
+const r = []; const check = (n, ok, d = "") => { r.push(ok); console.log((ok ? "PASS " : "FAIL ") + n + (d ? "  [" + d + "]" : "")); };
+const J = o => ({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: JSON.stringify(o) });
+let call = 0, ben = 40000, cy = 45600;
+const rows = () => [["Ana", 98000], ["Ben Lee", ben], ["Kristina", 46000, true], ["Cy", cy], ["Dee", 20000]].map(([n, s, me]) => ({ display_name: n, steps: s, bowls: 3, is_me: !!me }));
+const setup = async page => { await page.route("**/rpc/walker_board", r => { call++; r.fulfill(J(rows())); }); };
+const { page, browser, errors } = await open({ seed: { 0: 46000 }, setup });
+await page.waitForTimeout(500);
+const toastText = async () => (await page.textContent("#toast")) || "";
+check("first load: someone just behind me triggers a heads-up", /Cy is only 400 steps behind you/.test(await toastText()), await toastText());
+ben = 52000;
+await page.click("[data-tab=packs]"); await page.waitForTimeout(700);
+check("someone passing me triggers an alert", /Ben Lee just passed you/.test(await toastText()), await toastText());
+const t = await page.innerText("body");
+check("Race news card lists it on the leaderboard", /Race news/.test(t) && /Ben Lee just passed you/.test(t));
+await page.waitForTimeout(31500);
+check("Race news disappears after 30 seconds", (await page.locator(".racenews").count()) === 0);
+cy = 49000;   // I pass nobody, but Cy now passes me
+await page.click("[data-tab=today]"); await page.click("[data-tab=packs]"); await page.waitForTimeout(700);
+check("a second pass is reported too", /Cy just passed you/.test(await toastText()), await toastText());
+ben = 40000; cy = 20500;  // I retake the places
+await page.click("[data-tab=today]"); await page.click("[data-tab=packs]"); await page.waitForTimeout(700);
+check("passing someone is celebrated", /You just passed/.test(await toastText()), await toastText());
+await page.click("[data-tab=me]"); await page.click("details[data-det=priv] > summary");
+check("there is a switch for race alerts, on by default", await page.isChecked("input[name=alerts]"));
+await page.uncheck("input[name=alerts]"); await page.waitForTimeout(500);
+ben = 90000; await page.click("[data-tab=packs]"); await page.waitForTimeout(700);
+check("with alerts off nothing new appears", !/Ben Lee just passed you[\s\S]*Ben Lee just passed you/.test(await page.innerText("body")) && !/🚨 Ben Lee just passed you!$/m.test(await toastText()) , await toastText());
+check("no page errors", errors.length === 0, errors.join("|"));
+console.log(r.filter(Boolean).length + " of " + r.length + " passed");
+await browser.close();

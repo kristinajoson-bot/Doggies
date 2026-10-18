@@ -1,0 +1,25 @@
+import { open } from "./stepsharness.mjs";
+const r = []; const check = (n, ok, d = "") => { r.push(ok); console.log((ok ? "PASS " : "FAIL ") + n + (d ? "  [" + d + "]" : "")); };
+const J = o => ({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: JSON.stringify(o) });
+const ws = Array.from({ length: 30 }, (_, i) => ({ display_name: "Walker " + (i + 1), steps: 90000 - i * 2500, bowls: 3, is_me: i === 23 }));
+const setup = async page => {
+  await page.route("**/rpc/walker_board", r => r.fulfill(J(ws)));
+  await page.route("**/rpc/impact", r => r.fulfill(J([{ community_bowls: 120, community_walkers: 30, my_bowls: 2 }])));
+};
+const { page, browser, errors } = await open({ seed: { 0: 3000 }, setup });
+await page.click("[data-tab=impact]"); await page.waitForTimeout(400);
+let t = await page.innerText("body");
+check("no fundraising tile", !/Want to add a bowl|sponsor|Tell me/i.test(t));
+check("community total then what you unlocked underneath", /community this month/i.test(t) && t.toLowerCase().indexOf("what you unlocked") > t.toLowerCase().indexOf("community this month") && /2 bowls/.test(t));
+await page.click("[data-tab=packs]"); await page.waitForTimeout(900);
+t = await page.innerText("body");
+check("three bands named", /Top Dog/.test(t) && /Trail Hounds/.test(t) && /Pups/.test(t));
+check("no You: or Your pack labels", !/You:|Your pack/.test(t));
+const y = await page.evaluate(() => { const b = document.querySelector(".lb.mine").getBoundingClientRect(); return [b.top, b.bottom, innerHeight]; });
+check("scrolled to my row (visible and mid-screen)", y[0] > 0 && y[1] < y[2] && Math.abs((y[0] + y[1]) / 2 - y[2] / 2) < 160, JSON.stringify(y));
+const heads = await page.locator(".tierhead").allInnerTexts();
+check("bands in order", heads.join() === "Top Dog,Trail Hounds,Pups", heads.join());
+check("no page errors", errors.length === 0, errors.join("|"));
+console.log(r.filter(Boolean).length + " of " + r.length + " passed");
+await page.screenshot({ path: "tiers.png" });
+await browser.close();

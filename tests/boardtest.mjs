@@ -1,0 +1,23 @@
+import { open } from "./stepsharness.mjs";
+const r = []; const check = (n, ok, d = "") => { r.push(ok); console.log((ok ? "PASS " : "FAIL ") + n + (d ? "  [" + d + "]" : "")); };
+const J = o => ({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: JSON.stringify(o) });
+let optedIn = false;
+const teams = [{ workplace_id: "w1", name: "Casa Amor", industry: "Banking", size_bracket: "Pup", members: 2, total_steps: 40000, steps_per_member: 20000, bowls: 3, is_mine: false }, { workplace_id: "w2", name: "Bluegum", industry: "Retail", size_bracket: "Pack", members: 80, total_steps: 80000, steps_per_member: 1000, bowls: 5, is_mine: true }, { workplace_id: "w3", name: "MegaCorp", industry: "Other", size_bracket: "Big Dog", members: 400, total_steps: 8, steps_per_member: 5000, bowls: 5, is_mine: false }];
+const setup = async page => {
+  await page.route("**/rpc/leaderboard", r => r.fulfill(J(teams)));
+  await page.route("**/rpc/walker_board", r => r.fulfill(J(optedIn ? [{ display_name: "Ana", steps: 30000, bowls: 3, is_me: false }, { display_name: "Kristina", steps: 3000, bowls: 0, is_me: true }] : [{ display_name: "Ana", steps: 30000, bowls: 3, is_me: false }])));
+};
+const { page, db, browser, errors } = await open({ seed: { 0: 3000 }, setup });
+await page.click("[data-tab=packs]"); await page.waitForSelector("h1 >> text=Leaderboard");
+let t = await page.innerText("body");
+check("tab and title say Leaderboard", /Leaderboard/.test(await page.innerText("nav")) && !/Packs/.test(await page.innerText("nav")));
+check("explanations are gone", !/What the names mean|ranked by|You do not need a challenge/.test(t));
+check("asks to join the walker leaderboard when not in it", /Join the walker leaderboard/.test(t));
+optedIn = true; await page.click("[data-act=joinboard]"); await page.waitForTimeout(500);
+check("joining saved to profile", db.patches.some(p => p.show_on_leaderboard === true), JSON.stringify(db.patches));
+t = await page.innerText("body");
+check("I now appear in the walker list", /Kristina/.test(t) && !/Join the walker leaderboard/.test(t));
+await page.screenshot({ path: "board.png", fullPage: true });
+check("no page errors", errors.length === 0, errors.join("|"));
+console.log(r.filter(Boolean).length + " of " + r.length + " passed");
+await browser.close();

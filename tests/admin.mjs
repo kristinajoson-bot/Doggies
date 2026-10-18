@@ -1,0 +1,35 @@
+import { open } from "./stepsharness.mjs";
+const out = process.argv[2] || "shots";
+const r = []; const check = (n, ok, d = "") => { r.push(ok); console.log((ok ? "PASS " : "FAIL ") + n + (d ? "  [" + d + "]" : "")); };
+const J = o => ({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: JSON.stringify(o) });
+let calls = [], admin = true;
+let list = [{ id: "c1", slug: "sydney-v-melbourne", title: "Sydney vs Melbourne", tagline: "x", format: "duel", active: false, starts_on: "2026-10-01", ends_on: "2026-10-31", cities: "Sydney, Melbourne", members: 2 }, { id: "c2", slug: "city-world-cup", title: "City World Cup", tagline: "y", format: "cup", active: false, starts_on: "2026-10-16", ends_on: "2026-10-31", cities: "Sydney, Melbourne, Brisbane, Perth, Adelaide, Hobart, Darwin, Canberra", members: 5 }];
+const setup = async page => {
+  await page.route("**/rpc/am_admin", r => r.fulfill(J(admin)));
+  await page.route("**/rpc/admin_campaigns", r => r.fulfill(J(list)));
+  await page.route("**/rpc/admin_set_campaign", r => { const b = JSON.parse(r.request().postData()); calls.push("set " + JSON.stringify(b)); list = list.map(c => c.id === b.p_id ? { ...c, active: b.p_active != null ? b.p_active : c.active, title: b.p_title || c.title } : (b.p_active ? { ...c, active: false } : c)); r.fulfill(J(null)); });
+  await page.route("**/rpc/admin_create_campaign", r => { const b = JSON.parse(r.request().postData()); calls.push("create " + JSON.stringify(b)); if (b.p_format === "cup" && b.p_cities.length !== 8) return r.fulfill({ status: 400, contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: JSON.stringify({ message: "The World Cup format needs exactly 8 cities" }) }); list = [{ id: "c3", slug: "n", title: b.p_title, tagline: "", format: "duel", active: false, starts_on: b.p_starts, ends_on: b.p_ends, cities: b.p_cities.join(", "), members: 0 }, ...list]; r.fulfill(J("c3")); });
+};
+const { page, browser, errors } = await open({ seed: { 0: 3000 }, setup });
+await page.click("[data-tab=me]"); await page.waitForSelector("text=Campaigns"); await page.waitForTimeout(400);
+let t = await page.innerText("body");
+check("admin sees both campaigns, both Off", /Sydney vs Melbourne/.test(t) && /City World Cup/.test(t) && (await page.locator(".chip-s", { hasText: "Off" }).count()) === 2 && /World Cup/.test(t) && /2 joined/.test(t));
+await page.screenshot({ path: out + "/admin.png", fullPage: true });
+await page.click("[data-act=admtoggle][data-id=c2]"); await page.waitForTimeout(600);
+check("turn on sends active true, then it shows On", calls.some(c => c.includes('"p_id":"c2"') && c.includes('"p_active":true')) && (await page.locator(".chip-s", { hasText: "On" }).count()) === 1);
+await page.click("[data-act=admedit][data-id=c1]"); await page.fill("form[data-form=admSave] input[name=title]", "Sydney v Melbourne Cup"); await page.click("form[data-form=admSave] button"); await page.waitForTimeout(600);
+check("edit saves the new title", calls.some(c => c.includes("Sydney v Melbourne Cup")) && /Sydney v Melbourne Cup/.test(await page.innerText("body")));
+await page.click("details[data-det=admnew] > summary");
+await page.selectOption("form[data-form=admCreate] select[name=format]", "cup"); await page.fill("form[data-form=admCreate] input[name=title]", "Test"); await page.fill("form[data-form=admCreate] textarea[name=cities]", "A\nB\nC"); await page.click("form[data-form=admCreate] button"); await page.waitForTimeout(500);
+check("a bad cup shows the server's reason", /needs exactly 8 cities/.test(await page.innerText("body")));
+await page.selectOption("form[data-form=admCreate] select[name=format]", "duel"); await page.fill("form[data-form=admCreate] textarea[name=cities]", "Brisbane\nPerth"); await page.click("form[data-form=admCreate] button"); await page.waitForTimeout(700);
+check("a new campaign is created Off and listed", /Test/.test(await page.innerText("body")) && calls.some(c => c.startsWith("create") && c.includes('"p_cities":["Brisbane","Perth"]')));
+check("no page errors", errors.length === 0, errors.join("|"));
+console.log(r.filter(Boolean).length + " of " + r.length + " passed");
+await browser.close();
+// a normal walker sees nothing
+admin = false;
+const o2 = await open({ seed: { 0: 3000 }, setup });
+await o2.page.click("[data-tab=me]"); await o2.page.waitForTimeout(400);
+console.log((/Campaigns/.test(await o2.page.innerText("body")) ? "FAIL" : "PASS") + " non-admin does not see the Campaigns card");
+await o2.browser.close();

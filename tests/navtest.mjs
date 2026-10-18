@@ -1,0 +1,14 @@
+import { open } from "./stepsharness.mjs";
+const r = []; const check = (n, ok, d = "") => { r.push(ok); console.log((ok ? "PASS " : "FAIL ") + n + (d ? "  [" + d + "]" : "")); };
+const { page, browser, errors } = await open({ seed: { 0: 3000 }, dogId: "d1" });
+const tabs = await page.locator("nav .tab").allInnerTexts();
+check("tabs: Today, Challenges, Leaderboard, Impact, Me", tabs.map(t => t.trim()).join(",") === "Today,Challenges,Leaderboard,Impact,Me", tabs.join(","));
+const t = await page.innerText("body");
+check("no tug of war or pick-a-rival tile on Today", !/Pick a rival|Tug of war|tug of war/i.test(t));
+check("no pet card on Today", !/ready for a walk|cheers every scoop/.test(t) && (await page.locator("[data-act=pat]").count()) === 0);
+await page.click("[data-tab=rivals]"); await page.waitForSelector("h1 >> text=Challenges");
+check("second tab opens Challenges", /challenges/i.test(await page.innerText("h1")));
+check("no Sample wording anywhere in Today or Challenges", !/sample/i.test(await page.innerText("body")));
+check("no page errors", errors.length === 0, errors.join("|"));
+console.log(r.filter(Boolean).length + " of " + r.length + " passed");
+await browser.close();

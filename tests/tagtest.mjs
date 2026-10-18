@@ -1,0 +1,15 @@
+import { open } from "./stepsharness.mjs";
+const REF = "https://zzkpdkarrgsvibkxeuor.supabase.co", out = process.argv[2];
+const mk = (id, kind, my, rv, extra = {}) => ({ id, kind, status: "active", incoming: false, my_label: "You", rival_label: "Ana", my_members: 1, rival_members: 1, my_total: my, rival_total: rv, days_left: 7, finished: false, is_random: false, ...extra });
+const setup = async page => page.route(REF + "/rest/v1/rpc/my_duels", async route => { if (route.request().method() === "OPTIONS") return route.fallback(); route.fulfill({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: JSON.stringify([mk("a", "person", 0, 0), mk("b", "team", 5000, 3000), mk("c", "person", 0, 0, { is_random: true })]) }); });
+const { page, browser, errors } = await open({ setup });
+await page.click("[data-tab=rivals]"); await page.waitForTimeout(400);
+const t = await page.textContent("body");
+const r = [];
+const check = (n, ok, d = "") => { r.push(ok); console.log((ok ? "PASS " : "FAIL ") + n + (d ? "  [" + d + "]" : "")); };
+check("no 'Person' or 'Team' label in the card heading", !/TUG OF WAR\s*·|Tug of war ·/i.test(t) && (await page.locator(".tug-tag").allTextContents()).every(x => x.trim() === "Tug of war"), (await page.locator(".tug-tag").allTextContents()).join("|"));
+check("the 'All square' line is gone", !/All square|Every step counts/.test(t));
+check("winning text still shows when someone leads", /You are winning the tug of war/.test(t));
+await page.screenshot({ path: out + "/t-rivals.png", fullPage: true });
+check("no page errors", errors.length === 0, errors.join(";"));
+console.log(r.filter(Boolean).length + " of " + r.length + " passed"); await browser.close();
