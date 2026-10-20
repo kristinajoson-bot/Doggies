@@ -51,8 +51,20 @@ Every tenant table carries `company_id`. All access goes through SECURITY DEFINE
 |---|---|
 | Self | Own steps and bowls, always |
 | Colleague | Team/company aggregates; named rows only for people with `show_named = true` |
-| Company admin | Aggregates only, with a **minimum group size (suggest 5)** so a team of 1-2 cannot expose an individual. Roster (name, email, team, joined) but no individual step data |
-| Other companies | Company-level totals on cross-company boards only, subject to the same minimum size |
+| Company admin | Aggregates only, with the **small-group rule** below. Roster (name, email, team, joined) but no individual step data |
+| Other companies | Company-level totals on cross-company boards only, with the same small-group rule |
+
+### Small-group rule (decided 20 Oct 2026: small companies are included)
+
+Companies of any size can join and compete. Step totals for a group of fewer than 5 walkers could reveal one person's steps by subtraction, so:
+
+| Group size | What is shown |
+|---|---|
+| 5 or more walkers | Step totals and steps per walker |
+| Under 5, every member has opted in to "show my group's totals" | Step totals and steps per walker |
+| Under 5, anyone has not opted in | Bowls and dogs fed only, no step numbers |
+
+A small company appears on cross-company boards ranked by steps per walker once all its walkers have opted in; until then it appears with bowls only. The opt-in is part of the consent screen, logged in `consent_log`, and withdrawable.
 
 ## 3. Privacy and consent (proposal, needs legal review)
 
@@ -128,7 +140,7 @@ Nothing is built for payments until pricing is decided.
 
 1. Pricing model, price, and whether payments are in the first release.
 2. Shelter partner and cost per bowl.
-3. Minimum group size for any aggregate (proposal: 5). Does a company smaller than that get a dashboard?
+3. ~~Minimum group size~~ Decided: small-group rule (section 2).
 4. One company per user (proposal: yes)?
 5. Cross-company competitions need both admins' approval (proposal: yes)?
 6. Company size tiers back for cross-company boards?
