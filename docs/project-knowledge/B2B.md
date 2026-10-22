@@ -1,4 +1,4 @@
-# Walkies B2B (the corporate version): project brief
+# FurSteps B2B (the corporate version): project brief
 
 This is the hand-off for the **B2B** project session. The owner decided that the consumer app (B2C, see `docs/B2C.md`) would not carry company/team features, and that a separate corporate version would be built. Nothing for B2B has been built as its own product yet. This file collects what already exists, where to find it, and the decisions that are still open. Statements marked *suggestion* are mine, not decisions.
 

@@ -1,6 +1,6 @@
-# Walkies B2B: brain dump and channel map (copy of the Confluence page, session 2)
+# FurSteps B2B: brain dump and channel map (copy of the Confluence page, session 2)
 
-Source: Confluence space SD, page "Walkies B2B: brain dump and channel map". Items marked *verify* need a lawyer or primary source.
+Source: Confluence space SD, page "FurSteps B2B: brain dump and channel map". Items marked *verify* need a lawyer or primary source.
 
 Idea: companies pay per employee so staff walk; every milestone unlocks a bowl of food for a shelter dog; companies and industries compete; the company gets proof of impact. For-profit with a shelter/charity partnership, not a charity. Reference product: Treely (not "Trilli").
 
@@ -30,7 +30,7 @@ GDPR baseline plus Australian Privacy Act; step data treated as sensitive health
 Pty Ltd, shareholder agreement, IP in the company, trademarks and domain owned by the company; truthful charity claims (Australian Consumer Law); state charitable fundraising / commercial participator rules; contracts (customer, DPA, shelter, sponsor, privacy policy, terms, consent); insurance for dog visits; photo consent and ownership; GST and fund flow; voluntary participation and inclusion.
 
 ## Brand, web, social
-Check "Walkies" availability and trademark; consider "Walkies for Work"; one-page website first; LinkedIn plus Instagram; monthly impact report; pilot case studies.
+Check "FurSteps" availability and trademark; consider "FurSteps for Work"; one-page website first; LinkedIn plus Instagram; monthly impact report; pilot case studies.
 
 ## Gaps added
 Customer success/launch kit; challenge calendar (R U OK? Day, Steptember, Mental Health Week, January, EOFY); inclusion and alternative activities; proof of impact; anti-cheating; competitor price comparison; support and operations; advisors (HR + shelter); metrics (participation, weekly actives, retention, renewal); exit and data handling.

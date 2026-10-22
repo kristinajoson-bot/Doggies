@@ -1,4 +1,4 @@
-# Walkies B2B: status and hand-off (as of 18 Oct 2026)
+# FurSteps B2B: status and hand-off (as of 18 Oct 2026)
 
 Read this first in a new chat. It says what exists, what is open and what to do next.
 
@@ -7,7 +7,7 @@ Read this first in a new chat. It says what exists, what is open and what to do 
   - Launch plan page: /wiki/spaces/SD/pages/65802
   - Brain dump page (parent: launch plan): /wiki/spaces/SD/pages/360450 (version 2, includes section 13 update)
   - Board 1, channel map (mind map): /wiki/spaces/SD/whiteboard/65818
-- Jira (same site): project KAN "Walkies" (use as B2C or rename). No B2B Jira project yet. Free plan; epics, stories and tasks with parent links work. Claude cannot create Jira projects and cannot delete issues; the owner does both in the Jira UI.
+- Jira (same site): project KAN "FurSteps" (use as B2C or rename). No B2B Jira project yet. Free plan; epics, stories and tasks with parent links work. Claude cannot create Jira projects and cannot delete issues; the owner does both in the Jira UI.
 - GitHub: kristinajoson-bot/doggies, branch b2b/design-doc (docs/B2B-DESIGN.md, CLAUDE.md, docs/B2B-PROJECT-INSTRUCTIONS.md, docs/project-knowledge/). B2C branch is claude/hopeful-johnson-59a7hr and must not be changed. No pull request unless asked.
 
 ## Decided
@@ -24,7 +24,7 @@ Read this first in a new chat. It says what exists, what is open and what to do 
 - Decide whether KAN becomes B2C or a new B2C project is made.
 - First 3 pilot companies (automotive network) and a shelter partner to approach.
 - Minimum group size, one company per user, cross-company approval, size tiers back or not, privacy contact and lawyer review, pricing, whether admins can invite admins.
-- Name check for "Walkies" (trademark, domain) before logo work.
+- Name check for "FurSteps" (trademark, domain) before logo work.
 - Treely research: pricing, sales approach, how they prove impact.
 
 ## Next

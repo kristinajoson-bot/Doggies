@@ -1,6 +1,6 @@
-# Walkies B2B: design (draft for owner review)
+# FurSteps B2B: design (draft for owner review)
 
-Status: **draft v2 (20 Oct 2026)**. Decisions marked *Decided* were answered by the owner; everything else is a *proposal* or an **open question**. Legal statements are marked *verify* until a lawyer confirms them. "Walkies" is a working name only (name check in progress).
+Status: **draft v3 (22 Oct 2026), ready for owner review before Jira epics**. Decisions marked *Decided* were answered by the owner; everything else is a *proposal* or an **open question**. Legal statements are marked *verify* until a lawyer confirms them. Product name: **FurSteps** (decided 22 Oct 2026; trademark check still to do).
 
 ## Decided
 
@@ -14,6 +14,7 @@ Status: **draft v2 (20 Oct 2026)**. Decisions marked *Decided* were answered by 
 | Branding | Per-company logo, colours and name are **stored as data**, not code. |
 | Employee app | **Expo (React Native) phone app** reads steps from Apple Health and Android Health Connect (decided 19 Oct 2026, branch `b2b/mobile-health`). The HR dashboard stays a web app on Vercel. |
 | Cheating | Ignore hand-typed steps, count only the phone and trusted wearables, cap 60,000 steps/day, flag over 40,000. Bowls are capped per company purchase. |
+| Scalability (standing rule, 22 Oct 2026) | **Always build for scale.** Multi-tenant from day one (one codebase, every customer is data), logic in portable Postgres functions, no per-customer code, background jobs instead of slow requests, and design for many countries, currencies, languages and time zones. Cheapest tier now, but nothing that has to be rebuilt to grow. |
 | Funding and start | Self-funded. Starting from scratch: no client companies, no shelter partner yet. Reference product: Treely. |
 
 ## 1. Infrastructure

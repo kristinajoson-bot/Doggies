@@ -1,4 +1,4 @@
-# Walkies B2B: addendum (items from the first sessions not yet in the other files)
+# FurSteps B2B: addendum (items from the first sessions not yet in the other files)
 
 ## Owner context
 - Owner has hands-on AWS experience, so a later move off Supabase to AWS is realistic. Wants the most flexible and scalable option that can be tested quickly now and migrated to a bigger model later.
@@ -11,7 +11,7 @@
 - Launch globally as fast as possible by making the offer simple enough to "rinse and repeat" company by company and industry by industry. Suggested region order (proposal): Australia and New Zealand, UK, US, then others.
 - B2C (open to the general public) comes later; the initial focus is companies only. B2C app stays unchanged for now.
 - Instagram matters for B2B too (dogs, impact, leaderboards); LinkedIn is the main buyer channel.
-- A website, name and logo are needed early; "Walkies" availability and trademark are unchecked.
+- A website, name and logo are needed early; "FurSteps" availability and trademark are unchecked.
 
 ## Research notes (sources, indicative only)
 - Treely: https://marketing.smile.fr/smile-news/esdw24/en-challenge-treely and https://workplaces.wayahead.org.au/?p=21947 (one tree per 15,000 steps, 10-day company challenge, pedometer not GPS, 250+ companies since 2022).
