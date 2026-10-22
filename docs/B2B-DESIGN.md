@@ -37,6 +37,8 @@ Every tenant table carries `company_id`. All access goes through SECURITY DEFINE
 - `company_branding` (company_id, logo_url, primary_colour, accent_colour, display_name)
 - `company_domains` (company_id, domain, verified_at). A domain belongs to one company. Verification by DNS TXT record or emailed code to an address on the domain.
 - `company_admins` (company_id, user_id, role: owner/admin)
+- `shelter_staff` (shelter_id, user_id, role: uploader/manager). Shelter users never see company or employee data.
+- `shelter_posts` (shelter_id, dog_id, kind: photo/delivery/update, caption, kg, receipt, status: pending/approved/rejected, approved_by, created_at); files in a private Supabase Storage bucket.
 - `members` (user_id, company_id, display_name, team_id, joined_at, left_at, `show_named` bool default **false**). One company per user.
 - `teams` (company_id, name, office/department). Admin-managed, one team per member.
 - `step_days` (user_id, day, steps, source, flagged). Only trusted sources count; manual entries are stored but never counted.
@@ -120,6 +122,20 @@ A small company appears on cross-company boards ranked by steps per walker once 
 - Proof per delivery: shelter confirmation, receipt or photo, linked in the company's impact report.
 - Claims must be truthful and specific to avoid misleading conduct under the Australian Consumer Law; state charitable fundraising rules may apply if we use a charity's name (*verify*).
 - **Open question**: shelter partner, cost per bowl, and how food is bought and delivered.
+
+### Shelter portal (proposal, 22 Oct 2026)
+
+A phone-friendly page on the same Vercel web app (no new provider) where shelter staff sign in with an emailed link and post:
+- a photo or short update for a dog;
+- a delivery: date, kg received, receipt photo, linked to the bowls it covers in `bowl_ledger`.
+
+Flow: shelter posts → status **pending** → we approve (or reject) → it appears in each sponsoring company's impact feed and report. Nothing reaches companies without our approval.
+
+Rules: photos resized on upload and location data (EXIF GPS) stripped; no identifiable people in photos unless they signed a photo consent (*verify*); shelter staff accounts need MFA for managers; shelter agreement says who owns the photos and that we may show them to clients and on social media (*verify*).
+
+Storage cost: Supabase Free includes 1 GB, Pro 100 GB, then US$0.0213/GB/month ([source](https://supabase.com/docs/guides/storage/pricing)). At ~300 KB per resized photo, 100 GB is about 300,000 photos, so cost is negligible.
+
+**Pilot shortcut**: with one shelter, they can send photos by email and we upload them through the same approval screen; build the shelter login when the second shelter signs.
 
 ## 9. Money (open)
 
