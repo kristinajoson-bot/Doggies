@@ -1,4 +1,4 @@
-# Walkies mobile (employee app)
+# FurSteps mobile (employee app)
 
 Expo (React Native) app that reads daily step totals from Apple Health (iOS) and Health Connect (Android). A website can't read either, so employees need this app; the HR dashboard stays on the web.
 
@@ -22,7 +22,7 @@ Overlap between phone and watch is removed by the platform's own aggregate queri
 - Sync to Supabase: waits for the B2B Supabase project (design doc build order step 1). Will upsert into a `step_days`-style table through a SECURITY DEFINER function.
 - Sign-in, company join and consent logging.
 - Background refresh (HealthKit background delivery, Health Connect background read).
-- Bundle id `com.walkies.work` is a placeholder; it's permanent once on the stores, so confirm it before the first upload.
+- Bundle id and Android package: `com.fursteps.app` (reserved in App Store Connect, Apple ID 6829087926).
 - Allow-listed source ids marked "verify" in `rules.ts` must be checked on real devices (the app shows counted and ignored sources).
 
 ## Commands

@@ -29,7 +29,7 @@ export default function App() {
 
   return (
     <ScrollView contentContainerStyle={styles.page}>
-      <Text style={styles.title}>Walkies</Text>
+      <Text style={styles.title}>FurSteps</Text>
 
       {state.kind === 'intro' && (
         <View style={styles.card}>

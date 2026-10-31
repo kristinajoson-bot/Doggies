@@ -1,17 +1,17 @@
 {
   "expo": {
-    "name": "Walkies",
-    "slug": "walkies-work",
+    "name": "FurSteps",
+    "slug": "fursteps",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "bundleIdentifier": "com.walkies.work",
+      "bundleIdentifier": "com.fursteps.app",
       "supportsTablet": false
     },
     "android": {
-      "package": "com.walkies.work",
+      "package": "com.fursteps.app",
       "permissions": ["android.permission.health.READ_STEPS"],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -25,7 +25,7 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "Walkies reads your daily step total so your walks can feed shelter dogs. Your employer only ever sees team totals.",
+          "NSHealthShareUsageDescription": "FurSteps reads your daily step total so your walks can feed shelter dogs. Your employer only ever sees team totals.",
           "NSHealthUpdateUsageDescription": false,
           "background": false
         }
