@@ -19,11 +19,15 @@ Overlap between phone and watch is removed by the platform's own aggregate queri
 
 ## Not done yet
 
-- Sync to Supabase: waits for the B2B Supabase project (design doc build order step 1). Will upsert into a `step_days`-style table through a SECURITY DEFINER function.
-- Sign-in, company join and consent logging.
+- Custom email sender (Zoho SMTP) in Supabase Auth, and the email template showing the 6-digit code (`{{ .Token }}`). Supabase's built-in sender only mails project team members and is heavily rate-limited.
+- Team and dog picking, leaving and deleting from inside the app (backend functions exist).
 - Background refresh (HealthKit background delivery, Health Connect background read).
 - Bundle id and Android package: `com.fursteps.app` (reserved in App Store Connect, Apple ID 6829087926).
 - Allow-listed source ids marked "verify" in `rules.ts` must be checked on real devices (the app shows counted and ignored sources).
+
+## Backend
+
+Supabase project `fursteps-b2b` (Sydney). SQL lives in `../supabase-b2b/`. The app signs in with an emailed code, joins the company that owns the email's verified domain, logs consent, then calls `sync_steps`. A test company "FurSteps (test)" owns `fursteps.com`.
 
 ## Commands
 

@@ -12,7 +12,9 @@
     },
     "android": {
       "package": "com.fursteps.app",
-      "permissions": ["android.permission.health.READ_STEPS"],
+      "permissions": [
+        "android.permission.health.READ_STEPS"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -40,7 +42,8 @@
             "minSdkVersion": 26
           }
         }
-      ]
+      ],
+      "expo-secure-store"
     ]
   }
 }
