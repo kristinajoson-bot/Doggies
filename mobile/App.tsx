@@ -2,7 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { getStatus, giveStepConsent, joinCompany, sendCode, signOut, supabase, syncSteps, verifyCode } from './src/backend';
+import { getStatus, giveStepConsent, isReviewEmail, joinCompany, sendCode, signInForReview, signOut, supabase, syncSteps, verifyCode } from './src/backend';
 import { connect, healthStoreName, readDailySteps, type DaySteps, type SourceReport } from './src/steps';
 
 type Screen =
@@ -18,6 +18,7 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>({ kind: 'loading' });
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
+  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,10 +72,21 @@ export default function App() {
           <Text style={styles.h2}>Sign in with your work email</Text>
           <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="you@company.com"
             autoCapitalize="none" autoComplete="email" keyboardType="email-address" />
-          <Button label="Send me a code" busy={busy} onPress={() => run(async () => {
-            await sendCode(email);
-            setScreen({ kind: 'code', email });
-          })} />
+          {isReviewEmail(email) ? (
+            <>
+              <TextInput style={styles.input} value={password} onChangeText={setPassword} placeholder="Password"
+                secureTextEntry autoCapitalize="none" />
+              <Button label="Sign in" busy={busy} onPress={() => run(async () => {
+                await signInForReview(password);
+                await afterSignIn();
+              })} />
+            </>
+          ) : (
+            <Button label="Send me a code" busy={busy} onPress={() => run(async () => {
+              await sendCode(email);
+              setScreen({ kind: 'code', email });
+            })} />
+          )}
         </View>
       )}
 

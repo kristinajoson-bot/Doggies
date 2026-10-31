@@ -57,6 +57,18 @@ export async function verifyCode(email: string, token: string) {
   fail(error);
 }
 
+// Apple's reviewers can't receive our email codes, so this one account signs in with a password instead.
+export const REVIEW_EMAIL = 'appreview@fursteps.com';
+
+export function isReviewEmail(email: string) {
+  return email.trim().toLowerCase() === REVIEW_EMAIL;
+}
+
+export async function signInForReview(password: string) {
+  const { error } = await supabase.auth.signInWithPassword({ email: REVIEW_EMAIL, password });
+  fail(error);
+}
+
 export async function joinCompany() {
   const { error } = await supabase.rpc('join_company_by_email');
   fail(error);
