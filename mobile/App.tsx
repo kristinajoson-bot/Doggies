@@ -99,7 +99,7 @@ export default function App() {
     if (!status.hasStepConsent) return setView({ kind: 'consent', companyName: status.companyName });
     setView({ kind: 'app' });
     await loadAll();
-    await syncFromHealth(false).catch(() => undefined);
+    await syncFromHealth(true).catch(() => undefined);
   }
 
   useEffect(() => {
@@ -115,7 +115,7 @@ export default function App() {
   // Pick up new steps whenever the app comes back to the front.
   useEffect(() => {
     const s = AppState.addEventListener('change', (st) => {
-      if (st === 'active' && view.kind === 'app') syncFromHealth(false).catch(() => undefined);
+      if (st === 'active' && view.kind === 'app') syncFromHealth(true).catch(() => undefined);
     });
     return () => s.remove();
   }, [view.kind]);
