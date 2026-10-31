@@ -44,6 +44,12 @@
         }
       ],
       "expo-secure-store"
-    ]
+    ],
+    "owner": "puppy-trails-pty-ltd",
+    "extra": {
+      "eas": {
+        "projectId": "e905d0a6-fc10-4d5f-90d2-032c0efd2ceb"
+      }
+    }
   }
 }
