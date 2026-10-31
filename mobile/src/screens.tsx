@@ -28,8 +28,8 @@ function DogCard({ dog, onPress }: { dog: Dog | null; onPress: () => void }) {
   );
 }
 
-export function TodayScreen({ home, dog, healthName, busy, onSync, onDogs, onCelebrate }: {
-  home: Home; dog: Dog | null; healthName: string; busy: boolean; onSync: () => void; onDogs: () => void; onCelebrate: (milestone: number) => void;
+export function TodayScreen({ home, dog, healthName, busy, onDogs, onCelebrate }: {
+  home: Home; dog: Dog | null; healthName: string; busy: boolean; onDogs: () => void; onCelebrate: (milestone: number) => void;
 }) {
   const { width } = useWindowDimensions();
   const steps = home.monthSteps, done = home.myBowls;
@@ -64,7 +64,7 @@ export function TodayScreen({ home, dog, healthName, busy, onSync, onDogs, onCel
           {next ? <><Text style={S.bold}>{fmt(next - steps)}</Text> steps to your next scoop <Text style={{ color: C.muted }}>({short(next)})</Text></> : 'All 10 scoops unlocked. Epic walking!'}
         </Text>
       </View>
-      <Btn label={`Sync my steps from ${healthName}`} onPress={onSync} busy={busy} />
+      <Text style={[S.muted, { textAlign: 'center', fontSize: 13 }]}>{busy ? `Updating your steps from ${healthName}…` : `Your steps update from ${healthName} each time you open FurSteps. Pull down to refresh.`}</Text>
       <Text style={[S.muted, { textAlign: 'center', fontSize: 13 }]}>Steps typed in by hand don't count. Bowls reset on the 1st of each month.</Text>
     </View>
   );

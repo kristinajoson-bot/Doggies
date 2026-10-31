@@ -213,7 +213,6 @@ export default function App() {
   } else if (tab === 'today') {
     body = (
       <TodayScreen home={home} dog={myDog} healthName={healthStoreName} busy={busy}
-        onSync={() => run(() => syncFromHealth(true))}
         onDogs={() => setSub(myDog ? { kind: 'dog', dog: myDog } : { kind: 'dogs' })}
         onCelebrate={(m) => setCelebrate({ bowls: MILESTONES.indexOf(m) + 1, steps: m })} />
     );
