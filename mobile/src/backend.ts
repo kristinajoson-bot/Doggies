@@ -97,3 +97,75 @@ export async function getStatus(): Promise<Status> {
   const row = (data as { company_name: string; has_step_consent: boolean }[] | null)?.[0];
   return row ? { companyName: row.company_name, hasStepConsent: row.has_step_consent } : null;
 }
+
+// ---- Walkies features ----
+
+const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+// The current calendar month in the phone's time zone; bowls reset each month like Walkies.
+export function monthWindow(now = new Date()) {
+  return {
+    from: isoDay(new Date(now.getFullYear(), now.getMonth(), 1)),
+    to: isoDay(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+    today: isoDay(now),
+  };
+}
+
+export type Home = {
+  displayName: string; dogId: string | null; onBoard: boolean; todaySteps: number; monthSteps: number; myBowls: number;
+  companyName: string; companyWalkers: number; companyBowls: number; communityWalkers: number; communityBowls: number;
+};
+
+export async function getHome(): Promise<Home | null> {
+  const w = monthWindow();
+  const { data, error } = await supabase.rpc('my_home', { p_from: w.from, p_to: w.to, p_today: w.today });
+  fail(error);
+  const r = (data as Record<string, any>[] | null)?.[0];
+  if (!r) return null;
+  return {
+    displayName: r.display_name, dogId: r.dog_id, onBoard: r.on_board, todaySteps: r.today_steps, monthSteps: Number(r.month_steps),
+    myBowls: r.my_bowls, companyName: r.company_name, companyWalkers: r.company_walkers, companyBowls: r.company_bowls,
+    communityWalkers: r.community_walkers, communityBowls: r.community_bowls,
+  };
+}
+
+export type Dog = { id: string; slug: string; name: string; age: string | null; breed: string | null; story: string | null; shelter: string };
+
+export async function listDogs(): Promise<Dog[]> {
+  const { data, error } = await supabase.rpc('list_dogs');
+  fail(error);
+  return (data as Dog[]) ?? [];
+}
+
+export async function chooseDog(id: string | null) {
+  const { error } = await supabase.rpc('choose_dog', { p_dog: id });
+  fail(error);
+}
+
+export async function setDisplayName(name: string) {
+  const { error } = await supabase.rpc('set_display_name', { p_name: name });
+  fail(error);
+}
+
+export type Walker = { displayName: string; dogId: string | null; steps: number; bowls: number; isMe: boolean };
+
+export async function walkerBoard(): Promise<Walker[]> {
+  const w = monthWindow();
+  const { data, error } = await supabase.rpc('walker_board', { p_from: w.from, p_to: w.to });
+  fail(error);
+  return ((data as Record<string, any>[]) ?? []).map((r) => ({ displayName: r.display_name, dogId: r.dog_id, steps: Number(r.steps), bowls: r.bowls, isMe: r.is_me }));
+}
+
+// Showing your name on the leaderboard is a separate, logged consent.
+export async function setOnBoard(on: boolean) {
+  const { error } = on
+    ? await supabase.rpc('give_consent', { p_kind: 'named_leaderboard', p_version: CONSENT_VERSION })
+    : await supabase.rpc('withdraw_consent', { p_kind: 'named_leaderboard' });
+  fail(error);
+}
+
+// Stops step reading and deletes the step history on the server.
+export async function withdrawStepConsent() {
+  const { error } = await supabase.rpc('withdraw_consent', { p_kind: 'steps' });
+  fail(error);
+}
