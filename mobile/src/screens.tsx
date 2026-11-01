@@ -64,8 +64,6 @@ export function TodayScreen({ home, dog, healthName, busy, onDogs, onCelebrate }
           {next ? <><Text style={S.bold}>{fmt(next - steps)}</Text> steps to your next scoop <Text style={{ color: C.muted }}>({short(next)})</Text></> : 'All 10 scoops unlocked. Epic walking!'}
         </Text>
       </View>
-      <Text style={[S.muted, { textAlign: 'center', fontSize: 13 }]}>{busy ? `Updating your steps from ${healthName}…` : `Your steps update from ${healthName} each time you open FurSteps. Pull down to refresh.`}</Text>
-      <Text style={[S.muted, { textAlign: 'center', fontSize: 13 }]}>Steps typed in by hand don't count. Bowls reset on the 1st of each month.</Text>
     </View>
   );
 }
