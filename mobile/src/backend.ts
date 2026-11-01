@@ -156,6 +156,56 @@ export async function walkerBoard(): Promise<Walker[]> {
   return ((data as Record<string, any>[]) ?? []).map((r) => ({ displayName: r.display_name, dogId: r.dog_id, steps: Number(r.steps), bowls: r.bowls, isMe: r.is_me }));
 }
 
+// Packs: teams walkers make themselves inside their own workplace.
+export type Pack = {
+  id: string; name: string; code: string | null; walkers: number; stepsPerWalker: number | null; bowls: number; isMine: boolean; isOwner: boolean;
+};
+
+export async function packBoard(): Promise<Pack[]> {
+  const w = monthWindow();
+  const { data, error } = await supabase.rpc('pack_board', { p_from: w.from, p_to: w.to });
+  fail(error);
+  return ((data as Record<string, any>[]) ?? []).map((r) => ({
+    id: r.id, name: r.name, code: r.code, walkers: r.walkers, stepsPerWalker: r.steps_per_walker == null ? null : Number(r.steps_per_walker),
+    bowls: r.bowls, isMine: r.is_mine, isOwner: r.is_owner,
+  }));
+}
+
+export type PackPerson = Walker;
+export async function packPeople(id: string): Promise<{ people: PackPerson[]; hidden: number }> {
+  const w = monthWindow();
+  const { data, error } = await supabase.rpc('pack_people', { p_id: id, p_from: w.from, p_to: w.to });
+  fail(error);
+  const rows = (data as Record<string, any>[]) ?? [];
+  return {
+    people: rows.map((r) => ({ displayName: r.display_name, dogId: r.dog_id, steps: Number(r.steps), bowls: r.bowls, isMe: r.is_me })),
+    hidden: rows[0]?.hidden ?? 0,
+  };
+}
+
+export async function createPack(name: string): Promise<{ id: string; code: string }> {
+  const { data, error } = await supabase.rpc('create_pack', { p_name: name });
+  fail(error);
+  const r = (data as Record<string, any>[])[0];
+  return { id: r.id, code: r.code };
+}
+
+export async function joinPack(code: string): Promise<string> {
+  const { data, error } = await supabase.rpc('join_pack', { p_code: code });
+  fail(error);
+  return data as string;
+}
+
+export async function leavePack(id: string) {
+  const { error } = await supabase.rpc('leave_pack', { p_id: id });
+  fail(error);
+}
+
+export async function renamePack(id: string, name: string) {
+  const { error } = await supabase.rpc('rename_pack', { p_id: id, p_name: name });
+  fail(error);
+}
+
 // Showing your name on the leaderboard is a separate, logged consent.
 export async function setOnBoard(on: boolean) {
   const { error } = on

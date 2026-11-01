@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
-import { ActivityIndicator, AppState, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, Share, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useFonts } from 'expo-font';
 import { BricolageGrotesque_800ExtraBold } from '@expo-google-fonts/bricolage-grotesque';
@@ -9,13 +9,13 @@ import { GeistMono_500Medium, GeistMono_600SemiBold } from '@expo-google-fonts/g
 import { Bungee_400Regular } from '@expo-google-fonts/bungee';
 
 import {
-  chooseDog, getHome, getStatus, giveStepConsent, isReviewEmail, joinCompany, listDogs, monthWindow, sendCode, setDisplayName,
+  chooseDog, createPack, getHome, joinPack, leavePack, packBoard, packPeople, renamePack, getStatus, giveStepConsent, isReviewEmail, joinCompany, listDogs, monthWindow, sendCode, setDisplayName,
   setOnBoard, signInForReview, signOut, supabase, syncSteps, verifyCode, walkerBoard, withdrawStepConsent,
-  type Dog, type Home, type Walker,
+  type Dog, type Home, type Pack, type Walker,
 } from './src/backend';
 import { connect, healthStoreName, readDailySteps } from './src/steps';
 import {
-  Celebrate, ChallengesScreen, DogScreen, DogsScreen, ImpactScreen, LeaderboardScreen, MILESTONES, MeScreen, TodayScreen,
+  Celebrate, ChallengesScreen, type PackActions, DogScreen, DogsScreen, ImpactScreen, LeaderboardScreen, MILESTONES, MeScreen, TodayScreen,
 } from './src/screens';
 import { TabIcon } from './src/ui/art';
 import { Btn, Glow, TopBar } from './src/ui/kit';
@@ -47,6 +47,7 @@ export default function App() {
   const [home, setHome] = useState<Home | null>(null);
   const [dogs, setDogs] = useState<Dog[]>([]);
   const [walkers, setWalkers] = useState<Walker[]>([]);
+  const [packs, setPacks] = useState<Pack[]>([]);
   const [userEmail, setUserEmail] = useState('');
   const [celebrate, setCelebrate] = useState<{ bowls: number; steps: number } | null>(null);
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
@@ -64,10 +65,11 @@ export default function App() {
   }
 
   const loadAll = useCallback(async () => {
-    const [h, d, w] = await Promise.all([getHome(), listDogs(), walkerBoard()]);
+    const [h, d, w, k] = await Promise.all([getHome(), listDogs(), walkerBoard(), packBoard().catch(() => [] as Pack[])]);
     setHome(h);
     setDogs(d);
     setWalkers(w);
+    setPacks(k);
     return h;
   }, []);
 
@@ -205,6 +207,10 @@ export default function App() {
     setSub(null);
   });
 
+  function invitePack(name: string, code: string) {
+    Share.share({ message: `Join my FurSteps pack "${name}"! Every step fills a bowl for a shelter dog. Open FurSteps, go to Leaderboard > Packs and enter code ${code}.` }).catch(() => undefined);
+  }
+
   let body;
   if (sub?.kind === 'dogs') {
     body = <DogsScreen dogs={dogs} current={home.dogId} busy={busy} onPick={pickDog} onMeet={(d) => setSub({ kind: 'dog', dog: d })} onBack={() => setSub(null)} />;
@@ -219,7 +225,18 @@ export default function App() {
   } else if (tab === 'rivals') {
     body = <ChallengesScreen />;
   } else if (tab === 'packs') {
-    body = <LeaderboardScreen walkers={walkers} onBoard={home.onBoard} companyName={home.companyName} busy={busy} dogs={dogs}
+    const actions: PackActions = {
+      create: (name) => run(async () => { const k = await createPack(name); await loadAll(); invitePack(name, k.code); }),
+      join: (code) => run(async () => { await joinPack(code); await loadAll(); }),
+      rename: (k, name) => run(async () => { await renamePack(k.id, name); await loadAll(); }),
+      people: (k) => packPeople(k.id),
+      invite: (k) => k.code && invitePack(k.name, k.code),
+      leave: (k) => Alert.alert(`Leave ${k.name}?`, 'You can join again later with the code.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Leave', style: 'destructive', onPress: () => run(async () => { await leavePack(k.id); await loadAll(); }) },
+      ]),
+    };
+    body = <LeaderboardScreen walkers={walkers} packs={packs} onBoard={home.onBoard} companyName={home.companyName} busy={busy} dogs={dogs} actions={actions}
       onJoin={() => run(async () => { await setOnBoard(true); await loadAll(); })} />;
   } else if (tab === 'impact') {
     body = <ImpactScreen home={home} dog={myDog} onDogs={() => setSub({ kind: 'dogs' })} onMeet={(d) => setSub({ kind: 'dog', dog: d })} />;

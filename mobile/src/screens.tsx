@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Image, Linking, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import appJson from '../app.json';
 
-import type { Dog, Home, Walker } from './backend';
+import type { Dog, Home, Pack, Walker } from './backend';
 import { Bowl, BowlIcon, DOG_PHOTOS, DogAvatar, Orb, PawTile } from './ui/art';
 import { Bar, Btn, Card, Pill, fmt } from './ui/kit';
 import { C, F, S, glow } from './ui/theme';
@@ -95,41 +95,155 @@ export function ChallengesScreen() {
   );
 }
 
-export function LeaderboardScreen({ walkers, onBoard, companyName, busy, onJoin, dogs }: {
-  walkers: Walker[]; onBoard: boolean; companyName: string; busy: boolean; onJoin: () => void; dogs: Dog[];
+function WalkerRow({ w, rank, slug }: { w: Walker; rank: number; slug?: string }) {
+  const first = rank === 1 && !w.isMe;
+  return (
+    <View style={[x.lb, first && x.lbFirst, w.isMe && x.lbMine]}>
+      <View style={[x.rank, first && { backgroundColor: C.cyan, borderColor: C.cyan }, w.isMe && { backgroundColor: C.pink, borderColor: C.pink }]}>
+        <Text style={[x.rankText, (first || w.isMe) && { color: C.dark }]}>{rank}</Text>
+      </View>
+      <DogAvatar slug={slug} size={26} />
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text numberOfLines={1} style={[S.bold, { fontFamily: F.bodyBold, fontSize: 16 }]}>{w.displayName}</Text>
+        <Text style={[S.p, { fontSize: 13 }]}>{plural(w.bowls, 'bowl')}</Text>
+      </View>
+      <View>
+        <Text style={x.num}>{fmt(w.steps)}</Text>
+        <Text style={[S.p, { fontSize: 12, textAlign: 'right' }]}>steps</Text>
+      </View>
+    </View>
+  );
+}
+
+export type PackActions = {
+  create: (name: string) => Promise<void>;
+  join: (code: string) => Promise<void>;
+  leave: (p: Pack) => void;
+  invite: (p: Pack) => void;
+  rename: (p: Pack, name: string) => Promise<void>;
+  people: (p: Pack) => Promise<{ people: Walker[]; hidden: number }>;
+};
+
+export function LeaderboardScreen({ walkers, packs, onBoard, companyName, busy, onJoin, dogs, actions }: {
+  walkers: Walker[]; packs: Pack[]; onBoard: boolean; companyName: string; busy: boolean; onJoin: () => void; dogs: Dog[]; actions: PackActions;
 }) {
+  const [tab, setTab] = useState<'walkers' | 'packs'>('walkers');
+  const [open, setOpen] = useState<Pack | null>(null);
   const slug = (id: string | null) => dogs.find((d) => d.id === id)?.slug;
+  const fresh = open && packs.find((k) => k.id === open.id);
+  if (fresh) {
+    return <PackScreen pack={fresh} slug={slug} busy={busy} actions={actions} onBack={() => setOpen(null)} />;
+  }
   return (
     <View style={{ gap: 16 }}>
       <Text style={S.h1}>Leaderboard</Text>
-      <View style={{ flexDirection: 'row', gap: 8 }}><Pill label="Walkers" on onPress={() => {}} /></View>
-      {!onBoard && (
-        <Card style={[{ borderColor: C.cyan, flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
-          <Text style={[S.p, { flex: 1, fontSize: 14, lineHeight: 20 }]}>
-            <Text style={S.bold}>Join the walker leaderboard? </Text>
-            Your name and monthly steps will show to colleagues at {companyName}. You can change this in Me.
-          </Text>
-          <Btn label="Show me" small onPress={onJoin} busy={busy} />
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <Pill label="Walkers" on={tab === 'walkers'} onPress={() => setTab('walkers')} />
+        <Pill label="Packs" on={tab === 'packs'} onPress={() => setTab('packs')} />
+      </View>
+      {tab === 'walkers' ? (
+        <>
+          {!onBoard && (
+            <Card style={[{ borderColor: C.cyan, flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
+              <Text style={[S.p, { flex: 1, fontSize: 14, lineHeight: 20 }]}>
+                <Text style={S.bold}>Join the walker leaderboard? </Text>
+                Your name and monthly steps will show to colleagues at {companyName}. You can change this in Me.
+              </Text>
+              <Btn label="Show me" small onPress={onJoin} busy={busy} />
+            </Card>
+          )}
+          {walkers.length ? walkers.map((w, i) => <WalkerRow key={`${w.displayName}-${i}`} w={w} rank={i + 1} slug={slug(w.dogId)} />) : (
+            <Card><Text style={[S.bold, { fontSize: 16 }]}>No walkers here yet.</Text><Text style={S.muted}>Be the first. Tap Show me to join the leaderboard.</Text></Card>
+          )}
+        </>
+      ) : (
+        <PacksList packs={packs} busy={busy} actions={actions} onOpen={setOpen} companyName={companyName} />
+      )}
+    </View>
+  );
+}
+
+function PacksList({ packs, busy, actions, onOpen, companyName }: { packs: Pack[]; busy: boolean; actions: PackActions; onOpen: (p: Pack) => void; companyName: string }) {
+  const [name, setName] = useState('');
+  const [code, setCode] = useState('');
+  const mine = packs.filter((k) => k.isMine);
+  return (
+    <View style={{ gap: 12 }}>
+      <Text style={S.muted}>Packs are teams you make with colleagues at {companyName}. They're ranked by steps per walker this month.</Text>
+      {packs.length ? packs.map((k, i) => {
+        const first = i === 0 && !k.isMine;
+        return (
+          <Pressable key={k.id} onPress={() => k.isMine && onOpen(k)} disabled={!k.isMine} accessibilityRole={k.isMine ? 'button' : undefined}
+            style={[x.lb, first && x.lbFirst, k.isMine && x.lbMine]}>
+            <View style={[x.rank, first && { backgroundColor: C.cyan, borderColor: C.cyan }, k.isMine && { backgroundColor: C.pink, borderColor: C.pink }]}>
+              <Text style={[x.rankText, (first || k.isMine) && { color: C.dark }]}>{i + 1}</Text>
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text numberOfLines={1} style={[S.bold, { fontSize: 16 }]}>{k.name}</Text>
+              <Text style={[S.p, { fontSize: 13 }]}>{plural(k.walkers, 'walker')} · {plural(k.bowls, 'bowl')}</Text>
+            </View>
+            {k.stepsPerWalker != null ? (
+              <View>
+                <Text style={x.num}>{fmt(k.stepsPerWalker)}</Text>
+                <Text style={[S.p, { fontSize: 12, textAlign: 'right' }]}>per walker</Text>
+              </View>
+            ) : k.isMine ? <Text style={[S.muted, { fontSize: 22 }]}>›</Text> : null}
+          </Pressable>
+        );
+      }) : (
+        <Card><Text style={[S.bold, { fontSize: 16 }]}>No packs yet.</Text><Text style={S.muted}>Start one below and invite your colleagues.</Text></Card>
+      )}
+      {mine.length < 5 && (
+        <>
+          <Card style={{ gap: 10 }}>
+            <Text style={S.h2}>Start a pack</Text>
+            <TextInput style={S.input} value={name} onChangeText={setName} placeholder="Pack name, e.g. Level 3 Legends" placeholderTextColor={C.muted} maxLength={40} accessibilityLabel="Pack name" />
+            <Btn label="Create pack" kind="coral" busy={busy} onPress={() => { if (name.trim()) actions.create(name).then(() => setName('')); }} />
+          </Card>
+          <Card style={{ gap: 10 }}>
+            <Text style={S.h2}>Join with a code</Text>
+            <TextInput style={[S.input, { fontFamily: F.mono, letterSpacing: 4, textTransform: 'uppercase' }]} value={code} onChangeText={(t) => setCode(t.toUpperCase())} placeholder="ABC234" placeholderTextColor={C.muted} maxLength={6} autoCapitalize="characters" autoCorrect={false} accessibilityLabel="Pack code" />
+            <Btn label="Join pack" busy={busy} onPress={() => { if (code.trim().length === 6) actions.join(code).then(() => setCode('')); }} />
+          </Card>
+        </>
+      )}
+    </View>
+  );
+}
+
+function PackScreen({ pack, slug, busy, actions, onBack }: { pack: Pack; slug: (id: string | null) => string | undefined; busy: boolean; actions: PackActions; onBack: () => void }) {
+  const [rows, setRows] = useState<{ people: Walker[]; hidden: number } | null>(null);
+  const [name, setName] = useState(pack.name);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => { actions.people(pack).then(setRows).catch((e) => setErr(String(e?.message ?? e))); }, [pack.id, pack.walkers]);
+  return (
+    <View style={{ gap: 16 }}>
+      <Pressable onPress={onBack} accessibilityRole="button"><Text style={S.linkbtn}>‹ Leaderboard</Text></Pressable>
+      <Text style={S.h1}>{pack.name}</Text>
+      <View style={[S.hero, { alignItems: 'flex-start' }]}>
+        <Text style={S.eyebrow}>This month</Text>
+        <Text style={[S.bold, { fontSize: 22 }]}>{plural(pack.walkers, 'walker')} · {plural(pack.bowls, 'bowl')}</Text>
+        {pack.stepsPerWalker != null
+          ? <Text style={S.p}>{fmt(pack.stepsPerWalker)} steps per walker</Text>
+          : <Text style={S.muted}>Step totals show once the pack has 5 walkers, or everyone in it shows their name.</Text>}
+        {pack.code && <Text style={[S.tag, { marginTop: 6 }]}>Invite code {pack.code}</Text>}
+        <Btn label="Invite colleagues" kind="coral" small onPress={() => actions.invite(pack)} style={{ marginTop: 6 }} />
+      </View>
+      {err && <Text style={S.err}>{err}</Text>}
+      {!rows ? <Text style={S.muted}>Loading…</Text> : (
+        <>
+          {rows.people.map((w, i) => <WalkerRow key={`${w.displayName}-${i}`} w={w} rank={i + 1} slug={slug(w.dogId)} />)}
+          {rows.hidden > 0 && <Text style={S.muted}>{plural(rows.hidden, 'member')} {rows.hidden === 1 ? 'keeps' : 'keep'} their name private.</Text>}
+        </>
+      )}
+      {pack.isOwner && (
+        <Card style={{ gap: 10 }}>
+          <Text style={S.label}>Pack name</Text>
+          <TextInput style={S.input} value={name} onChangeText={setName} maxLength={40} accessibilityLabel="Pack name" />
+          <Btn label="Save name" small busy={busy} onPress={() => { if (name.trim() && name.trim() !== pack.name) actions.rename(pack, name); }} />
         </Card>
       )}
-      {walkers.length ? walkers.map((w, i) => (
-        <View key={`${w.displayName}-${i}`} style={[x.lb, i === 0 && !w.isMe && x.lbFirst, w.isMe && x.lbMine]}>
-          <View style={[x.rank, i === 0 && !w.isMe && { backgroundColor: C.cyan, borderColor: C.cyan }, w.isMe && { backgroundColor: C.pink, borderColor: C.pink }]}>
-            <Text style={[x.rankText, (i === 0 || w.isMe) && { color: C.dark }]}>{i + 1}</Text>
-          </View>
-          <DogAvatar slug={slug(w.dogId)} size={26} />
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text numberOfLines={1} style={[S.bold, { fontFamily: F.bodyBold, fontSize: 16 }]}>{w.displayName}</Text>
-            <Text style={[S.p, { fontSize: 13 }]}>{plural(w.bowls, 'bowl')}</Text>
-          </View>
-          <View>
-            <Text style={x.num}>{fmt(w.steps)}</Text>
-            <Text style={[S.p, { fontSize: 12, textAlign: 'right' }]}>steps</Text>
-          </View>
-        </View>
-      )) : (
-        <Card><Text style={[S.bold, { fontSize: 16 }]}>No walkers here yet.</Text><Text style={S.muted}>Be the first. Tap Show me to join the leaderboard.</Text></Card>
-      )}
+      <Btn label="Leave pack" kind="light" small onPress={() => actions.leave(pack)} />
     </View>
   );
 }
