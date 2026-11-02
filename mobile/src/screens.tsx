@@ -415,5 +415,5 @@ const x = StyleSheet.create({
   rankText: { fontFamily: F.display, fontSize: 18, color: C.muted },
   num: { fontFamily: F.display, fontSize: 22, color: C.fg, textAlign: 'right' },
   drop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 20, paddingHorizontal: 16, minHeight: 56 },
-  celCard: { width: 280, aspectRatio: 4 / 3, borderRadius: 22, borderWidth: 2, borderColor: C.pink, backgroundColor: '#100c18', alignItems: 'center', justifyContent: 'center', gap: 6, transform: [{ perspective: 900 }, { rotateY: '-14deg' }, { rotateX: '5deg' }] },
+  celCard: { width: 280, aspectRatio: 4 / 3, borderRadius: 22, borderWidth: 2, borderColor: C.pink, backgroundColor: '#100c18', alignItems: 'center', justifyContent: 'center', gap: 6, transform: [{ rotate: '-3deg' }] },
 });
