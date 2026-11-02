@@ -207,6 +207,20 @@ export default function App() {
     setSub(null);
   });
 
+  // Pack actions show problems in a pop-up, because the error line at the top is off screen down here.
+  async function packRun(action: () => Promise<void>): Promise<boolean> {
+    setBusy(true);
+    try {
+      await action();
+      return true;
+    } catch (e) {
+      Alert.alert("That didn't work", e instanceof Error ? e.message : String(e));
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function invitePack(name: string, code: string) {
     Share.share({ message: `Join my FurSteps pack "${name}"! Every step fills a bowl for a shelter dog. Open FurSteps, go to Leaderboard > Packs and enter code ${code}.` }).catch(() => undefined);
   }
@@ -226,14 +240,14 @@ export default function App() {
     body = <ChallengesScreen />;
   } else if (tab === 'packs') {
     const actions: PackActions = {
-      create: (name) => run(async () => { const k = await createPack(name); await loadAll(); invitePack(name, k.code); }),
-      join: (code) => run(async () => { await joinPack(code); await loadAll(); }),
-      rename: (k, name) => run(async () => { await renamePack(k.id, name); await loadAll(); }),
+      create: (name) => packRun(async () => { const k = await createPack(name); await loadAll(); invitePack(name.trim(), k.code); }),
+      join: (code) => packRun(async () => { await joinPack(code); await loadAll(); }),
+      rename: (k, name) => packRun(async () => { await renamePack(k.id, name); await loadAll(); }).then(() => undefined),
       people: (k) => packPeople(k.id),
       invite: (k) => k.code && invitePack(k.name, k.code),
       leave: (k) => Alert.alert(`Leave ${k.name}?`, 'You can join again later with the code.', [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Leave', style: 'destructive', onPress: () => run(async () => { await leavePack(k.id); await loadAll(); }) },
+        { text: 'Leave', style: 'destructive', onPress: () => { packRun(async () => { await leavePack(k.id); await loadAll(); }); } },
       ]),
     };
     body = <LeaderboardScreen walkers={walkers} packs={packs} onBoard={home.onBoard} companyName={home.companyName} busy={busy} dogs={dogs} actions={actions}
@@ -252,7 +266,7 @@ export default function App() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <ScrollView ref={scroll} contentContainerStyle={[S.page, { paddingTop: 60 }]} keyboardShouldPersistTaps="handled"
+      <ScrollView ref={scroll} contentContainerStyle={[S.page, { paddingTop: 60 }]} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode="interactive"
         refreshControl={<RefreshControl refreshing={false} tintColor={C.pink} onRefresh={() => run(() => syncFromHealth(false))} />}>
         <TopBar />
         {error && <Text style={S.err}>{error}</Text>}

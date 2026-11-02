@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Image, Linking, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { Alert, Image, Keyboard, Linking, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import appJson from '../app.json';
 
 import type { Dog, Home, Pack, Walker } from './backend';
@@ -116,8 +116,8 @@ function WalkerRow({ w, rank, slug }: { w: Walker; rank: number; slug?: string }
 }
 
 export type PackActions = {
-  create: (name: string) => Promise<void>;
-  join: (code: string) => Promise<void>;
+  create: (name: string) => Promise<boolean>;
+  join: (code: string) => Promise<boolean>;
   leave: (p: Pack) => void;
   invite: (p: Pack) => void;
   rename: (p: Pack, name: string) => Promise<void>;
@@ -166,7 +166,18 @@ export function LeaderboardScreen({ walkers, packs, onBoard, companyName, busy, 
 function PacksList({ packs, busy, actions, onOpen, companyName }: { packs: Pack[]; busy: boolean; actions: PackActions; onOpen: (p: Pack) => void; companyName: string }) {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
+  const [hint, setHint] = useState<'name' | 'code' | null>(null);
   const mine = packs.filter((k) => k.isMine);
+  const create = () => {
+    Keyboard.dismiss();
+    if (!name.trim()) return setHint('name');
+    actions.create(name).then((ok) => { if (ok) setName(''); });
+  };
+  const join = () => {
+    Keyboard.dismiss();
+    if (code.trim().length !== 6) return setHint('code');
+    actions.join(code).then((ok) => { if (ok) setCode(''); });
+  };
   return (
     <View style={{ gap: 12 }}>
       <Text style={S.muted}>Packs are teams you make with colleagues at {companyName}. They're ranked by steps per walker this month.</Text>
@@ -197,13 +208,15 @@ function PacksList({ packs, busy, actions, onOpen, companyName }: { packs: Pack[
         <>
           <Card style={{ gap: 10 }}>
             <Text style={S.h2}>Start a pack</Text>
-            <TextInput style={S.input} value={name} onChangeText={setName} placeholder="Pack name, e.g. Level 3 Legends" placeholderTextColor={C.muted} maxLength={40} accessibilityLabel="Pack name" />
-            <Btn label="Create pack" kind="coral" busy={busy} onPress={() => { if (name.trim()) actions.create(name).then(() => setName('')); }} />
+            <TextInput style={S.input} value={name} onChangeText={(t) => { setName(t); setHint(null); }} placeholder="Pack name, e.g. Level 3 Legends" placeholderTextColor={C.muted} maxLength={40} accessibilityLabel="Pack name" returnKeyType="done" onSubmitEditing={create} />
+            {hint === 'name' && <Text style={S.err}>Type a name for your pack first.</Text>}
+            <Btn label="Create pack" kind="coral" busy={busy} onPress={create} />
           </Card>
           <Card style={{ gap: 10 }}>
             <Text style={S.h2}>Join with a code</Text>
-            <TextInput style={[S.input, { fontFamily: F.mono, letterSpacing: 4, textTransform: 'uppercase' }]} value={code} onChangeText={(t) => setCode(t.toUpperCase())} placeholder="ABC234" placeholderTextColor={C.muted} maxLength={6} autoCapitalize="characters" autoCorrect={false} accessibilityLabel="Pack code" />
-            <Btn label="Join pack" busy={busy} onPress={() => { if (code.trim().length === 6) actions.join(code).then(() => setCode('')); }} />
+            <TextInput style={[S.input, { fontFamily: F.mono, letterSpacing: 4, textTransform: 'uppercase' }]} value={code} onChangeText={(t) => { setCode(t.toUpperCase()); setHint(null); }} placeholder="ABC234" placeholderTextColor={C.muted} maxLength={6} autoCapitalize="characters" autoCorrect={false} accessibilityLabel="Pack code" returnKeyType="done" onSubmitEditing={join} />
+            {hint === 'code' && <Text style={S.err}>Pack codes have 6 letters and numbers.</Text>}
+            <Btn label="Join pack" busy={busy} onPress={join} />
           </Card>
         </>
       )}
