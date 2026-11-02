@@ -169,9 +169,9 @@ export default function App() {
             <>
               <Text style={S.h1}>Check your email</Text>
               <View style={a.form}>
-                <Text style={S.p}>We sent a 6-digit code to <Text style={S.bold}>{view.email}</Text>.</Text>
-                <TextInput style={[S.input, { fontFamily: F.monoBold, fontSize: 22, letterSpacing: 6, textAlign: 'center' }]} value={code} onChangeText={setCode}
-                  placeholder="000000" placeholderTextColor={C.line} keyboardType="number-pad" autoComplete="one-time-code" maxLength={6} />
+                <Text style={S.p}>We sent a sign-in code to <Text style={S.bold}>{view.email}</Text>.</Text>
+                <TextInput style={[S.input, { fontFamily: F.monoBold, fontSize: 22, letterSpacing: 6, textAlign: 'center' }]} value={code} onChangeText={(t) => setCode(t.replace(/\D/g, ''))}
+                  placeholder="Code" placeholderTextColor={C.line} keyboardType="number-pad" autoComplete="one-time-code" maxLength={10} />
                 {error && <Text style={S.err}>{error}</Text>}
                 <Btn kind="coral" busy={busy} label="Sign in" onPress={() => run(async () => {
                   await verifyCode(view.email, code);
