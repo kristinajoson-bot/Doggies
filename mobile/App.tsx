@@ -229,7 +229,7 @@ export default function App() {
   if (sub?.kind === 'dogs') {
     body = <DogsScreen dogs={dogs} current={home.dogId} busy={busy} onPick={pickDog} onMeet={(d) => setSub({ kind: 'dog', dog: d })} onBack={() => setSub(null)} />;
   } else if (sub?.kind === 'dog') {
-    body = <DogScreen dog={sub.dog} mine={home.dogId === sub.dog.id} busy={busy} onPick={() => pickDog(sub.dog.id)} onBack={() => setSub(null)} onAll={() => setSub({ kind: 'dogs' })} />;
+    body = <DogScreen dog={sub.dog} mine={home.dogId === sub.dog.id} busy={busy} onPick={() => pickDog(sub.dog.id)} onBack={() => setSub({ kind: 'dogs' })} onAll={() => setSub({ kind: 'dogs' })} />;
   } else if (tab === 'today') {
     body = (
       <TodayScreen home={home} dog={myDog} healthName={healthStoreName} busy={busy}

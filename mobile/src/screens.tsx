@@ -368,7 +368,7 @@ export function DogScreen({ dog, mine, busy, onPick, onBack, onAll }: { dog: Dog
   const w = Math.min(width, 440) - 40;
   return (
     <View style={{ gap: 16 }}>
-      <Pressable onPress={onBack}><Text style={S.linkbtn}>‹ Back</Text></Pressable>
+      <Pressable onPress={onBack}><Text style={S.linkbtn}>‹ All dogs</Text></Pressable>
       <View style={{ alignItems: 'center', gap: 8 }}>
         {photos.length ? (
           <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={{ width: w }} snapToInterval={w * 0.88 + 10} decelerationRate="fast">
