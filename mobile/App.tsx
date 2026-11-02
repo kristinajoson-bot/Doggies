@@ -48,6 +48,7 @@ export default function App() {
   const [dogs, setDogs] = useState<Dog[]>([]);
   const [walkers, setWalkers] = useState<Walker[]>([]);
   const [packs, setPacks] = useState<Pack[]>([]);
+  const [lbStart, setLbStart] = useState<'walkers' | 'packs'>('walkers');
   const [userEmail, setUserEmail] = useState('');
   const [celebrate, setCelebrate] = useState<{ bowls: number; steps: number } | null>(null);
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
@@ -237,7 +238,7 @@ export default function App() {
         onCelebrate={(m) => setCelebrate({ bowls: MILESTONES.indexOf(m) + 1, steps: m })} />
     );
   } else if (tab === 'rivals') {
-    body = <ChallengesScreen />;
+    body = <ChallengesScreen packs={packs} onPacks={() => { setLbStart('packs'); setTab('packs'); }} />;
   } else if (tab === 'packs') {
     const actions: PackActions = {
       create: (name) => packRun(async () => { const k = await createPack(name); await loadAll(); invitePack(name.trim(), k.code); }),
@@ -250,7 +251,7 @@ export default function App() {
         { text: 'Leave', style: 'destructive', onPress: () => { packRun(async () => { await leavePack(k.id); await loadAll(); }); } },
       ]),
     };
-    body = <LeaderboardScreen walkers={walkers} packs={packs} onBoard={home.onBoard} companyName={home.companyName} busy={busy} dogs={dogs} actions={actions}
+    body = <LeaderboardScreen key={lbStart} startOn={lbStart} walkers={walkers} packs={packs} onBoard={home.onBoard} companyName={home.companyName} busy={busy} dogs={dogs} actions={actions}
       onJoin={() => run(async () => { await setOnBoard(true); await loadAll(); })} />;
   } else if (tab === 'impact') {
     body = <ImpactScreen home={home} dog={myDog} onDogs={() => setSub({ kind: 'dogs' })} onMeet={(d) => setSub({ kind: 'dog', dog: d })} />;

@@ -68,7 +68,8 @@ export function TodayScreen({ home, dog, healthName, busy, onDogs, onCelebrate }
   );
 }
 
-export function ChallengesScreen() {
+export function ChallengesScreen({ packs, onPacks }: { packs: Pack[]; onPacks: () => void }) {
+  const mine = packs.map((k, i) => ({ k, rank: i + 1 })).filter((r) => r.k.isMine);
   const month = new Date().toLocaleDateString('en-AU', { month: 'long' }).toUpperCase();
   const cards = [
     { kind: 'PACK WAR', title: 'BUILD YOUR CREW. WIN AS A PACK', body: 'Team up with colleagues and race other teams in your company to the top of the ranking.', color: C.cyan },
@@ -83,14 +84,25 @@ export function ChallengesScreen() {
         <Text style={[S.h1, { fontSize: 24, color: C.pink, marginTop: -6 }]}>of the month</Text>
         <Text style={[S.muted, { fontSize: 16, lineHeight: 22 }]}>Every step you walk also fills a bowl for a shelter dog. Take on a colleague or lead a pack.</Text>
       </View>
-      {cards.map((c) => (
-        <View key={c.kind} style={[x.chal, { borderColor: c.color }, glow(c.color, 14, 0.25)]}>
-          <Text style={[x.chalKind, { color: c.color }]}>{c.kind}</Text>
-          <Text style={x.chalTitle}>{c.title}</Text>
-          <Text style={[S.p, { fontSize: 15, color: '#d8d4e6' }]}>{c.body}</Text>
-          <Text style={[S.tag, { color: c.color }]}>Coming soon</Text>
-        </View>
-      ))}
+      {cards.map((c) => {
+        const live = c.kind === 'PACK WAR';
+        return (
+          <Pressable key={c.kind} disabled={!live} onPress={onPacks} accessibilityRole={live ? 'button' : undefined}
+            style={[x.chal, { borderColor: c.color }, live && { borderStyle: 'solid' }, glow(c.color, 14, 0.25)]}>
+            <Text style={[x.chalKind, { color: c.color }]}>{live ? `PACK WAR · LIVE ALL ${month}` : c.kind}</Text>
+            <Text style={x.chalTitle}>{c.title}</Text>
+            <Text style={[S.p, { fontSize: 15, color: '#d8d4e6' }]}>{c.body}</Text>
+            {live ? (
+              <>
+                {mine.length
+                  ? mine.map((r) => <Text key={r.k.id} style={[S.bold, { fontSize: 16 }]}>{r.k.name}: #{r.rank} of {packs.length}</Text>)
+                  : <Text style={[S.bold, { fontSize: 16 }]}>You're not in a pack yet.</Text>}
+                <Btn label={mine.length ? 'See the pack ranking' : 'Start or join a pack'} kind="coral" small onPress={onPacks} />
+              </>
+            ) : <Text style={[S.tag, { color: c.color }]}>Coming soon</Text>}
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -124,10 +136,10 @@ export type PackActions = {
   people: (p: Pack) => Promise<{ people: Walker[]; hidden: number }>;
 };
 
-export function LeaderboardScreen({ walkers, packs, onBoard, companyName, busy, onJoin, dogs, actions }: {
-  walkers: Walker[]; packs: Pack[]; onBoard: boolean; companyName: string; busy: boolean; onJoin: () => void; dogs: Dog[]; actions: PackActions;
+export function LeaderboardScreen({ walkers, packs, onBoard, companyName, busy, onJoin, dogs, actions, startOn = 'walkers' }: {
+  walkers: Walker[]; packs: Pack[]; onBoard: boolean; companyName: string; busy: boolean; onJoin: () => void; dogs: Dog[]; actions: PackActions; startOn?: 'walkers' | 'packs';
 }) {
-  const [tab, setTab] = useState<'walkers' | 'packs'>('walkers');
+  const [tab, setTab] = useState<'walkers' | 'packs'>(startOn);
   const [open, setOpen] = useState<Pack | null>(null);
   const slug = (id: string | null) => dogs.find((d) => d.id === id)?.slug;
   const fresh = open && packs.find((k) => k.id === open.id);
