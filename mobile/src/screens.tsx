@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Image, Keyboard, Linking, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import appJson from '../app.json';
 
-import type { Dog, Home, Pack, Walker } from './backend';
+import type { Dog, Duel, Home, Pack, Walker } from './backend';
 import { Bowl, BowlIcon, DOG_PHOTOS, DogAvatar, Orb, PawTile } from './ui/art';
 import { Bar, Btn, Card, Pill, fmt } from './ui/kit';
 import { C, F, S, glow } from './ui/theme';
@@ -68,8 +68,20 @@ export function TodayScreen({ home, dog, healthName, busy, onDogs, onCelebrate }
   );
 }
 
-export function ChallengesScreen({ packs, onPacks }: { packs: Pack[]; onPacks: () => void }) {
+export type TugActions = {
+  create: (days: number) => Promise<boolean>;
+  accept: (code: string) => Promise<boolean>;
+  cancel: (d: Duel) => void;
+  share: (code: string, days: number) => void;
+};
+
+export function ChallengesScreen({ packs, onPacks, duels, tug, busy, dogs }: {
+  packs: Pack[]; onPacks: () => void; duels: Duel[]; tug: TugActions; busy: boolean; dogs: Dog[];
+}) {
+  const [inTug, setInTug] = useState(false);
   const mine = packs.map((k, i) => ({ k, rank: i + 1 })).filter((r) => r.k.isMine);
+  if (inTug) return <TugScreen duels={duels} tug={tug} busy={busy} dogs={dogs} onBack={() => setInTug(false)} />;
+  const running = duels.filter((d) => d.status === 'active');
   const month = new Date().toLocaleDateString('en-AU', { month: 'long' }).toUpperCase();
   const cards = [
     { kind: 'PACK WAR', title: 'BUILD YOUR CREW. WIN AS A PACK', body: 'Team up with colleagues and race other teams in your company to the top of the ranking.', color: C.cyan },
@@ -85,6 +97,20 @@ export function ChallengesScreen({ packs, onPacks }: { packs: Pack[]; onPacks: (
         <Text style={[S.muted, { fontSize: 16, lineHeight: 22 }]}>Every step you walk also fills a bowl for a shelter dog. Take on a colleague or lead a pack.</Text>
       </View>
       {cards.map((c) => {
+        if (c.kind === 'TUG OF WAR') {
+          return (
+            <Pressable key={c.kind} onPress={() => setInTug(true)} accessibilityRole="button"
+              style={[x.chal, { borderColor: c.color, borderStyle: 'solid' }, glow(c.color, 14, 0.25)]}>
+              <Text style={[x.chalKind, { color: c.color }]}>TUG OF WAR · LIVE</Text>
+              <Text style={x.chalTitle}>{c.title}</Text>
+              <Text style={[S.p, { fontSize: 15, color: '#d8d4e6' }]}>{c.body}</Text>
+              {running.length
+                ? running.map((d) => <Text key={d.id} style={[S.bold, { fontSize: 16 }]}>vs {d.opponentName ?? 'colleague'}: {d.mySteps >= d.theirSteps ? 'you lead' : 'you trail'} by {fmt(Math.abs(d.mySteps - d.theirSteps))}</Text>)
+                : null}
+              <Btn label={running.length ? 'See my tugs of war' : 'Challenge a colleague'} kind="coral" small onPress={() => setInTug(true)} />
+            </Pressable>
+          );
+        }
         const live = c.kind === 'PACK WAR';
         return (
           <Pressable key={c.kind} disabled={!live} onPress={onPacks} accessibilityRole={live ? 'button' : undefined}
@@ -103,6 +129,93 @@ export function ChallengesScreen({ packs, onPacks }: { packs: Pack[]; onPacks: (
           </Pressable>
         );
       })}
+    </View>
+  );
+}
+
+const DAY_MS = 86400000;
+function daysLeft(endsOn: string | null) {
+  if (!endsOn) return 0;
+  const end = new Date(endsOn + 'T23:59:59');
+  return Math.max(0, Math.ceil((end.getTime() - Date.now()) / DAY_MS));
+}
+
+function TugBar({ mine, theirs }: { mine: number; theirs: number }) {
+  const total = mine + theirs;
+  const share = total ? mine / total : 0.5;
+  return (
+    <View style={{ height: 18, borderRadius: 9, backgroundColor: C.cyan, overflow: 'hidden', flexDirection: 'row' }}>
+      <View style={{ width: `${Math.round(share * 100)}%`, backgroundColor: C.pink }} />
+      <View style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 2, marginLeft: -1, backgroundColor: C.fg, opacity: 0.8 }} />
+    </View>
+  );
+}
+
+function TugScreen({ duels, tug, busy, dogs, onBack }: { duels: Duel[]; tug: TugActions; busy: boolean; dogs: Dog[]; onBack: () => void }) {
+  const [days, setDays] = useState(7);
+  const [code, setCode] = useState('');
+  const [hint, setHint] = useState(false);
+  const slug = (id: string | null) => dogs.find((d) => d.id === id)?.slug;
+  const accept = () => {
+    Keyboard.dismiss();
+    if (code.trim().length !== 6) return setHint(true);
+    tug.accept(code).then((ok) => { if (ok) setCode(''); });
+  };
+  return (
+    <View style={{ gap: 16 }}>
+      <Pressable onPress={onBack} accessibilityRole="button"><Text style={S.linkbtn}>‹ Challenges</Text></Pressable>
+      <Text style={[S.h1, { color: C.pink }, textGlow(C.pink)]}>Tug of War</Text>
+      <Text style={S.muted}>Challenge one colleague. Whoever walks more steps in the time wins the bone. Your steps still fill bowls for shelter dogs either way.</Text>
+      {duels.map((d) => {
+        const left = daysLeft(d.endsOn);
+        const name = d.opponentName ?? 'a colleague';
+        if (d.status === 'pending') {
+          return (
+            <Card key={d.id} style={{ gap: 10 }}>
+              <Text style={S.eyebrow}>Waiting for a colleague · {d.days} days</Text>
+              <Text style={[S.tag, { fontSize: 16 }]}>Code {d.code}</Text>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <Btn label="Send again" small kind="coral" onPress={() => d.code && tug.share(d.code, d.days)} />
+                <Btn label="Cancel" small kind="light" onPress={() => tug.cancel(d)} />
+              </View>
+            </Card>
+          );
+        }
+        const done = d.status === 'finished';
+        const verdict = d.mySteps === d.theirSteps ? "It's a draw" : d.mySteps > d.theirSteps ? (done ? 'You won the bone!' : "You're winning") : (done ? `${name} won the bone` : `${name} is ahead`);
+        return (
+          <View key={d.id} style={[S.card, { gap: 10 }, !done && { borderColor: C.pink, borderWidth: 2 }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <DogAvatar slug={slug(d.opponentDog)} size={26} />
+              <View style={{ flex: 1 }}>
+                <Text style={[S.bold, { fontSize: 16 }]}>You vs {name}</Text>
+                <Text style={S.muted}>{done ? 'Finished' : left <= 1 ? 'Last day' : `${left} days left`}</Text>
+              </View>
+            </View>
+            <TugBar mine={d.mySteps} theirs={d.theirSteps} />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <View><Text style={[x.num, { textAlign: 'left', color: C.pink }]}>{fmt(d.mySteps)}</Text><Text style={S.muted}>You</Text></View>
+              <View><Text style={[x.num, { color: C.cyan }]}>{fmt(d.theirSteps)}</Text><Text style={[S.muted, { textAlign: 'right' }]}>{name}</Text></View>
+            </View>
+            <Text style={[S.bold, { fontSize: 16, color: done && d.mySteps > d.theirSteps ? C.green : C.fg }]}>{verdict}</Text>
+          </View>
+        );
+      })}
+      <Card style={{ gap: 10 }}>
+        <Text style={S.h2}>Challenge a colleague</Text>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {[3, 7, 14].map((n) => <Pill key={n} label={`${n} days`} on={days === n} onPress={() => setDays(n)} />)}
+        </View>
+        <Text style={S.muted}>You'll get a code to send them. It starts the day they accept.</Text>
+        <Btn label="Create challenge" kind="coral" busy={busy} onPress={() => { tug.create(days); }} />
+      </Card>
+      <Card style={{ gap: 10 }}>
+        <Text style={S.h2}>Got a code?</Text>
+        <TextInput style={[S.input, { fontFamily: F.mono, letterSpacing: 4 }]} value={code} onChangeText={(t) => { setCode(t.toUpperCase()); setHint(false); }} placeholder="ABC234" placeholderTextColor={C.muted} maxLength={6} autoCapitalize="characters" autoCorrect={false} accessibilityLabel="Challenge code" returnKeyType="done" onSubmitEditing={accept} />
+        {hint && <Text style={S.err}>Codes have 6 letters and numbers.</Text>}
+        <Text style={S.muted}>By accepting, you and your opponent see each other's steps for the days of this tug of war. Nobody else does.</Text>
+        <Btn label="Accept challenge" busy={busy} onPress={accept} />
+      </Card>
     </View>
   );
 }

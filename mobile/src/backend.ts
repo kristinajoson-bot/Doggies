@@ -206,6 +206,39 @@ export async function renamePack(id: string, name: string) {
   fail(error);
 }
 
+// Tug of War: 1-v-1 step duels between two colleagues.
+export type Duel = {
+  id: string; code: string | null; days: number; startsOn: string | null; endsOn: string | null;
+  status: 'pending' | 'active' | 'finished'; isChallenger: boolean;
+  opponentName: string | null; opponentDog: string | null; mySteps: number; theirSteps: number;
+};
+
+export async function myDuels(): Promise<Duel[]> {
+  const { data, error } = await supabase.rpc('my_duels', { p_today: monthWindow().today });
+  fail(error);
+  return ((data as Record<string, any>[]) ?? []).map((r) => ({
+    id: r.id, code: r.code, days: r.days, startsOn: r.starts_on, endsOn: r.ends_on, status: r.status, isChallenger: r.is_challenger,
+    opponentName: r.opponent_name, opponentDog: r.opponent_dog, mySteps: Number(r.my_steps), theirSteps: Number(r.their_steps),
+  }));
+}
+
+export async function createDuel(days: number): Promise<{ id: string; code: string }> {
+  const { data, error } = await supabase.rpc('create_duel', { p_days: days, p_today: monthWindow().today });
+  fail(error);
+  const r = (data as Record<string, any>[])[0];
+  return { id: r.id, code: r.code };
+}
+
+export async function acceptDuel(code: string) {
+  const { error } = await supabase.rpc('accept_duel', { p_code: code, p_today: monthWindow().today });
+  fail(error);
+}
+
+export async function cancelDuel(id: string) {
+  const { error } = await supabase.rpc('cancel_duel', { p_id: id });
+  fail(error);
+}
+
 // Showing your name on the leaderboard is a separate, logged consent.
 export async function setOnBoard(on: boolean) {
   const { error } = on
