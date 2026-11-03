@@ -517,6 +517,32 @@ export function DogScreen({ dog, mine, busy, onPick, onBack, onAll }: { dog: Dog
   );
 }
 
+// Shown once, right after a new walker agrees to share steps.
+export function ChooseDogPopup({ visible, dogs, busy, onPick, onLater }: { visible: boolean; dogs: Dog[]; busy: boolean; onPick: (id: string) => void; onLater: () => void }) {
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onLater}>
+      <View style={{ flex: 1, backgroundColor: C.bg }}>
+        <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 28, paddingBottom: 48, gap: 16 }}>
+          <Text style={[{ fontFamily: F.mono, fontSize: 13, letterSpacing: 2.4, color: C.pink }]}>WELCOME TO FURSTEPS</Text>
+          <Text style={S.h1}>Choose a shelter dog to walk for</Text>
+          <Text style={S.muted}>Every bowl your steps unlock goes to your dog. You can change dogs any time.</Text>
+          {dogs.map((d) => {
+            const photo = DOG_PHOTOS[d.slug]?.photos?.[0];
+            return (
+              <Card key={d.id} style={{ gap: 12 }}>
+                {photo ? <Image source={photo} style={{ width: '100%', height: 220, borderRadius: 18 }} resizeMode="cover" /> : <DogAvatar slug={d.slug} size={64} />}
+                <View><Text style={[S.bold, { fontSize: 20 }]}>{d.name}</Text><Text style={S.muted}>{[d.age, d.breed, d.shelter].filter(Boolean).join(' · ')}</Text></View>
+                <Btn label={`Walk for ${d.name}`} kind="coral" busy={busy} onPress={() => onPick(d.id)} />
+              </Card>
+            );
+          })}
+          <Btn label="Later, feed whichever dog needs it most" kind="light" onPress={onLater} />
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+}
+
 export function Celebrate({ visible, bowls, steps, dogName, onDone, onMore }: { visible: boolean; bowls: number; steps: number; dogName: string | null; onDone: () => void; onMore: () => void }) {
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onDone}>

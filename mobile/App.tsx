@@ -15,7 +15,7 @@ import {
 } from './src/backend';
 import { connect, healthStoreName, readDailySteps } from './src/steps';
 import {
-  Celebrate, ChallengesScreen, type PackActions, type TugActions, DogScreen, DogsScreen, ImpactScreen, LeaderboardScreen, MILESTONES, MeScreen, TodayScreen,
+  Celebrate, ChallengesScreen, ChooseDogPopup, type PackActions, type TugActions, DogScreen, DogsScreen, ImpactScreen, LeaderboardScreen, MILESTONES, MeScreen, TodayScreen,
 } from './src/screens';
 import { TabIcon } from './src/ui/art';
 import { Btn, Glow, TopBar } from './src/ui/kit';
@@ -51,6 +51,7 @@ export default function App() {
   const [duels, setDuels] = useState<Duel[]>([]);
   const [lbStart, setLbStart] = useState<'walkers' | 'packs'>('walkers');
   const [userEmail, setUserEmail] = useState('');
+  const [askDog, setAskDog] = useState(false);
   const [celebrate, setCelebrate] = useState<{ bowls: number; steps: number } | null>(null);
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
 
@@ -192,7 +193,8 @@ export default function App() {
                 <Btn kind="coral" busy={busy} label="I agree, connect my steps" onPress={() => run(async () => {
                   await giveStepConsent();
                   setView({ kind: 'app' });
-                  await loadAll();
+                  const fresh = await loadAll();
+                  if (fresh && !fresh.dogId) setAskDog(true);
                   await syncFromHealth(true);
                 })} />
               </View>
@@ -302,6 +304,8 @@ export default function App() {
       {busy && <ActivityIndicator style={{ position: 'absolute', top: 64, right: 20 }} color={C.pink} />}
       <Celebrate visible={!!celebrate} bowls={celebrate?.bowls ?? 0} steps={celebrate?.steps ?? 0} dogName={myDog?.name ?? null}
         onDone={() => setCelebrate(null)} onMore={() => { setCelebrate(null); goTab('impact'); }} />
+      <ChooseDogPopup visible={askDog && !celebrate} dogs={dogs} busy={busy} onLater={() => setAskDog(false)}
+        onPick={(id) => run(async () => { await chooseDog(id); setAskDog(false); await loadAll(); })} />
       <StatusBar style="light" />
     </View>
   );
