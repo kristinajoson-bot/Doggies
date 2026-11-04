@@ -9,7 +9,7 @@ import { GeistMono_500Medium, GeistMono_600SemiBold } from '@expo-google-fonts/g
 import { Bungee_400Regular } from '@expo-google-fonts/bungee';
 
 import {
-  acceptDuel, cancelDuel, chooseDog, createDuel, createPack, myDuels, getHome, joinPack, leavePack, packBoard, packPeople, renamePack, getStatus, giveStepConsent, isReviewEmail, joinCompany, listDogs, monthWindow, sendCode, setDisplayName,
+  acceptDuel, cancelDuel, challengeColleague, chooseDog, declineDuel, tugColleagues, createPack, myDuels, getHome, joinPack, leavePack, packBoard, packPeople, renamePack, getStatus, giveStepConsent, isReviewEmail, joinCompany, listDogs, monthWindow, sendCode, setDisplayName,
   setOnBoard, signInForReview, signOut, supabase, syncSteps, verifyCode, walkerBoard, withdrawStepConsent,
   type Dog, type Duel, type Home, type Pack, type Walker,
 } from './src/backend';
@@ -226,12 +226,8 @@ export default function App() {
     }
   }
 
-  function shareDuel(code: string, days: number) {
-    Share.share({ message: `I challenge you to a FurSteps tug of war! Most steps in ${days} days wins the bone, and every step fills a bowl for a shelter dog. Open FurSteps, go to Challenges > Tug of War and enter code ${code}.` }).catch(() => undefined);
-  }
-
-  function invitePack(name: string, code: string) {
-    Share.share({ message: `Join my FurSteps pack "${name}"! Every step fills a bowl for a shelter dog. Open FurSteps, go to Leaderboard > Packs and enter code ${code}.` }).catch(() => undefined);
+  function invitePack(name: string) {
+    Share.share({ message: `Join my FurSteps pack "${name}"! Every step fills a bowl for a shelter dog. Open FurSteps, go to Leaderboard > Packs and tap Join next to "${name}".` }).catch(() => undefined);
   }
 
   let body;
@@ -247,10 +243,14 @@ export default function App() {
     );
   } else if (tab === 'rivals') {
     const tug: TugActions = {
-      create: (n) => packRun(async () => { const d = await createDuel(n); await loadAll(); shareDuel(d.code, n); }),
-      accept: (code) => packRun(async () => { await acceptDuel(code); await loadAll(); }),
-      share: shareDuel,
-      cancel: (d) => Alert.alert('Cancel this challenge?', 'The code will stop working.', [
+      colleagues: tugColleagues,
+      create: (id, n) => packRun(async () => { await challengeColleague(id, n); await loadAll(); }),
+      accept: (d) => packRun(async () => { await acceptDuel(d.id); await loadAll(); }),
+      decline: (d) => Alert.alert('Decline this challenge?', `${d.opponentName ?? 'Your colleague'} won't be told why.`, [
+        { text: 'Keep it', style: 'cancel' },
+        { text: 'Decline', style: 'destructive', onPress: () => { packRun(async () => { await declineDuel(d.id); await loadAll(); }); } },
+      ]),
+      cancel: (d) => Alert.alert('Cancel this challenge?', 'It will disappear for both of you.', [
         { text: 'Keep it', style: 'cancel' },
         { text: 'Cancel challenge', style: 'destructive', onPress: () => { packRun(async () => { await cancelDuel(d.id); await loadAll(); }); } },
       ]),
@@ -258,11 +258,11 @@ export default function App() {
     body = <ChallengesScreen packs={packs} duels={duels} tug={tug} busy={busy} dogs={dogs} onPacks={() => { setLbStart('packs'); setTab('packs'); }} />;
   } else if (tab === 'packs') {
     const actions: PackActions = {
-      create: (name) => packRun(async () => { const k = await createPack(name); await loadAll(); invitePack(name.trim(), k.code); }),
-      join: (code) => packRun(async () => { await joinPack(code); await loadAll(); }),
+      create: (name) => packRun(async () => { await createPack(name); await loadAll(); invitePack(name.trim()); }),
+      join: (k) => packRun(async () => { await joinPack(k.id); await loadAll(); }),
       rename: (k, name) => packRun(async () => { await renamePack(k.id, name); await loadAll(); }).then(() => undefined),
       people: (k) => packPeople(k.id),
-      invite: (k) => k.code && invitePack(k.name, k.code),
+      invite: (k) => invitePack(k.name),
       leave: (k) => Alert.alert(`Leave ${k.name}?`, 'You can join again later with the code.', [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Leave', style: 'destructive', onPress: () => { packRun(async () => { await leavePack(k.id); await loadAll(); }); } },

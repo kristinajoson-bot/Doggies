@@ -190,8 +190,8 @@ export async function createPack(name: string): Promise<{ id: string; code: stri
   return { id: r.id, code: r.code };
 }
 
-export async function joinPack(code: string): Promise<string> {
-  const { data, error } = await supabase.rpc('join_pack', { p_code: code });
+export async function joinPack(id: string): Promise<string> {
+  const { data, error } = await supabase.rpc('join_pack_by_id', { p_id: id });
   fail(error);
   return data as string;
 }
@@ -222,15 +222,27 @@ export async function myDuels(): Promise<Duel[]> {
   }));
 }
 
-export async function createDuel(days: number): Promise<{ id: string; code: string }> {
-  const { data, error } = await supabase.rpc('create_duel', { p_days: days, p_today: monthWindow().today });
+export type Colleague = { id: string; displayName: string; dogId: string | null };
+
+// Colleagues on the named leaderboard at your company, the only people you can challenge.
+export async function tugColleagues(): Promise<Colleague[]> {
+  const { data, error } = await supabase.rpc('tug_colleagues');
   fail(error);
-  const r = (data as Record<string, any>[])[0];
-  return { id: r.id, code: r.code };
+  return ((data as Record<string, any>[]) ?? []).map((r) => ({ id: r.user_id, displayName: r.display_name, dogId: r.dog_id }));
 }
 
-export async function acceptDuel(code: string) {
-  const { error } = await supabase.rpc('accept_duel', { p_code: code, p_today: monthWindow().today });
+export async function challengeColleague(opponentId: string, days: number) {
+  const { error } = await supabase.rpc('challenge_colleague', { p_opponent: opponentId, p_days: days, p_today: monthWindow().today });
+  fail(error);
+}
+
+export async function acceptDuel(id: string) {
+  const { error } = await supabase.rpc('accept_duel_by_id', { p_id: id, p_today: monthWindow().today });
+  fail(error);
+}
+
+export async function declineDuel(id: string) {
+  const { error } = await supabase.rpc('decline_duel', { p_id: id });
   fail(error);
 }
 

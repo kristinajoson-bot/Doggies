@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Image, Keyboard, Linking, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import appJson from '../app.json';
 
-import type { Dog, Duel, Home, Pack, Walker } from './backend';
+import type { Colleague, Dog, Duel, Home, Pack, Walker } from './backend';
 import { Bowl, BowlIcon, DOG_PHOTOS, DogAvatar, Orb, PawTile } from './ui/art';
 import { Bar, Btn, Card, Pill, fmt } from './ui/kit';
 import { C, F, S, glow } from './ui/theme';
@@ -69,10 +69,11 @@ export function TodayScreen({ home, dog, healthName, busy, onDogs, onCelebrate }
 }
 
 export type TugActions = {
-  create: (days: number) => Promise<boolean>;
-  accept: (code: string) => Promise<boolean>;
+  colleagues: () => Promise<Colleague[]>;
+  create: (opponentId: string, days: number) => Promise<boolean>;
+  accept: (d: Duel) => Promise<boolean>;
+  decline: (d: Duel) => void;
   cancel: (d: Duel) => void;
-  share: (code: string, days: number) => void;
 };
 
 export function ChallengesScreen({ packs, onPacks, duels, tug, busy, dogs }: {
@@ -82,6 +83,7 @@ export function ChallengesScreen({ packs, onPacks, duels, tug, busy, dogs }: {
   const mine = packs.map((k, i) => ({ k, rank: i + 1 })).filter((r) => r.k.isMine);
   if (inTug) return <TugScreen duels={duels} tug={tug} busy={busy} dogs={dogs} onBack={() => setInTug(false)} />;
   const running = duels.filter((d) => d.status === 'active');
+  const incoming = duels.filter((d) => d.status === 'pending' && !d.isChallenger);
   const month = new Date().toLocaleDateString('en-AU', { month: 'long' }).toUpperCase();
   const cards = [
     { kind: 'PACK WAR', title: 'BUILD YOUR CREW. WIN AS A PACK', body: 'Team up with colleagues and race other teams in your company to the top of the ranking.', color: C.cyan },
@@ -107,7 +109,8 @@ export function ChallengesScreen({ packs, onPacks, duels, tug, busy, dogs }: {
               {running.length
                 ? running.map((d) => <Text key={d.id} style={[S.bold, { fontSize: 16 }]}>vs {d.opponentName ?? 'colleague'}: {d.mySteps >= d.theirSteps ? 'you lead' : 'you trail'} by {fmt(Math.abs(d.mySteps - d.theirSteps))}</Text>)
                 : null}
-              <Btn label={running.length ? 'See my tugs of war' : 'Challenge a colleague'} kind="coral" small onPress={() => setInTug(true)} />
+              {incoming.map((d) => <Text key={d.id} style={[S.bold, { fontSize: 16, color: C.cyan }]}>{d.opponentName ?? 'A colleague'} challenged you!</Text>)}
+              <Btn label={incoming.length ? 'Answer the challenge' : running.length ? 'See my tugs of war' : 'Challenge a colleague'} kind="coral" small onPress={() => setInTug(true)} />
             </Pressable>
           );
         }
@@ -153,13 +156,14 @@ function TugBar({ mine, theirs }: { mine: number; theirs: number }) {
 
 function TugScreen({ duels, tug, busy, dogs, onBack }: { duels: Duel[]; tug: TugActions; busy: boolean; dogs: Dog[]; onBack: () => void }) {
   const [days, setDays] = useState(7);
-  const [code, setCode] = useState('');
+  const [people, setPeople] = useState<Colleague[] | null>(null);
+  const [pick, setPick] = useState<string | null>(null);
   const [hint, setHint] = useState(false);
   const slug = (id: string | null) => dogs.find((d) => d.id === id)?.slug;
-  const accept = () => {
-    Keyboard.dismiss();
-    if (code.trim().length !== 6) return setHint(true);
-    tug.accept(code).then((ok) => { if (ok) setCode(''); });
+  useEffect(() => { tug.colleagues().then(setPeople).catch(() => setPeople([])); }, [duels.length]);
+  const send = () => {
+    if (!pick) return setHint(true);
+    tug.create(pick, days).then((ok) => { if (ok) setPick(null); });
   };
   return (
     <View style={{ gap: 16 }}>
@@ -169,15 +173,26 @@ function TugScreen({ duels, tug, busy, dogs, onBack }: { duels: Duel[]; tug: Tug
       {duels.map((d) => {
         const left = daysLeft(d.endsOn);
         const name = d.opponentName ?? 'a colleague';
+        if (d.status === 'pending' && !d.isChallenger) {
+          return (
+            <View key={d.id} style={[S.card, { gap: 10, borderColor: C.cyan, borderWidth: 2 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <DogAvatar slug={slug(d.opponentDog)} size={26} />
+                <Text style={[S.bold, { fontSize: 16, flex: 1 }]}>{name} challenged you · {d.days} days</Text>
+              </View>
+              <Text style={S.muted}>If you accept, you two see each other's steps for these {d.days} days. Nobody else does.</Text>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <Btn label="Accept" small kind="coral" busy={busy} onPress={() => { tug.accept(d); }} />
+                <Btn label="Decline" small kind="light" onPress={() => tug.decline(d)} />
+              </View>
+            </View>
+          );
+        }
         if (d.status === 'pending') {
           return (
             <Card key={d.id} style={{ gap: 10 }}>
-              <Text style={S.eyebrow}>Waiting for a colleague · {d.days} days</Text>
-              <Text style={[S.tag, { fontSize: 16 }]}>Code {d.code}</Text>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <Btn label="Send again" small kind="coral" onPress={() => d.code && tug.share(d.code, d.days)} />
-                <Btn label="Cancel" small kind="light" onPress={() => tug.cancel(d)} />
-              </View>
+              <Text style={S.eyebrow}>Waiting for {name} to accept · {d.days} days</Text>
+              <Btn label="Cancel" small kind="light" onPress={() => tug.cancel(d)} />
             </Card>
           );
         }
@@ -203,18 +218,26 @@ function TugScreen({ duels, tug, busy, dogs, onBack }: { duels: Duel[]; tug: Tug
       })}
       <Card style={{ gap: 10 }}>
         <Text style={S.h2}>Challenge a colleague</Text>
+        {!people ? <Text style={S.muted}>Loading…</Text> : people.length === 0 ? (
+          <Text style={S.muted}>Nobody else at your workplace is on the leaderboard yet. Only people who show their name can be challenged.</Text>
+        ) : (
+          <View style={{ gap: 8 }}>
+            {people.map((p) => (
+              <Pressable key={p.id} onPress={() => { setPick(p.id); setHint(false); }} accessibilityRole="radio" accessibilityState={{ selected: pick === p.id }}
+                style={[x.lb, pick === p.id && x.lbMine]}>
+                <DogAvatar slug={slug(p.dogId)} size={26} />
+                <Text numberOfLines={1} style={[S.bold, { fontSize: 16, flex: 1 }]}>{p.displayName}</Text>
+                {pick === p.id && <Text style={[S.bold, { color: C.pink }]}>✓</Text>}
+              </Pressable>
+            ))}
+          </View>
+        )}
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {[3, 7, 14].map((n) => <Pill key={n} label={`${n} days`} on={days === n} onPress={() => setDays(n)} />)}
         </View>
-        <Text style={S.muted}>You'll get a code to send them. It starts the day they accept.</Text>
-        <Btn label="Create challenge" kind="coral" busy={busy} onPress={() => { tug.create(days); }} />
-      </Card>
-      <Card style={{ gap: 10 }}>
-        <Text style={S.h2}>Got a code?</Text>
-        <TextInput style={[S.input, { fontFamily: F.mono, letterSpacing: 4 }]} value={code} onChangeText={(t) => { setCode(t.toUpperCase()); setHint(false); }} placeholder="ABC234" placeholderTextColor={C.muted} maxLength={6} autoCapitalize="characters" autoCorrect={false} accessibilityLabel="Challenge code" returnKeyType="done" onSubmitEditing={accept} />
-        {hint && <Text style={S.err}>Codes have 6 letters and numbers.</Text>}
-        <Text style={S.muted}>By accepting, you and your opponent see each other's steps for the days of this tug of war. Nobody else does.</Text>
-        <Btn label="Accept challenge" busy={busy} onPress={accept} />
+        {hint && <Text style={S.err}>Pick a colleague first.</Text>}
+        <Text style={S.muted}>They'll see it under Challenges and it starts the day they accept.</Text>
+        <Btn label="Send challenge" kind="coral" busy={busy} onPress={send} />
       </Card>
     </View>
   );
@@ -242,7 +265,7 @@ function WalkerRow({ w, rank, slug }: { w: Walker; rank: number; slug?: string }
 
 export type PackActions = {
   create: (name: string) => Promise<boolean>;
-  join: (code: string) => Promise<boolean>;
+  join: (p: Pack) => Promise<boolean>;
   leave: (p: Pack) => void;
   invite: (p: Pack) => void;
   rename: (p: Pack, name: string) => Promise<void>;
@@ -290,22 +313,16 @@ export function LeaderboardScreen({ walkers, packs, onBoard, companyName, busy, 
 
 function PacksList({ packs, busy, actions, onOpen, companyName }: { packs: Pack[]; busy: boolean; actions: PackActions; onOpen: (p: Pack) => void; companyName: string }) {
   const [name, setName] = useState('');
-  const [code, setCode] = useState('');
-  const [hint, setHint] = useState<'name' | 'code' | null>(null);
+  const [hint, setHint] = useState<'name' | null>(null);
   const mine = packs.filter((k) => k.isMine);
   const create = () => {
     Keyboard.dismiss();
     if (!name.trim()) return setHint('name');
     actions.create(name).then((ok) => { if (ok) setName(''); });
   };
-  const join = () => {
-    Keyboard.dismiss();
-    if (code.trim().length !== 6) return setHint('code');
-    actions.join(code).then((ok) => { if (ok) setCode(''); });
-  };
   return (
     <View style={{ gap: 12 }}>
-      <Text style={S.muted}>Packs are teams you make with colleagues at {companyName}. They're ranked by steps per walker this month.</Text>
+      <Text style={S.muted}>Packs are teams you make with colleagues at {companyName}. Tap Join on any pack. They're ranked by steps per walker this month.</Text>
       {packs.length ? packs.map((k, i) => {
         const first = i === 0 && !k.isMine;
         return (
@@ -324,10 +341,11 @@ function PacksList({ packs, busy, actions, onOpen, companyName }: { packs: Pack[
                 <Text style={[S.p, { fontSize: 12, textAlign: 'right' }]}>per walker</Text>
               </View>
             ) : k.isMine ? <Text style={[S.muted, { fontSize: 22 }]}>›</Text> : null}
+            {!k.isMine && mine.length < 5 && <Btn label="Join" small kind="coral" busy={busy} onPress={() => actions.join(k)} />}
           </Pressable>
         );
       }) : (
-        <Card><Text style={[S.bold, { fontSize: 16 }]}>No packs yet.</Text><Text style={S.muted}>Start one below and invite your colleagues.</Text></Card>
+        <Card><Text style={[S.bold, { fontSize: 16 }]}>No packs yet.</Text><Text style={S.muted}>Start one below. Colleagues can then tap Join.</Text></Card>
       )}
       {mine.length < 5 && (
         <>
@@ -336,12 +354,6 @@ function PacksList({ packs, busy, actions, onOpen, companyName }: { packs: Pack[
             <TextInput style={S.input} value={name} onChangeText={(t) => { setName(t); setHint(null); }} placeholder="Pack name, e.g. Level 3 Legends" placeholderTextColor={C.muted} maxLength={40} accessibilityLabel="Pack name" returnKeyType="done" onSubmitEditing={create} />
             {hint === 'name' && <Text style={S.err}>Type a name for your pack first.</Text>}
             <Btn label="Create pack" kind="coral" busy={busy} onPress={create} />
-          </Card>
-          <Card style={{ gap: 10 }}>
-            <Text style={S.h2}>Join with a code</Text>
-            <TextInput style={[S.input, { fontFamily: F.mono, letterSpacing: 4, textTransform: 'uppercase' }]} value={code} onChangeText={(t) => { setCode(t.toUpperCase()); setHint(null); }} placeholder="ABC234" placeholderTextColor={C.muted} maxLength={6} autoCapitalize="characters" autoCorrect={false} accessibilityLabel="Pack code" returnKeyType="done" onSubmitEditing={join} />
-            {hint === 'code' && <Text style={S.err}>Pack codes have 6 letters and numbers.</Text>}
-            <Btn label="Join pack" busy={busy} onPress={join} />
           </Card>
         </>
       )}
@@ -364,7 +376,6 @@ function PackScreen({ pack, slug, busy, actions, onBack }: { pack: Pack; slug: (
         {pack.stepsPerWalker != null
           ? <Text style={S.p}>{fmt(pack.stepsPerWalker)} steps per walker</Text>
           : <Text style={S.muted}>Step totals show once the pack has 5 walkers, or everyone in it shows their name.</Text>}
-        {pack.code && <Text style={[S.tag, { marginTop: 6 }]}>Invite code {pack.code}</Text>}
         <Btn label="Invite colleagues" kind="coral" small onPress={() => actions.invite(pack)} style={{ marginTop: 6 }} />
       </View>
       {err && <Text style={S.err}>{err}</Text>}
