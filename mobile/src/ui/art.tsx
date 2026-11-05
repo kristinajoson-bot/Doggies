@@ -1,5 +1,5 @@
 import { Image, View } from 'react-native';
-import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, ClipPath, Defs, Ellipse, G, LinearGradient, Path, Stop, Text as SvgText } from 'react-native-svg';
 
 import { C, F, glow } from './theme';
 
@@ -18,19 +18,16 @@ export function Paw({ size = 28, color = C.pink }: { size?: number; color?: stri
 
 // A milestone paw: lit green when reached, pink outline when it's the next one.
 export function PawTile({ state, size }: { state: 'on' | 'next' | 'off'; size: number }) {
-  const fill = state === 'on' ? C.green : C.surface;
+  const fill = state === 'on' ? C.green : 'none';
   const stroke = state === 'on' ? C.green : state === 'next' ? C.pink : '#4a4660';
-  const glowStyle = state === 'on' ? glow(C.green, 6, 0.6) : state === 'next' ? glow(C.pink, 6, 0.65) : {};
   return (
-    <View style={glowStyle}>
-      <Svg width={size} height={size} viewBox="0 0 120 120">
-        <G fill={fill} stroke={stroke} strokeWidth={state === 'next' ? 6 : 5}>
-          <Ellipse cx={25} cy={52} rx={10} ry={13} /><Ellipse cx={46} cy={29} rx={10} ry={13} />
-          <Ellipse cx={74} cy={29} rx={10} ry={13} /><Ellipse cx={95} cy={52} rx={10} ry={13} />
-          <Ellipse cx={60} cy={84} rx={31} ry={25} />
-        </G>
-      </Svg>
-    </View>
+    <Svg width={size} height={size} viewBox="0 0 120 120">
+      <G fill={fill} stroke={stroke} strokeWidth={state === 'next' ? 7 : 5}>
+        <Ellipse cx={25} cy={52} rx={10} ry={13} /><Ellipse cx={46} cy={29} rx={10} ry={13} />
+        <Ellipse cx={74} cy={29} rx={10} ry={13} /><Ellipse cx={95} cy={52} rx={10} ry={13} />
+        <Ellipse cx={60} cy={84} rx={31} ry={25} />
+      </G>
+    </Svg>
   );
 }
 
@@ -49,7 +46,7 @@ const KIBBLE_COLOURS = ['#b8692c', '#9a5220', '#cf8240', '#a85d25'];
 export function Bowl({ level, width = 250, id = 'b' }: { level: number; width?: number; id?: string }) {
   const l = Math.max(0, Math.min(1, level));
   const top = 60 - 30 * l; // peak of the kibble mound
-  const edge = 66 - 4 * l; // where the mound meets the bowl wall
+  const edge = 61 - 2 * l; // where the mound meets the bowl wall
   const mound = (x: number) => top + (edge - top) * Math.pow((x - 100) / 70, 2);
   const front = (x: number) => 59 + 14 * Math.sqrt(Math.max(0, 1 - Math.pow((x - 100) / 72, 2)));
   const pieces = KIBBLE_GRID.filter(([x, y]) => Math.abs(x - 100) <= 68 && y >= mound(x) + 1 && y <= front(x) - 3);
@@ -59,14 +56,15 @@ export function Bowl({ level, width = 250, id = 'b' }: { level: number; width?: 
         <LinearGradient id={`${id}cer`} x1="0" y1="0" x2="1" y2="0">
           <Stop offset="0" stopColor="#c9c3b8" /><Stop offset="0.35" stopColor="#fbf8f2" /><Stop offset="1" stopColor="#b5afa4" />
         </LinearGradient>
+        <ClipPath id={`${id}in`}><Path d="M29 0 H171 V59 A71 13 0 0 1 29 59 Z" /></ClipPath>
       </Defs>
       <Ellipse cx={100} cy={128} rx={74} ry={7} fill="#000" opacity={0.6} />
       <Path d="M18 58 C22 108 58 124 100 124 C142 124 178 108 182 58 Z" fill={`url(#${id}cer)`} />
       <Ellipse cx={100} cy={58} rx={82} ry={18} fill="#ffffff" />
       <Ellipse cx={100} cy={59} rx={72} ry={14} fill="#2a1a14" />
       {l > 0.01 && (
-        <G>
-          <Path d={`M30 ${edge} Q100 ${2 * top - edge} 170 ${edge} A70 12 0 0 1 30 ${edge} Z`} fill="#6e3814" />
+        <G clipPath={`url(#${id}in)`}>
+          <Path d={`M29 ${edge} Q100 ${2 * top - edge} 171 ${edge} L171 59 A71 13 0 0 1 29 59 Z`} fill="#6e3814" />
           {pieces.map(([x, y, r], i) => (
             <G key={i} transform={`rotate(${r} ${x} ${y})`}>
               <Ellipse cx={x} cy={y} rx={5.6} ry={4.2} fill={KIBBLE_COLOURS[i % 4]} stroke="#5a2c0e" strokeWidth={0.7} />
