@@ -11,7 +11,7 @@ export const MILESTONES = [5000, 15000, 30000, 45000, 65000, 85000, 100000, 1200
 export const BOWL_KG = 0.4;
 export const PRIVACY_URL = 'https://fursteps-site-kj-2567.vercel.app/privacy';
 
-const textGlow = (color: string) => ({ textShadowColor: color, textShadowRadius: 14, textShadowOffset: { width: 0, height: 0 } });
+const textGlow = (_color: string) => ({}); // no text glows on the light theme
 const plural = (n: number, one: string, many = one + 's') => `${fmt(n)} ${n === 1 ? one : many}`;
 
 function DogCard({ dog, onPress }: { dog: Dog | null; onPress: () => void }) {
@@ -53,7 +53,7 @@ export function TodayScreen({ home, dog, healthName, busy, onDogs, onCelebrate }
             return (
               <Pressable key={m} disabled={state !== 'on'} onPress={() => onCelebrate(m)} style={{ alignItems: 'center', width: paw }} accessibilityLabel={`${fmt(m)} steps, ${state === 'on' ? 'bowl filled' : state === 'next' ? 'next bowl' : 'locked'}`}>
                 <PawTile state={state} size={paw} />
-                <Text style={[x.pl, state === 'on' && { color: C.green }, state === 'next' && { color: C.pink }]}>{m / 1000}k</Text>
+                <Text style={[x.pl, state === 'on' && { color: C.fg }, state === 'next' && { color: C.pink }]}>{m / 1000}k</Text>
               </Pressable>
             );
           })}
@@ -90,13 +90,13 @@ export function ChallengesScreen({ packs, onPacks, onOpenPack, duels, tug, busy,
   const open = duels.find((d) => d.status === 'active') ?? duels.find((d) => d.status === 'pending');
   return (
     <View style={{ gap: 16 }}>
-      <Text style={[S.h1, { fontSize: 44, lineHeight: 50, color: C.pink }, textGlow(C.pink)]}>Challenges</Text>
+      <Text style={[S.h1, { fontSize: 34, lineHeight: 40 }]}>Challenges</Text>
       <View style={[x.chal, { borderColor: C.pink, borderStyle: 'solid' }, glow(C.pink, 14, 0.25)]}>
         <Text style={[x.chalKind, { color: C.pink }]}>TUG OF WAR</Text>
         {open ? <DuelCard d={open} slug={slug} tug={tug} busy={busy} /> : (
           <>
             <Text style={x.chalTitle}>PULL THE BONE FROM A COLLEAGUE</Text>
-            <Text style={[S.p, { fontSize: 15, color: '#d8d4e6' }]}>Most steps in 3 to 14 days wins the bone.</Text>
+            <Text style={[S.p, { fontSize: 15, color: C.muted }]}>Most steps in 3 to 14 days wins the bone.</Text>
             <Btn label="Challenge a colleague" kind="coral" small onPress={() => setInTug(true)} />
           </>
         )}
@@ -562,8 +562,8 @@ export function ChooseDogPopup({ visible, dogs, busy, onPick, onLater }: { visib
 export function Celebrate({ visible, bowls, steps, dogName, onDone, onMore }: { visible: boolean; bowls: number; steps: number; dogName: string | null; onDone: () => void; onMore: () => void }) {
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onDone}>
-      <View style={{ flex: 1, backgroundColor: '#07060b', paddingTop: 60, paddingBottom: 30 }}>
-        <View style={{ position: 'absolute', top: 40, left: '15%', width: '70%', height: 300, borderRadius: 300, backgroundColor: 'rgba(255,46,154,0.18)' }} />
+      <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: 60, paddingBottom: 30 }}>
+        <View style={{ position: 'absolute', top: 40, left: '15%', width: '70%', height: 300, borderRadius: 300, backgroundColor: 'rgba(214,31,105,0.08)' }} />
         <Pressable onPress={onDone} style={{ alignSelf: 'flex-end', paddingHorizontal: 20, paddingVertical: 8 }}><Text style={{ color: C.cyan, fontFamily: F.bodyMedium, fontSize: 17 }}>Done</Text></Pressable>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 26, paddingHorizontal: 28 }}>
           <Text style={[{ fontFamily: F.mono, fontSize: 14, letterSpacing: 2.8, color: C.pink }, textGlow(C.pink)]}>CONGRATULATIONS</Text>
@@ -583,17 +583,17 @@ export function Celebrate({ visible, bowls, steps, dogName, onDone, onMore }: { 
 }
 
 const x = StyleSheet.create({
-  dogcard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: 'rgba(255,46,154,0.5)', borderRadius: 20, paddingVertical: 12, paddingHorizontal: 14 },
+  dogcard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 20, paddingVertical: 12, paddingHorizontal: 14 },
   pl: { fontFamily: F.display, fontSize: 12, color: C.muted, marginTop: 1 },
-  chal: { borderWidth: 2, borderStyle: 'dashed', borderRadius: 22, padding: 18, gap: 10, backgroundColor: '#0b0a12' },
+  chal: { borderWidth: 2, borderStyle: 'dashed', borderRadius: 22, padding: 18, gap: 10, backgroundColor: C.bg },
   chalKind: { fontFamily: F.monoBold, fontSize: 13, letterSpacing: 1.6 },
   chalTitle: { fontFamily: 'Bungee_400Regular', fontSize: 24, lineHeight: 28, color: C.fg },
   lb: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 20, paddingVertical: 12, paddingHorizontal: 14 },
   lbFirst: { borderColor: C.cyan, ...glow(C.cyan, 18, 0.25) },
-  lbMine: { backgroundColor: 'rgba(255,46,154,0.1)', borderWidth: 2, borderColor: C.pink, ...glow(C.pink, 28, 0.28) },
+  lbMine: { backgroundColor: C.pinkSoft, borderWidth: 1.5, borderColor: C.pink, ...glow(C.pink, 28, 0.28) },
   rank: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
   rankText: { fontFamily: F.display, fontSize: 18, color: C.muted },
   num: { fontFamily: F.display, fontSize: 22, color: C.fg, textAlign: 'right' },
   drop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 20, paddingHorizontal: 16, minHeight: 56 },
-  celCard: { width: 280, aspectRatio: 4 / 3, borderRadius: 22, borderWidth: 2, borderColor: C.pink, backgroundColor: '#100c18', alignItems: 'center', justifyContent: 'center', gap: 6, transform: [{ rotate: '-3deg' }] },
+  celCard: { width: 280, aspectRatio: 4 / 3, borderRadius: 22, borderWidth: 2, borderColor: C.pink, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', gap: 6, transform: [{ rotate: '-3deg' }] },
 });

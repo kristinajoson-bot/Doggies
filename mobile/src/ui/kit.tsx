@@ -28,7 +28,7 @@ export function Btn({ label, onPress, kind = 'default', small, busy, style }: { 
 export function Bar({ pct }: { pct: number }) {
   return (
     <View style={k.bar}>
-      <LinearGradient colors={[C.pink, C.cyan]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[k.barFill, { width: `${Math.max(0, Math.min(100, pct))}%` }]} />
+      <LinearGradient colors={[C.coral, C.pink]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[k.barFill, { width: `${Math.max(0, Math.min(100, pct))}%` }]} />
     </View>
   );
 }
@@ -49,8 +49,8 @@ export function Card({ children, style }: { children: ReactNode; style?: StylePr
 export function Glow({ children }: { children: ReactNode }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <LinearGradient colors={['rgba(255,46,154,0.30)', 'transparent']} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 420 }} />
-      <LinearGradient colors={['transparent', 'rgba(35,229,255,0.16)']} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 380 }} />
+      <LinearGradient colors={['rgba(214,31,105,0.07)', 'transparent']} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 420 }} />
+      <LinearGradient colors={['transparent', 'rgba(14,116,144,0.05)']} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 380 }} />
       {children}
     </View>
   );

@@ -18,8 +18,8 @@ export function Paw({ size = 28, color = C.pink }: { size?: number; color?: stri
 
 // A milestone paw: lit green when reached, pink outline when it's the next one.
 export function PawTile({ state, size }: { state: 'on' | 'next' | 'off'; size: number }) {
-  const fill = state === 'on' ? C.green : 'none';
-  const stroke = state === 'on' ? C.green : state === 'next' ? C.pink : '#4a4660';
+  const fill = state === 'on' ? C.coral : 'none';
+  const stroke = state === 'on' ? C.coral : state === 'next' ? C.pink : '#d9cfc7';
   return (
     <Svg width={size} height={size} viewBox="0 0 120 120">
       <G fill={fill} stroke={stroke} strokeWidth={state === 'next' ? 7 : 5}>
@@ -31,7 +31,7 @@ export function PawTile({ state, size }: { state: 'on' | 'next' | 'off'; size: n
   );
 }
 
-// A cream ceramic dog bowl with a pink paw that fills with kibble (level 0 to 1). The same bowl is used everywhere.
+// A coral ceramic dog bowl (logo colour) with a cream paw that fills with kibble (level 0 to 1). The same bowl is used everywhere.
 // Kibble pieces sit on a fixed grid; only the ones under the mound line show, back rows first.
 const KIBBLE_GRID: [number, number, number][] = (() => {
   const out: [number, number, number][] = [];
@@ -73,21 +73,21 @@ export function Bowl({ level, width = 250, id = 'b' }: { level: number; width?: 
     <Svg width={width} height={Math.round(width * 0.7)} viewBox="0 0 200 140">
       <Defs>
         <LinearGradient id={`${id}cer`} x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor="#c9c3b8" /><Stop offset="0.35" stopColor="#fbf8f2" /><Stop offset="1" stopColor="#b5afa4" />
+          <Stop offset="0" stopColor="#d24a2f" /><Stop offset="0.35" stopColor="#f27a61" /><Stop offset="1" stopColor="#c4432a" />
         </LinearGradient>
         <ClipPath id={`${id}in`}><Path d="M29 0 H171 V59 A71 13 0 0 1 29 59 Z" /></ClipPath>
       </Defs>
-      <Ellipse cx={100} cy={128} rx={74} ry={7} fill="#000" opacity={0.6} />
+      <Ellipse cx={100} cy={128} rx={74} ry={7} fill="#1c1a24" opacity={0.1} />
       <Path d="M18 58 C22 108 58 124 100 124 C142 124 178 108 182 58 Z" fill={`url(#${id}cer)`} />
-      <Ellipse cx={100} cy={58} rx={82} ry={18} fill="#ffffff" />
-      <Ellipse cx={100} cy={59} rx={72} ry={14} fill="#2a1a14" />
+      <Ellipse cx={100} cy={58} rx={82} ry={18} fill="#f9a58f" />
+      <Ellipse cx={100} cy={59} rx={72} ry={14} fill="#4a2f22" />
       {l > 0.01 && (
         <G clipPath={`url(#${id}in)`}>
           <Path d={`M29 ${edge} Q100 ${2 * top - edge} 171 ${edge} L171 59 A71 13 0 0 1 29 59 Z`} fill="#6a4220" />
           {pieces.map(([x, y, r], i) => <Kibble key={i} x={x} y={y} r={r} i={i} />)}
         </G>
       )}
-      <G fill={C.pink}>
+      <G fill="#fff5ec">
         <Ellipse cx={100} cy={106} rx={8.5} ry={6.5} /><Circle cx={87} cy={96} r={3.6} /><Circle cx={95} cy={90.5} r={3.6} />
         <Circle cx={105} cy={90.5} r={3.6} /><Circle cx={113} cy={96} r={3.6} />
       </G>
@@ -96,7 +96,7 @@ export function Bowl({ level, width = 250, id = 'b' }: { level: number; width?: 
 }
 
 // The bone in a tug of war. It slides toward whoever is ahead.
-export function Bone({ width = 90, color = '#f4ead8' }: { width?: number; color?: string }) {
+export function Bone({ width = 90, color = '#e9d6b0' }: { width?: number; color?: string }) {
   return (
     <Svg width={width} height={width * 0.42} viewBox="0 0 100 42">
       <G fill={color}>
@@ -145,7 +145,7 @@ export const DOG_PHOTOS: Record<string, { thumb: number; photos: number[] }> = {
 export function DogAvatar({ slug, size }: { slug?: string | null; size: number }) {
   const ring = Math.round(size * 1.25), pic = slug ? DOG_PHOTOS[slug] : undefined;
   return (
-    <View style={[{ width: ring, height: ring, borderRadius: ring / 2, borderWidth: 2, borderColor: 'rgba(255,46,154,0.6)', backgroundColor: '#1a0f1c', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, glow(C.pink, 11, 0.3)]}>
+    <View style={[{ width: ring, height: ring, borderRadius: ring / 2, borderWidth: 2, borderColor: 'rgba(214,31,105,0.35)', backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, glow(C.pink, 11, 0.3)]}>
       {pic ? <Image source={pic.thumb} style={{ width: '100%', height: '100%' }} /> : <Paw size={size} />}
     </View>
   );

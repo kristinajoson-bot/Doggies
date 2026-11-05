@@ -1,20 +1,24 @@
 import { StyleSheet } from 'react-native';
 
-// Same colours and fonts as the Walkies web app.
+// Light theme from the FurSteps logo: white background, coral accent, warm cream cards.
+// Text colours pass WCAG AA (4.5:1) on white. Bright coral (C.coral) is for shapes only, never small text.
 export const C = {
-  bg: '#000000',
-  surface: '#0d0c12',
-  surface2: '#16141f',
-  line: '#2a2736',
-  fg: '#f4f2fa',
-  muted: '#9a95ad',
-  pink: '#ff2e9a',
-  green: '#3bff8f',
-  cyan: '#23e5ff',
-  yellow: '#f4ff3a',
-  gold: '#ffc21a',
-  dark: '#050507',
-  err: '#ff7a9c',
+  bg: '#ffffff',
+  surface: '#fff5ec',
+  surface2: '#fbebdd',
+  line: '#efe6de',
+  fg: '#241b19',
+  muted: '#6b6360',
+  pink: '#c8432a', // deep coral: buttons, links, active tab, small accent text
+  coral: '#e9593c', // logo coral: bowl, progress, large shapes
+  green: '#2e7d4f',
+  cyan: '#2f6f73', // deep teal: the other side in a tug of war
+  yellow: '#a35f00',
+  gold: '#a35f00',
+  mango: '#ffc468',
+  dark: '#ffffff', // text on filled accent buttons and badges
+  err: '#b42318',
+  pinkSoft: '#fff1eb',
 };
 
 export const F = {
@@ -26,8 +30,9 @@ export const F = {
   monoBold: 'GeistMono_600SemiBold',
 };
 
-const glow = (color: string, radius = 14, opacity = 0.45) => ({
-  shadowColor: color, shadowOpacity: opacity, shadowRadius: radius, shadowOffset: { width: 0, height: 0 },
+// On a light background neon glows look muddy, so every 'glow' is now one soft neutral shadow.
+const glow = (_color?: string, _radius?: number, _opacity?: number) => ({
+  shadowColor: '#1c1a24', shadowOpacity: 0.07, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 2,
 });
 export { glow };
 
@@ -39,12 +44,12 @@ export const S = StyleSheet.create({
   muted: { fontFamily: F.body, fontSize: 14, lineHeight: 20, color: C.muted },
   bold: { fontFamily: F.bodyBold, color: C.fg },
   eyebrow: { fontFamily: F.bodyBold, fontSize: 12, letterSpacing: 1.4, textTransform: 'uppercase', color: C.pink },
-  card: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 22, padding: 16 },
-  hero: { backgroundColor: C.surface, borderWidth: 2, borderColor: C.pink, borderRadius: 28, paddingTop: 18, paddingHorizontal: 20, paddingBottom: 20, alignItems: 'center', gap: 6, ...glow(C.pink, 28, 0.35) },
+  card: { backgroundColor: C.bg, borderWidth: 1, borderColor: C.line, borderRadius: 22, padding: 16 },
+  hero: { backgroundColor: C.bg, borderWidth: 1, borderColor: C.line, borderRadius: 28, paddingTop: 18, paddingHorizontal: 20, paddingBottom: 20, alignItems: 'center', gap: 6, ...glow(C.pink, 28, 0.35) },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   input: { minHeight: 48, borderWidth: 1, borderColor: C.line, borderRadius: 14, paddingHorizontal: 14, backgroundColor: C.surface, color: C.fg, fontSize: 16, fontFamily: F.body },
   label: { fontFamily: F.bodyBold, fontSize: 15, color: C.fg },
   err: { fontFamily: F.bodyBold, fontSize: 14, color: C.err },
-  linkbtn: { fontFamily: F.bodyBold, fontSize: 16, color: C.cyan, paddingVertical: 12 },
-  tag: { fontFamily: F.mono, fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase', color: C.cyan },
+  linkbtn: { fontFamily: F.bodyBold, fontSize: 16, color: C.pink, paddingVertical: 12 },
+  tag: { fontFamily: F.mono, fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase', color: C.muted },
 });

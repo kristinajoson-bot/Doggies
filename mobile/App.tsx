@@ -207,7 +207,7 @@ export default function App() {
             </>
           ) : null}
         </ScrollView>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
       </Glow>
     );
   }
@@ -313,14 +313,14 @@ export default function App() {
         onDone={() => setCelebrate(null)} onMore={() => { setCelebrate(null); goTab('impact'); }} />
       <ChooseDogPopup visible={askDog && !celebrate} dogs={dogs} busy={busy} onLater={() => setAskDog(false)}
         onPick={(id) => run(async () => { await chooseDog(id); setAskDog(false); await loadAll(); })} />
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
     </View>
   );
 }
 
 const a = StyleSheet.create({
-  form: { backgroundColor: C.surface, borderWidth: 2, borderColor: C.pink, borderRadius: 24, padding: 16, gap: 12, ...glow(C.pink, 28, 0.3) },
-  nav: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', justifyContent: 'space-evenly', backgroundColor: 'rgba(0,0,0,0.94)', borderTopWidth: 1, borderTopColor: C.line, paddingTop: 6, paddingBottom: 28, paddingHorizontal: 10 },
+  form: { backgroundColor: C.bg, borderWidth: 1, borderColor: C.line, borderRadius: 24, padding: 16, gap: 12, ...glow(C.pink, 28, 0.3) },
+  nav: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', justifyContent: 'space-evenly', backgroundColor: 'rgba(255,255,255,0.97)', borderTopWidth: 1, borderTopColor: C.line, paddingTop: 6, paddingBottom: 28, paddingHorizontal: 10 },
   tab: { alignItems: 'center', justifyContent: 'center', gap: 3, minHeight: 52, minWidth: 56 },
   tabText: { fontFamily: F.bodyBold, fontSize: 12, color: C.muted },
 });
