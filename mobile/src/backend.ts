@@ -264,3 +264,21 @@ export async function withdrawStepConsent() {
   const { error } = await supabase.rpc('withdraw_consent', { p_kind: 'steps' });
   fail(error);
 }
+
+export type CompanyRow = { name: string; emoji: string | null; walkers: number; stepsPerWalker: number | null; bowls: number; isMine: boolean };
+
+// Your company against the others: totals only, never another company's people.
+export async function companyBoard(): Promise<CompanyRow[]> {
+  const w = monthWindow();
+  const { data, error } = await supabase.rpc('company_board', { p_from: w.from, p_to: w.to });
+  fail(error);
+  return ((data as Record<string, any>[]) ?? []).map((r) => ({
+    name: r.name, emoji: r.industry_emoji, walkers: r.walkers, stepsPerWalker: r.steps_per_walker, bowls: r.bowls, isMine: r.is_mine,
+  }));
+}
+
+export async function myAllTimeBowls(): Promise<number> {
+  const { data, error } = await supabase.rpc('my_all_time');
+  fail(error);
+  return Number((data as Record<string, any>[])?.[0]?.bowls ?? 0);
+}

@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Alert, Image, Keyboard, Linking, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import appJson from '../app.json';
 
-import type { Colleague, Dog, Duel, Home, Pack, Walker } from './backend';
-import { Bowl, BowlIcon, DOG_PHOTOS, DogAvatar, Orb, PawTile } from './ui/art';
+import type { Colleague, CompanyRow, Dog, Duel, Home, Pack, Walker } from './backend';
+import { Bone, Bowl, DOG_PHOTOS, DogAvatar } from './ui/art';
 import { Bar, Btn, Card, Pill, fmt } from './ui/kit';
 import { C, F, S, glow } from './ui/theme';
 
@@ -12,7 +12,6 @@ export const BOWL_KG = 0.4;
 export const PRIVACY_URL = 'https://fursteps-site-kj-2567.vercel.app/privacy';
 
 const textGlow = (color: string) => ({ textShadowColor: color, textShadowRadius: 14, textShadowOffset: { width: 0, height: 0 } });
-const short = (m: number) => `${m / 1000}k`;
 const plural = (n: number, one: string, many = one + 's') => `${fmt(n)} ${n === 1 ? one : many}`;
 
 function DogCard({ dog, onPress }: { dog: Dog | null; onPress: () => void }) {
@@ -20,8 +19,7 @@ function DogCard({ dog, onPress }: { dog: Dog | null; onPress: () => void }) {
     <Pressable onPress={onPress} style={[x.dogcard, glow(C.pink, 18, 0.18)]} accessibilityRole="button">
       <DogAvatar slug={dog?.slug} size={40} />
       <View style={{ flex: 1 }}>
-        <Text style={[S.bold, { fontSize: 16 }]}>{dog ? `Walking for ${dog.name}` : 'Walking for the FurSteps pool'}</Text>
-        <Text style={S.muted}>{dog ? `Tap to meet ${dog.name}` : 'Choose a shelter dog to walk for'}</Text>
+        <Text style={[S.bold, { fontSize: 16 }]}>{dog ? `Walking for ${dog.name}` : 'Choose a shelter dog to walk for'}</Text>
       </View>
       <Text style={[S.muted, { fontSize: 22 }]}>›</Text>
     </Pressable>
@@ -35,34 +33,28 @@ export function TodayScreen({ home, dog, healthName, busy, onDogs, onCelebrate }
   const steps = home.monthSteps, done = home.myBowls;
   const next = MILESTONES.find((m) => steps < m);
   const prev = [...MILESTONES].reverse().find((m) => steps >= m) ?? 0;
-  const pct = next ? Math.round(((steps - prev) / (next - prev)) * 100) : 100;
+  const fill = next ? (steps - prev) / (next - prev) : 1;
   const inner = Math.min(width, 440) - 40 - 44;
-  const orb = Math.floor((inner - 16) / 3), paw = Math.floor((inner - 12 - 40) / 5);
   return (
     <View style={{ gap: 16 }}>
       <DogCard dog={dog} onPress={onDogs} />
       <View style={S.hero}>
-        <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
-          <Orb size={orb} progress={done / 10} color={C.gold} value={String(done)} label="dog bowls" big />
-          <Orb size={orb} progress={1} color={C.pink} value={fmt(home.todaySteps)} label="today" />
-          <Orb size={orb} progress={steps / 150000} color={C.cyan} value={fmt(steps)} label="month" />
+        <Pressable disabled={!prev} onPress={() => onCelebrate(prev)} accessibilityLabel={`${done} bowls this month`} style={{ alignItems: 'center' }}>
+          <Bowl level={fill} width={Math.min(260, inner)} id="today" />
+        </Pressable>
+        <View style={{ alignItems: 'center', marginTop: -6 }}>
+          <Text style={[{ fontFamily: F.display, fontSize: 56, lineHeight: 60, color: C.gold }, textGlow(C.gold)]}>{done}</Text>
+          <Text style={S.eyebrow}>{done === 1 ? 'bowl' : 'bowls'} this month</Text>
         </View>
-        <View style={{ marginTop: -24 }}><Bowl level={steps / 150000} width={Math.min(240, inner)} /></View>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 8, width: '100%', paddingHorizontal: 6 }}>
-          {MILESTONES.map((m) => {
-            const state = steps >= m ? 'on' : m === next ? 'next' : 'off';
-            return (
-              <Pressable key={m} disabled={state !== 'on'} onPress={() => onCelebrate(m)} style={{ alignItems: 'center', width: paw }} accessibilityLabel={`${fmt(m)} steps, ${state === 'on' ? 'unlocked' : state === 'next' ? 'next scoop' : 'locked'}`}>
-                <PawTile state={state} size={paw} />
-                <Text style={[x.pl, state === 'on' && { color: C.green }, state === 'next' && { color: C.pink }]}>{short(m)}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        <View style={{ width: '100%', marginTop: 2 }}><Bar pct={pct} /></View>
+        <View style={{ width: '100%', marginTop: 4 }}><Bar pct={Math.round(fill * 100)} /></View>
         <Text style={[S.p, { fontSize: 15, textAlign: 'center' }]}>
-          {next ? <><Text style={S.bold}>{fmt(next - steps)}</Text> steps to your next scoop <Text style={{ color: C.muted }}>({short(next)})</Text></> : 'All 10 scoops unlocked. Epic walking!'}
+          {next ? <><Text style={S.bold}>{fmt(next - steps)}</Text> steps to fill your next bowl</> : 'Every bowl filled this month. Epic walking!'}
         </Text>
+        <View style={{ flexDirection: 'row', width: '100%', marginTop: 6 }}>
+          <View style={{ flex: 1, alignItems: 'center' }}><Text style={[x.num, { color: C.pink, textAlign: 'center' }]}>{fmt(home.todaySteps)}</Text><Text style={S.eyebrow}>today</Text></View>
+          <View style={{ width: 1, backgroundColor: C.line }} />
+          <View style={{ flex: 1, alignItems: 'center' }}><Text style={[x.num, { color: C.cyan, textAlign: 'center' }]}>{fmt(steps)}</Text><Text style={S.eyebrow}>this month</Text></View>
+        </View>
       </View>
     </View>
   );
@@ -76,62 +68,84 @@ export type TugActions = {
   cancel: (d: Duel) => void;
 };
 
-export function ChallengesScreen({ packs, onPacks, duels, tug, busy, dogs }: {
-  packs: Pack[]; onPacks: () => void; duels: Duel[]; tug: TugActions; busy: boolean; dogs: Dog[];
+export function ChallengesScreen({ packs, onPacks, onOpenPack, duels, tug, busy, dogs }: {
+  packs: Pack[]; onPacks: () => void; onOpenPack: (p: Pack) => void; duels: Duel[]; tug: TugActions; busy: boolean; dogs: Dog[];
 }) {
   const [inTug, setInTug] = useState(false);
+  const slug = (id: string | null) => dogs.find((d) => d.id === id)?.slug;
   const mine = packs.map((k, i) => ({ k, rank: i + 1 })).filter((r) => r.k.isMine);
   if (inTug) return <TugScreen duels={duels} tug={tug} busy={busy} dogs={dogs} onBack={() => setInTug(false)} />;
-  const running = duels.filter((d) => d.status === 'active');
-  const incoming = duels.filter((d) => d.status === 'pending' && !d.isChallenger);
-  const month = new Date().toLocaleDateString('en-AU', { month: 'long' }).toUpperCase();
-  const cards = [
-    { kind: 'PACK WAR', title: 'BUILD YOUR CREW. WIN AS A PACK', body: 'Team up with colleagues and race other teams in your company to the top of the ranking.', color: C.cyan },
-    { kind: 'TUG OF WAR', title: 'PULL THE BONE FROM A COLLEAGUE', body: 'Challenge one person. Most steps in 3 to 14 days wins the bone.', color: C.pink },
-    { kind: 'COMPANY CUP', title: 'YOUR COMPANY VS THE REST', body: 'Companies and industries go head to head, ranked by steps per walker.', color: C.yellow },
-  ];
+  const open = duels.find((d) => d.status === 'active') ?? duels.find((d) => d.status === 'pending');
   return (
     <View style={{ gap: 16 }}>
-      <View style={{ gap: 4 }}>
-        <Text style={S.eyebrow}>{month} · PICK YOUR FIGHT</Text>
-        <Text style={[S.h1, { fontSize: 44, lineHeight: 50, color: C.pink }, textGlow(C.pink)]}>Challenges</Text>
-        <Text style={[S.h1, { fontSize: 24, color: C.pink, marginTop: -6 }]}>of the month</Text>
-        <Text style={[S.muted, { fontSize: 16, lineHeight: 22 }]}>Every step you walk also fills a bowl for a shelter dog. Take on a colleague or lead a pack.</Text>
+      <Text style={[S.h1, { fontSize: 44, lineHeight: 50, color: C.pink }, textGlow(C.pink)]}>Challenges</Text>
+      <View style={[x.chal, { borderColor: C.pink, borderStyle: 'solid' }, glow(C.pink, 14, 0.25)]}>
+        <Text style={[x.chalKind, { color: C.pink }]}>TUG OF WAR</Text>
+        {open ? <DuelCard d={open} slug={slug} tug={tug} busy={busy} /> : (
+          <>
+            <Text style={x.chalTitle}>PULL THE BONE FROM A COLLEAGUE</Text>
+            <Text style={[S.p, { fontSize: 15, color: '#d8d4e6' }]}>Most steps in 3 to 14 days wins the bone.</Text>
+            <Btn label="Challenge a colleague" kind="coral" small onPress={() => setInTug(true)} />
+          </>
+        )}
+        {open && <Pressable onPress={() => setInTug(true)} accessibilityRole="button"><Text style={S.linkbtn}>Past tugs of war ›</Text></Pressable>}
       </View>
-      {cards.map((c) => {
-        if (c.kind === 'TUG OF WAR') {
-          return (
-            <Pressable key={c.kind} onPress={() => setInTug(true)} accessibilityRole="button"
-              style={[x.chal, { borderColor: c.color, borderStyle: 'solid' }, glow(c.color, 14, 0.25)]}>
-              <Text style={[x.chalKind, { color: c.color }]}>TUG OF WAR · LIVE</Text>
-              <Text style={x.chalTitle}>{c.title}</Text>
-              <Text style={[S.p, { fontSize: 15, color: '#d8d4e6' }]}>{c.body}</Text>
-              {running.length
-                ? running.map((d) => <Text key={d.id} style={[S.bold, { fontSize: 16 }]}>vs {d.opponentName ?? 'colleague'}: {d.mySteps >= d.theirSteps ? 'you lead' : 'you trail'} by {fmt(Math.abs(d.mySteps - d.theirSteps))}</Text>)
-                : null}
-              {incoming.map((d) => <Text key={d.id} style={[S.bold, { fontSize: 16, color: C.cyan }]}>{d.opponentName ?? 'A colleague'} challenged you!</Text>)}
-              <Btn label={incoming.length ? 'Answer the challenge' : running.length ? 'See my tugs of war' : 'Challenge a colleague'} kind="coral" small onPress={() => setInTug(true)} />
-            </Pressable>
-          );
-        }
-        const live = c.kind === 'PACK WAR';
-        return (
-          <Pressable key={c.kind} disabled={!live} onPress={onPacks} accessibilityRole={live ? 'button' : undefined}
-            style={[x.chal, { borderColor: c.color }, live && { borderStyle: 'solid' }, glow(c.color, 14, 0.25)]}>
-            <Text style={[x.chalKind, { color: c.color }]}>{live ? `PACK WAR · LIVE ALL ${month}` : c.kind}</Text>
-            <Text style={x.chalTitle}>{c.title}</Text>
-            <Text style={[S.p, { fontSize: 15, color: '#d8d4e6' }]}>{c.body}</Text>
-            {live ? (
-              <>
-                {mine.length
-                  ? mine.map((r) => <Text key={r.k.id} style={[S.bold, { fontSize: 16 }]}>{r.k.name}: #{r.rank} of {packs.length}</Text>)
-                  : <Text style={[S.bold, { fontSize: 16 }]}>You're not in a pack yet.</Text>}
-                <Btn label={mine.length ? 'See the pack ranking' : 'Start or join a pack'} kind="coral" small onPress={onPacks} />
-              </>
-            ) : <Text style={[S.tag, { color: c.color }]}>Coming soon</Text>}
-          </Pressable>
-        );
-      })}
+      <Pressable onPress={() => (mine.length ? onOpenPack(mine[0].k) : onPacks())} accessibilityRole="button"
+        style={[x.chal, { borderColor: C.cyan, borderStyle: 'solid' }, glow(C.cyan, 14, 0.25)]}>
+        <Text style={[x.chalKind, { color: C.cyan }]}>PACK WAR</Text>
+        <Text style={x.chalTitle}>BUILD YOUR CREW. WIN AS A PACK</Text>
+        {mine.length
+          ? mine.map((r) => <Text key={r.k.id} style={[S.bold, { fontSize: 16 }]}>{r.k.name} · #{r.rank} of {packs.length} ›</Text>)
+          : <Btn label="Start or join a pack" kind="coral" small onPress={onPacks} />}
+      </Pressable>
+    </View>
+  );
+}
+
+// One tug of war: an invite to answer, a challenge waiting, or the live bone.
+function DuelCard({ d, slug, tug, busy }: { d: Duel; slug: (id: string | null) => string | undefined; tug: TugActions; busy: boolean }) {
+  const name = d.opponentName ?? 'your colleague';
+  const who = (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+      <DogAvatar slug={slug(d.opponentDog)} size={34} />
+      <Text style={[S.bold, { fontSize: 18, flex: 1 }]}>{d.status === 'pending' && !d.isChallenger ? `${name} challenged you` : `You vs ${name}`}</Text>
+    </View>
+  );
+  if (d.status === 'pending' && !d.isChallenger) {
+    return (
+      <View style={{ gap: 10 }}>
+        {who}
+        <Text style={S.muted}>{d.days} days. If you accept, you two see each other's steps for these days only.</Text>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <Btn label="Accept" small kind="coral" busy={busy} onPress={() => { tug.accept(d); }} />
+          <Btn label="Decline" small kind="light" onPress={() => tug.decline(d)} />
+        </View>
+      </View>
+    );
+  }
+  if (d.status === 'pending') {
+    return (
+      <View style={{ gap: 10 }}>
+        {who}
+        <Text style={S.muted}>Waiting for {name} to accept · {d.days} days</Text>
+        <Btn label="Cancel challenge" small kind="light" onPress={() => tug.cancel(d)} />
+      </View>
+    );
+  }
+  const done = d.status === 'finished';
+  const left = daysLeft(d.endsOn);
+  const verdict = d.mySteps === d.theirSteps ? "It's a draw" : d.mySteps > d.theirSteps ? (done ? 'You won the bone!' : "You're winning") : (done ? `${name} won the bone` : `${name} is ahead`);
+  return (
+    <View style={{ gap: 10 }}>
+      {who}
+      <TugBar mine={d.mySteps} theirs={d.theirSteps} />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <View><Text style={[x.num, { textAlign: 'left', color: C.pink }]}>{fmt(d.mySteps)}</Text><Text style={S.muted}>You</Text></View>
+        <View><Text style={[x.num, { color: C.cyan }]}>{fmt(d.theirSteps)}</Text><Text style={[S.muted, { textAlign: 'right' }]}>{name}</Text></View>
+      </View>
+      <Text style={[S.bold, { fontSize: 16, color: done && d.mySteps > d.theirSteps ? C.green : C.fg }]}>
+        {verdict} · {done ? 'Finished' : left <= 1 ? 'Last day' : `${left} days left`}
+      </Text>
     </View>
   );
 }
@@ -143,13 +157,20 @@ function daysLeft(endsOn: string | null) {
   return Math.max(0, Math.ceil((end.getTime() - Date.now()) / DAY_MS));
 }
 
+// A rope with a bone in the middle. The bone slides toward whoever has more steps.
 function TugBar({ mine, theirs }: { mine: number; theirs: number }) {
+  const [w, setW] = useState(0);
   const total = mine + theirs;
-  const share = total ? mine / total : 0.5;
+  const lead = total ? (mine - theirs) / total : 0; // -1..1, positive = you lead
+  const pos = 0.5 - Math.max(-0.38, Math.min(0.38, lead * 0.6)); // 0 = your end (left)
+  const bone = 84;
   return (
-    <View style={{ height: 18, borderRadius: 9, backgroundColor: C.cyan, overflow: 'hidden', flexDirection: 'row' }}>
-      <View style={{ width: `${Math.round(share * 100)}%`, backgroundColor: C.pink }} />
-      <View style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 2, marginLeft: -1, backgroundColor: C.fg, opacity: 0.8 }} />
+    <View style={{ height: 44, justifyContent: 'center' }} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
+      <View style={{ height: 6, borderRadius: 3, flexDirection: 'row', overflow: 'hidden' }}>
+        <View style={{ flex: 1, backgroundColor: C.pink }} /><View style={{ flex: 1, backgroundColor: C.cyan }} />
+      </View>
+      <View style={{ position: 'absolute', left: '50%', top: 6, bottom: 6, width: 2, marginLeft: -1, backgroundColor: C.fg, opacity: 0.5 }} />
+      {w > 0 && <View style={{ position: 'absolute', left: w * pos - bone / 2 }}><Bone width={bone} /></View>}
     </View>
   );
 }
@@ -160,6 +181,7 @@ function TugScreen({ duels, tug, busy, dogs, onBack }: { duels: Duel[]; tug: Tug
   const [pick, setPick] = useState<string | null>(null);
   const [hint, setHint] = useState(false);
   const slug = (id: string | null) => dogs.find((d) => d.id === id)?.slug;
+  const busyDuel = duels.some((d) => d.status === 'active' || d.status === 'pending');
   useEffect(() => { tug.colleagues().then(setPeople).catch(() => setPeople([])); }, [duels.length]);
   const send = () => {
     if (!pick) return setHint(true);
@@ -169,76 +191,35 @@ function TugScreen({ duels, tug, busy, dogs, onBack }: { duels: Duel[]; tug: Tug
     <View style={{ gap: 16 }}>
       <Pressable onPress={onBack} accessibilityRole="button"><Text style={S.linkbtn}>‹ Challenges</Text></Pressable>
       <Text style={[S.h1, { color: C.pink }, textGlow(C.pink)]}>Tug of War</Text>
-      <Text style={S.muted}>Challenge one colleague. Whoever walks more steps in the time wins the bone. Your steps still fill bowls for shelter dogs either way.</Text>
-      {duels.map((d) => {
-        const left = daysLeft(d.endsOn);
-        const name = d.opponentName ?? 'a colleague';
-        if (d.status === 'pending' && !d.isChallenger) {
-          return (
-            <View key={d.id} style={[S.card, { gap: 10, borderColor: C.cyan, borderWidth: 2 }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <DogAvatar slug={slug(d.opponentDog)} size={26} />
-                <Text style={[S.bold, { fontSize: 16, flex: 1 }]}>{name} challenged you · {d.days} days</Text>
-              </View>
-              <Text style={S.muted}>If you accept, you two see each other's steps for these {d.days} days. Nobody else does.</Text>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <Btn label="Accept" small kind="coral" busy={busy} onPress={() => { tug.accept(d); }} />
-                <Btn label="Decline" small kind="light" onPress={() => tug.decline(d)} />
-              </View>
-            </View>
-          );
-        }
-        if (d.status === 'pending') {
-          return (
-            <Card key={d.id} style={{ gap: 10 }}>
-              <Text style={S.eyebrow}>Waiting for {name} to accept · {d.days} days</Text>
-              <Btn label="Cancel" small kind="light" onPress={() => tug.cancel(d)} />
-            </Card>
-          );
-        }
-        const done = d.status === 'finished';
-        const verdict = d.mySteps === d.theirSteps ? "It's a draw" : d.mySteps > d.theirSteps ? (done ? 'You won the bone!' : "You're winning") : (done ? `${name} won the bone` : `${name} is ahead`);
-        return (
-          <View key={d.id} style={[S.card, { gap: 10 }, !done && { borderColor: C.pink, borderWidth: 2 }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <DogAvatar slug={slug(d.opponentDog)} size={26} />
-              <View style={{ flex: 1 }}>
-                <Text style={[S.bold, { fontSize: 16 }]}>You vs {name}</Text>
-                <Text style={S.muted}>{done ? 'Finished' : left <= 1 ? 'Last day' : `${left} days left`}</Text>
-              </View>
-            </View>
-            <TugBar mine={d.mySteps} theirs={d.theirSteps} />
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <View><Text style={[x.num, { textAlign: 'left', color: C.pink }]}>{fmt(d.mySteps)}</Text><Text style={S.muted}>You</Text></View>
-              <View><Text style={[x.num, { color: C.cyan }]}>{fmt(d.theirSteps)}</Text><Text style={[S.muted, { textAlign: 'right' }]}>{name}</Text></View>
-            </View>
-            <Text style={[S.bold, { fontSize: 16, color: done && d.mySteps > d.theirSteps ? C.green : C.fg }]}>{verdict}</Text>
-          </View>
-        );
-      })}
-      <Card style={{ gap: 10 }}>
-        <Text style={S.h2}>Challenge a colleague</Text>
-        {!people ? <Text style={S.muted}>Loading…</Text> : people.length === 0 ? (
-          <Text style={S.muted}>Nobody else at your workplace is on the leaderboard yet. Only people who show their name can be challenged.</Text>
-        ) : (
-          <View style={{ gap: 8 }}>
-            {people.map((p) => (
-              <Pressable key={p.id} onPress={() => { setPick(p.id); setHint(false); }} accessibilityRole="radio" accessibilityState={{ selected: pick === p.id }}
-                style={[x.lb, pick === p.id && x.lbMine]}>
-                <DogAvatar slug={slug(p.dogId)} size={26} />
-                <Text numberOfLines={1} style={[S.bold, { fontSize: 16, flex: 1 }]}>{p.displayName}</Text>
-                {pick === p.id && <Text style={[S.bold, { color: C.pink }]}>✓</Text>}
-              </Pressable>
-            ))}
-          </View>
-        )}
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          {[3, 7, 14].map((n) => <Pill key={n} label={`${n} days`} on={days === n} onPress={() => setDays(n)} />)}
+      {duels.map((d) => (
+        <View key={d.id} style={[S.card, { gap: 10 }, d.status !== 'finished' && { borderColor: C.pink, borderWidth: 2 }]}>
+          <DuelCard d={d} slug={slug} tug={tug} busy={busy} />
         </View>
-        {hint && <Text style={S.err}>Pick a colleague first.</Text>}
-        <Text style={S.muted}>They'll see it under Challenges and it starts the day they accept.</Text>
-        <Btn label="Send challenge" kind="coral" busy={busy} onPress={send} />
-      </Card>
+      ))}
+      {!busyDuel && (
+        <Card style={{ gap: 10 }}>
+          <Text style={S.h2}>Challenge a colleague</Text>
+          {!people ? <Text style={S.muted}>Loading…</Text> : people.length === 0 ? (
+            <Text style={S.muted}>Nobody else at your workplace is on the leaderboard yet.</Text>
+          ) : (
+            <View style={{ gap: 8 }}>
+              {people.map((p) => (
+                <Pressable key={p.id} onPress={() => { setPick(pick === p.id ? null : p.id); setHint(false); }} accessibilityRole="radio" accessibilityState={{ selected: pick === p.id }}
+                  style={[x.lb, pick === p.id && x.lbMine]}>
+                  <DogAvatar slug={slug(p.dogId)} size={26} />
+                  <Text numberOfLines={1} style={[S.bold, { fontSize: 16, flex: 1 }]}>{p.displayName}</Text>
+                  {pick === p.id && <Text style={[S.bold, { color: C.pink }]}>✓</Text>}
+                </Pressable>
+              ))}
+            </View>
+          )}
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {[3, 7, 14].map((n) => <Pill key={n} label={`${n} days`} on={days === n} onPress={() => setDays(n)} />)}
+          </View>
+          {hint && <Text style={S.err}>Pick a colleague first.</Text>}
+          <Btn label="Send challenge" kind="coral" busy={busy} onPress={send} />
+        </Card>
+      )}
     </View>
   );
 }
@@ -253,12 +234,8 @@ function WalkerRow({ w, rank, slug }: { w: Walker; rank: number; slug?: string }
       <DogAvatar slug={slug} size={26} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text numberOfLines={1} style={[S.bold, { fontFamily: F.bodyBold, fontSize: 16 }]}>{w.displayName}</Text>
-        <Text style={[S.p, { fontSize: 13 }]}>{plural(w.bowls, 'bowl')}</Text>
       </View>
-      <View>
-        <Text style={x.num}>{fmt(w.steps)}</Text>
-        <Text style={[S.p, { fontSize: 12, textAlign: 'right' }]}>steps</Text>
-      </View>
+      <Text style={x.num}>{fmt(w.steps)}</Text>
     </View>
   );
 }
@@ -272,46 +249,68 @@ export type PackActions = {
   people: (p: Pack) => Promise<{ people: Walker[]; hidden: number }>;
 };
 
-export function LeaderboardScreen({ walkers, packs, onBoard, companyName, busy, onJoin, dogs, actions, startOn = 'walkers' }: {
-  walkers: Walker[]; packs: Pack[]; onBoard: boolean; companyName: string; busy: boolean; onJoin: () => void; dogs: Dog[]; actions: PackActions; startOn?: 'walkers' | 'packs';
+export function LeaderboardScreen({ walkers, packs, companies, onBoard, companyName, busy, onJoin, dogs, actions, startOn = 'walkers', startPack }: {
+  walkers: Walker[]; packs: Pack[]; companies: CompanyRow[]; onBoard: boolean; companyName: string; busy: boolean; onJoin: () => void; dogs: Dog[]; actions: PackActions;
+  startOn?: 'walkers' | 'packs' | 'companies'; startPack?: string | null;
 }) {
-  const [tab, setTab] = useState<'walkers' | 'packs'>(startOn);
-  const [open, setOpen] = useState<Pack | null>(null);
+  const [tab, setTab] = useState<'walkers' | 'packs' | 'companies'>(startOn);
+  const [open, setOpen] = useState<Pack | null>(() => packs.find((k) => k.id === startPack) ?? null);
   const slug = (id: string | null) => dogs.find((d) => d.id === id)?.slug;
   const fresh = open && packs.find((k) => k.id === open.id);
   if (fresh) {
     return <PackScreen pack={fresh} slug={slug} busy={busy} actions={actions} onBack={() => setOpen(null)} />;
   }
+  const emoji = companies.find((c) => c.isMine)?.emoji;
   return (
     <View style={{ gap: 16 }}>
       <Text style={S.h1}>Leaderboard</Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <Pill label="Walkers" on={tab === 'walkers'} onPress={() => setTab('walkers')} />
         <Pill label="Packs" on={tab === 'packs'} onPress={() => setTab('packs')} />
+        <Pill label="Companies" on={tab === 'companies'} onPress={() => setTab('companies')} />
       </View>
+      {tab !== 'companies' && <Text style={S.eyebrow}>{emoji ? `${emoji} ` : ''}{companyName}</Text>}
       {tab === 'walkers' ? (
         <>
           {!onBoard && (
             <Card style={[{ borderColor: C.cyan, flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
-              <Text style={[S.p, { flex: 1, fontSize: 14, lineHeight: 20 }]}>
-                <Text style={S.bold}>Join the walker leaderboard? </Text>
-                Your name and monthly steps will show to colleagues at {companyName}. You can change this in Me.
-              </Text>
+              <Text style={[S.bold, { flex: 1, fontSize: 15 }]}>Show your name here?</Text>
               <Btn label="Show me" small onPress={onJoin} busy={busy} />
             </Card>
           )}
           {walkers.length ? walkers.map((w, i) => <WalkerRow key={`${w.displayName}-${i}`} w={w} rank={i + 1} slug={slug(w.dogId)} />) : (
-            <Card><Text style={[S.bold, { fontSize: 16 }]}>No walkers here yet.</Text><Text style={S.muted}>Be the first. Tap Show me to join the leaderboard.</Text></Card>
+            <Card><Text style={[S.bold, { fontSize: 16 }]}>No walkers here yet.</Text></Card>
           )}
         </>
+      ) : tab === 'packs' ? (
+        <PacksList packs={packs} busy={busy} actions={actions} onOpen={setOpen} />
       ) : (
-        <PacksList packs={packs} busy={busy} actions={actions} onOpen={setOpen} companyName={companyName} />
+        <View style={{ gap: 12 }}>
+          {companies.map((c, i) => {
+            const first = i === 0 && !c.isMine;
+            return (
+              <View key={`${c.name}-${i}`} style={[x.lb, first && x.lbFirst, c.isMine && x.lbMine]}>
+                <View style={[x.rank, first && { backgroundColor: C.cyan, borderColor: C.cyan }, c.isMine && { backgroundColor: C.pink, borderColor: C.pink }]}>
+                  <Text style={[x.rankText, (first || c.isMine) && { color: C.dark }]}>{i + 1}</Text>
+                </View>
+                <Text style={{ fontSize: 22 }}>{c.emoji ?? '🏢'}</Text>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text numberOfLines={1} style={[S.bold, { fontSize: 16 }]}>{c.name}</Text>
+                  <Text style={[S.p, { fontSize: 13 }]}>{plural(c.walkers, 'walker')}</Text>
+                </View>
+                {c.stepsPerWalker != null
+                  ? <Text style={x.num}>{fmt(c.stepsPerWalker)}</Text>
+                  : <Text style={[S.bold, { color: C.gold }]}>{plural(c.bowls, 'bowl')}</Text>}
+              </View>
+            );
+          })}
+        </View>
       )}
     </View>
   );
 }
 
-function PacksList({ packs, busy, actions, onOpen, companyName }: { packs: Pack[]; busy: boolean; actions: PackActions; onOpen: (p: Pack) => void; companyName: string }) {
+function PacksList({ packs, busy, actions, onOpen }: { packs: Pack[]; busy: boolean; actions: PackActions; onOpen: (p: Pack) => void }) {
   const [name, setName] = useState('');
   const [hint, setHint] = useState<'name' | null>(null);
   const mine = packs.filter((k) => k.isMine);
@@ -322,7 +321,6 @@ function PacksList({ packs, busy, actions, onOpen, companyName }: { packs: Pack[
   };
   return (
     <View style={{ gap: 12 }}>
-      <Text style={S.muted}>Packs are teams you make with colleagues at {companyName}. Tap Join on any pack. They're ranked by steps per walker this month.</Text>
       {packs.length ? packs.map((k, i) => {
         const first = i === 0 && !k.isMine;
         return (
@@ -333,19 +331,14 @@ function PacksList({ packs, busy, actions, onOpen, companyName }: { packs: Pack[
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text numberOfLines={1} style={[S.bold, { fontSize: 16 }]}>{k.name}</Text>
-              <Text style={[S.p, { fontSize: 13 }]}>{plural(k.walkers, 'walker')} · {plural(k.bowls, 'bowl')}</Text>
+              <Text style={[S.p, { fontSize: 13 }]}>{plural(k.walkers, 'walker')}</Text>
             </View>
-            {k.stepsPerWalker != null ? (
-              <View>
-                <Text style={x.num}>{fmt(k.stepsPerWalker)}</Text>
-                <Text style={[S.p, { fontSize: 12, textAlign: 'right' }]}>per walker</Text>
-              </View>
-            ) : k.isMine ? <Text style={[S.muted, { fontSize: 22 }]}>›</Text> : null}
+            {k.stepsPerWalker != null ? <Text style={x.num}>{fmt(k.stepsPerWalker)}</Text> : k.isMine ? <Text style={[S.muted, { fontSize: 22 }]}>›</Text> : null}
             {!k.isMine && mine.length < 5 && <Btn label="Join" small kind="coral" busy={busy} onPress={() => actions.join(k)} />}
           </Pressable>
         );
       }) : (
-        <Card><Text style={[S.bold, { fontSize: 16 }]}>No packs yet.</Text><Text style={S.muted}>Start one below. Colleagues can then tap Join.</Text></Card>
+        <Card><Text style={[S.bold, { fontSize: 16 }]}>No packs yet. Start one below.</Text></Card>
       )}
       {mine.length < 5 && (
         <>
@@ -375,7 +368,7 @@ function PackScreen({ pack, slug, busy, actions, onBack }: { pack: Pack; slug: (
         <Text style={[S.bold, { fontSize: 22 }]}>{plural(pack.walkers, 'walker')} · {plural(pack.bowls, 'bowl')}</Text>
         {pack.stepsPerWalker != null
           ? <Text style={S.p}>{fmt(pack.stepsPerWalker)} steps per walker</Text>
-          : <Text style={S.muted}>Step totals show once the pack has 5 walkers, or everyone in it shows their name.</Text>}
+          : null}
         <Btn label="Invite colleagues" kind="coral" small onPress={() => actions.invite(pack)} style={{ marginTop: 6 }} />
       </View>
       {err && <Text style={S.err}>{err}</Text>}
@@ -392,44 +385,44 @@ function PackScreen({ pack, slug, busy, actions, onBack }: { pack: Pack; slug: (
           <Btn label="Save name" small busy={busy} onPress={() => { if (name.trim() && name.trim() !== pack.name) actions.rename(pack, name); }} />
         </Card>
       )}
-      <Btn label="Leave pack" kind="light" small onPress={() => actions.leave(pack)} />
+      <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+        <Btn label="Start another pack" small onPress={onBack} />
+        <Btn label="Leave pack" kind="light" small onPress={() => actions.leave(pack)} />
+      </View>
     </View>
   );
 }
 
-export function ImpactScreen({ home, dog, onDogs, onMeet }: { home: Home; dog: Dog | null; onDogs: () => void; onMeet: (d: Dog) => void }) {
+export function ImpactScreen({ home, dog, allTime, onDogs, onMeet }: { home: Home; dog: Dog | null; allTime: number | null; onDogs: () => void; onMeet: (d: Dog) => void }) {
   const kg = (b: number) => Math.round(b * BOWL_KG * 10) / 10;
+  const Stat = ({ label, bowls }: { label: string; bowls: number }) => (
+    <View style={{ flex: 1 }}>
+      <Text style={S.eyebrow}>{label}</Text>
+      <Text style={[S.bold, { fontSize: 22, marginTop: 2 }]}>{plural(bowls, 'bowl')}</Text>
+      <Text style={S.muted}>{kg(bowls)} kg</Text>
+    </View>
+  );
   return (
     <View style={{ gap: 16 }}>
       <Text style={S.h1}>Impact</Text>
       <View style={[S.hero, { alignItems: 'flex-start' }]}>
-        <Text style={S.eyebrow}>Food unlocked by the FurSteps community this month</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}><Text style={{ fontFamily: F.display, fontSize: 64, lineHeight: 72, color: C.fg }}>{kg(home.communityBowls)}</Text><Text style={[S.bold, { fontSize: 20 }]}>kg</Text></View>
-        <Text style={S.p}>{plural(home.communityBowls, 'bowl')} from {plural(home.communityWalkers, 'walker')}.</Text>
+        <Text style={S.eyebrow}>FurSteps community this month</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}><Text style={{ fontFamily: F.display, fontSize: 64, lineHeight: 72, color: C.fg }}>{kg(home.communityBowls)}</Text><Text style={[S.bold, { fontSize: 20 }]}>kg of food</Text></View>
+        <Text style={S.p}>{plural(home.communityBowls, 'bowl')} from {plural(home.communityWalkers, 'walker')}</Text>
       </View>
-      <Card>
-        <Text style={S.eyebrow}>What you unlocked</Text>
-        <Text style={[S.bold, { fontSize: 22, marginTop: 2 }]}>{plural(home.myBowls, 'bowl')} <Text style={[S.muted, { fontSize: 15 }]}>· {kg(home.myBowls)} kg</Text></Text>
+      <Card style={{ flexDirection: 'row', gap: 12 }}>
+        <Stat label="This month" bowls={home.myBowls} />
+        {allTime != null && <Stat label="All time" bowls={allTime} />}
+        <Stat label="Your company" bowls={home.companyBowls} />
       </Card>
-      <Card>
-        <Text style={S.eyebrow}>{home.companyName} this month</Text>
-        <Text style={[S.bold, { fontSize: 22, marginTop: 2 }]}>{plural(home.companyBowls, 'bowl')} <Text style={[S.muted, { fontSize: 15 }]}>· {kg(home.companyBowls)} kg</Text></Text>
-        <Text style={S.muted}>From {plural(home.companyWalkers, 'walker')} at your workplace.</Text>
-      </Card>
-      <Card style={{ gap: 10 }}>
-        <Text style={S.h2}>Who you are feeding</Text>
-        {dog ? (
-          <View style={S.row}>
-            <DogAvatar slug={dog.slug} size={44} />
-            <View style={{ flex: 1 }}><Text style={[S.bold, { fontSize: 16 }]}>{dog.name}</Text><Text style={S.muted}>{[dog.age, dog.breed].filter(Boolean).join(' · ') || dog.shelter}</Text></View>
-          </View>
-        ) : <Text style={S.muted}>Your bowls go to the FurSteps pool, which feeds whichever dog needs it most. Pick a dog to follow their story.</Text>}
-        <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
-          {dog && <Btn label={`Meet ${dog.name}`} small onPress={() => onMeet(dog)} />}
-          <Btn label={dog ? 'Change dog' : 'Meet the dogs'} small kind="light" onPress={onDogs} />
+      <Pressable onPress={() => (dog ? onMeet(dog) : onDogs())} accessibilityRole="button" style={[S.card, S.row]}>
+        <DogAvatar slug={dog?.slug} size={44} />
+        <View style={{ flex: 1 }}>
+          <Text style={S.eyebrow}>You are feeding</Text>
+          <Text style={[S.bold, { fontSize: 16 }]}>{dog ? dog.name : 'Whichever dog needs it most'}</Text>
         </View>
-      </Card>
-      <Card><Text style={[S.bold, { fontSize: 16 }]}>Delivery proof</Text><Text style={S.muted}>Photos and delivery dockets from our rescue partners will show up here once the first food goes out.</Text></Card>
+        <Text style={[S.muted, { fontSize: 22 }]}>›</Text>
+      </Pressable>
     </View>
   );
 }
@@ -564,7 +557,7 @@ export function Celebrate({ visible, bowls, steps, dogName, onDone, onMore }: { 
           <Text style={[{ fontFamily: F.mono, fontSize: 14, letterSpacing: 2.8, color: C.pink }, textGlow(C.pink)]}>CONGRATULATIONS</Text>
           <Text style={{ fontFamily: F.display, fontSize: 36, lineHeight: 40, letterSpacing: -1.2, color: C.fg, textAlign: 'center', marginTop: -12 }}>You helped feed a shelter dog</Text>
           <View style={[x.celCard, glow(C.pink, 40, 0.45)]}>
-            <View style={glow(C.green, 12, 0.7)}><BowlIcon /></View>
+            <Bowl level={1} width={150} id="cel" />
             <Text style={{ fontFamily: F.display, fontSize: 30, color: C.fg }}>{plural(bowls, 'bowl')}</Text>
             <Text style={{ fontFamily: F.mono, fontSize: 12, letterSpacing: 1.7, color: C.muted }}>{fmt(steps)} STEPS</Text>
           </View>

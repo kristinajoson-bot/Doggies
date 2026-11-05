@@ -1,5 +1,5 @@
 import { Image, View } from 'react-native';
-import Svg, { Circle, Ellipse, G, Path, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, ClipPath, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Stop, Text as SvgText } from 'react-native-svg';
 
 import { C, F, glow } from './theme';
 
@@ -34,27 +34,59 @@ export function PawTile({ state, size }: { state: 'on' | 'next' | 'off'; size: n
   );
 }
 
-// The kibble bowl fills up as the month goes on (level 0 to 1).
-export function Bowl({ level, width = 250 }: { level: number; width?: number }) {
+// A steel dog bowl that fills with kibble (level 0 to 1). The same bowl is used everywhere.
+const KIBBLE: [number, number, number][] = [
+  [52, 0, 5], [64, -3, 5.5], [77, -5, 5], [90, -7, 5.5], [103, -8, 5], [116, -7, 5.5], [129, -5, 5], [142, -3, 5.5], [154, 0, 5],
+  [60, -9, 5], [73, -13, 5.5], [87, -16, 5], [100, -18, 5.5], [113, -16, 5], [127, -13, 5.5], [140, -9, 5],
+  [70, -20, 5], [84, -25, 5.5], [98, -28, 5], [112, -26, 5.5], [126, -21, 5], [90, -35, 5], [106, -36, 5.5], [120, -31, 5], [98, -44, 5],
+];
+export function Bowl({ level, width = 250, id = 'b' }: { level: number; width?: number; id?: string }) {
   const l = Math.max(0, Math.min(1, level));
-  const peak = 76 - 52 * l, mid = 76 - 30 * l;
+  const top = 58 - 40 * l; // how high the kibble mound reaches
   return (
-    <Svg width={width} height={Math.round(width * 0.68)} viewBox="0 0 200 140">
-      <Ellipse cx={100} cy={134} rx={70} ry={6} fill={C.pink} opacity={0.25} />
-      {l > 0.02 && (
-        <>
-          <Path d={`M34 76 Q54 ${mid} 100 ${peak} Q146 ${mid} 166 76 Z`} fill="#B9692F" stroke={C.fg} strokeWidth={4} strokeLinejoin="round" />
-          <G fill="#8A4A1E">
-            <Circle cx={70} cy={72 - 14 * l} r={5} /><Circle cx={96} cy={70 - 24 * l} r={5} /><Circle cx={122} cy={72 - 14 * l} r={5} />
-            <Circle cx={146} cy={73} r={4.5} /><Circle cx={84} cy={73} r={4.5} />
-          </G>
-        </>
+    <Svg width={width} height={Math.round(width * 0.7)} viewBox="0 0 200 140">
+      <Defs>
+        <LinearGradient id={`${id}steel`} x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor="#4b505c" /><Stop offset="0.22" stopColor="#d9dde5" /><Stop offset="0.45" stopColor="#8c929e" />
+          <Stop offset="0.7" stopColor="#f2f4f8" /><Stop offset="1" stopColor="#5a5f6b" />
+        </LinearGradient>
+        <LinearGradient id={`${id}rim`} x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor="#9aa0ab" /><Stop offset="0.5" stopColor="#ffffff" /><Stop offset="1" stopColor="#7c828d" />
+        </LinearGradient>
+        <RadialGradient id={`${id}inside`} cx="0.5" cy="0.35" r="0.7">
+          <Stop offset="0" stopColor="#3a3e47" /><Stop offset="1" stopColor="#15161b" />
+        </RadialGradient>
+        <RadialGradient id={`${id}kib`} cx="0.4" cy="0.35" r="0.7">
+          <Stop offset="0" stopColor="#d08a4a" /><Stop offset="1" stopColor="#7a3f17" />
+        </RadialGradient>
+        <ClipPath id={`${id}open`}><Path d="M24 0 H176 V60 A76 17 0 0 1 24 60 Z" /></ClipPath>
+      </Defs>
+      <Ellipse cx={100} cy={128} rx={78} ry={8} fill="#000" opacity={0.55} />
+      <Path d="M14 60 C18 108 58 124 100 124 C142 124 182 108 186 60 Z" fill={`url(#${id}steel)`} />
+      <Ellipse cx={100} cy={60} rx={86} ry={20} fill={`url(#${id}rim)`} />
+      <Ellipse cx={100} cy={61} rx={76} ry={16} fill={`url(#${id}inside)`} />
+      {l > 0.01 && (
+        <G clipPath={`url(#${id}open)`}>
+          <Path d={`M28 64 Q60 ${top + 18} 100 ${top} Q140 ${top + 18} 172 64 A72 14 0 0 1 28 64 Z`} fill={`url(#${id}kib)`} />
+          {KIBBLE.map(([x, dy, r]) => [x, 62 + dy * l, r]).filter(([x, y]) => y >= top + 5 + Math.abs(x - 100) * 0.3 * l).map(([x, y, r], i) => (
+            <Ellipse key={i} cx={x} cy={y} rx={r} ry={r * 0.78} fill={i % 3 === 0 ? '#a45d26' : i % 3 === 1 ? '#c77b3b' : '#8c4a1c'} stroke="#5c2c0e" strokeWidth={0.8} />
+          ))}
+        </G>
       )}
-      <Path d="M18 76 H182 Q182 132 100 132 Q18 132 18 76 Z" fill={C.surface} stroke={C.fg} strokeWidth={5} strokeLinejoin="round" />
-      <G fill={C.pink}>
-        <Ellipse cx={100} cy={116} rx={6} ry={5} /><Ellipse cx={88} cy={108} rx={2.6} ry={3.4} />
-        <Ellipse cx={95} cy={103} rx={2.6} ry={3.4} /><Ellipse cx={105} cy={103} rx={2.6} ry={3.4} /><Ellipse cx={112} cy={108} rx={2.6} ry={3.4} />
+      <Path d="M36 96 C60 112 86 116 100 116" stroke="#ffffff" strokeOpacity={0.35} strokeWidth={3} fill="none" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+// The bone in a tug of war. It slides toward whoever is ahead.
+export function Bone({ width = 90, color = '#f4ead8' }: { width?: number; color?: string }) {
+  return (
+    <Svg width={width} height={width * 0.42} viewBox="0 0 100 42">
+      <G fill={color}>
+        <Circle cx={11} cy={12} r={10} /><Circle cx={11} cy={30} r={10} /><Circle cx={89} cy={12} r={10} /><Circle cx={89} cy={30} r={10} />
+        <Path d="M10 11 H90 V31 H10 Z" />
       </G>
+      <Path d="M18 16 H82" stroke="#ffffff" strokeOpacity={0.6} strokeWidth={2.5} strokeLinecap="round" />
     </Svg>
   );
 }

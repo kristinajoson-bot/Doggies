@@ -9,9 +9,9 @@ import { GeistMono_500Medium, GeistMono_600SemiBold } from '@expo-google-fonts/g
 import { Bungee_400Regular } from '@expo-google-fonts/bungee';
 
 import {
-  acceptDuel, cancelDuel, challengeColleague, chooseDog, declineDuel, tugColleagues, createPack, myDuels, getHome, joinPack, leavePack, packBoard, packPeople, renamePack, getStatus, giveStepConsent, isReviewEmail, joinCompany, listDogs, monthWindow, sendCode, setDisplayName,
+  acceptDuel, cancelDuel, companyBoard, myAllTimeBowls, challengeColleague, chooseDog, declineDuel, tugColleagues, createPack, myDuels, getHome, joinPack, leavePack, packBoard, packPeople, renamePack, getStatus, giveStepConsent, isReviewEmail, joinCompany, listDogs, monthWindow, sendCode, setDisplayName,
   setOnBoard, signInForReview, signOut, supabase, syncSteps, verifyCode, walkerBoard, withdrawStepConsent,
-  type Dog, type Duel, type Home, type Pack, type Walker,
+  type CompanyRow, type Dog, type Duel, type Home, type Pack, type Walker,
 } from './src/backend';
 import { connect, healthStoreName, readDailySteps } from './src/steps';
 import {
@@ -49,7 +49,10 @@ export default function App() {
   const [walkers, setWalkers] = useState<Walker[]>([]);
   const [packs, setPacks] = useState<Pack[]>([]);
   const [duels, setDuels] = useState<Duel[]>([]);
-  const [lbStart, setLbStart] = useState<'walkers' | 'packs'>('walkers');
+  const [lbStart, setLbStart] = useState<'walkers' | 'packs' | 'companies'>('walkers');
+  const [lbPack, setLbPack] = useState<string | null>(null);
+  const [companies, setCompanies] = useState<CompanyRow[]>([]);
+  const [allTime, setAllTime] = useState<number | null>(null);
   const [userEmail, setUserEmail] = useState('');
   const [askDog, setAskDog] = useState(false);
   const [celebrate, setCelebrate] = useState<{ bowls: number; steps: number } | null>(null);
@@ -68,10 +71,13 @@ export default function App() {
   }
 
   const loadAll = useCallback(async () => {
-    const [h, d, w, k, t] = await Promise.all([getHome(), listDogs(), walkerBoard(), packBoard().catch(() => [] as Pack[]), myDuels().catch(() => [] as Duel[])]);
+    const [h, d, w, k, t, c, all] = await Promise.all([getHome(), listDogs(), walkerBoard(), packBoard().catch(() => [] as Pack[]), myDuels().catch(() => [] as Duel[]),
+      companyBoard().catch(() => [] as CompanyRow[]), myAllTimeBowls().catch(() => null)]);
     setHome(h);
     setDogs(d);
     setWalkers(w);
+    setCompanies(c);
+    setAllTime(all);
     setPacks(k);
     setDuels(t);
     return h;
@@ -129,7 +135,7 @@ export default function App() {
   if (!fontsReady) return <View style={{ flex: 1, backgroundColor: C.bg }} />;
 
   const myDog = home?.dogId ? dogs.find((d) => d.id === home.dogId) ?? null : null;
-  const goTab = (t: Tab) => { setSub(null); setTab(t); scroll.current?.scrollTo({ y: 0, animated: false }); };
+  const goTab = (t: Tab) => { setSub(null); setTab(t); if (t === 'packs') { setLbStart('walkers'); setLbPack(null); } scroll.current?.scrollTo({ y: 0, animated: false }); };
 
   if (view.kind !== 'app' || !home) {
     return (
@@ -255,7 +261,8 @@ export default function App() {
         { text: 'Cancel challenge', style: 'destructive', onPress: () => { packRun(async () => { await cancelDuel(d.id); await loadAll(); }); } },
       ]),
     };
-    body = <ChallengesScreen packs={packs} duels={duels} tug={tug} busy={busy} dogs={dogs} onPacks={() => { setLbStart('packs'); setTab('packs'); }} />;
+    body = <ChallengesScreen packs={packs} duels={duels} tug={tug} busy={busy} dogs={dogs} onPacks={() => { setLbStart('packs'); setLbPack(null); setTab('packs'); }}
+      onOpenPack={(k) => { setLbStart('packs'); setLbPack(k.id); setTab('packs'); }} />;
   } else if (tab === 'packs') {
     const actions: PackActions = {
       create: (name) => packRun(async () => { await createPack(name); await loadAll(); invitePack(name.trim()); }),
@@ -268,10 +275,10 @@ export default function App() {
         { text: 'Leave', style: 'destructive', onPress: () => { packRun(async () => { await leavePack(k.id); await loadAll(); }); } },
       ]),
     };
-    body = <LeaderboardScreen key={lbStart} startOn={lbStart} walkers={walkers} packs={packs} onBoard={home.onBoard} companyName={home.companyName} busy={busy} dogs={dogs} actions={actions}
+    body = <LeaderboardScreen key={`${lbStart}-${lbPack}`} startOn={lbStart} startPack={lbPack} walkers={walkers} packs={packs} companies={companies} onBoard={home.onBoard} companyName={home.companyName} busy={busy} dogs={dogs} actions={actions}
       onJoin={() => run(async () => { await setOnBoard(true); await loadAll(); })} />;
   } else if (tab === 'impact') {
-    body = <ImpactScreen home={home} dog={myDog} onDogs={() => setSub({ kind: 'dogs' })} onMeet={(d) => setSub({ kind: 'dog', dog: d })} />;
+    body = <ImpactScreen home={home} dog={myDog} allTime={allTime} onDogs={() => setSub({ kind: 'dogs' })} onMeet={(d) => setSub({ kind: 'dog', dog: d })} />;
   } else {
     body = (
       <MeScreen home={home} email={userEmail} busy={busy}
