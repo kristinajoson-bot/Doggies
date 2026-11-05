@@ -43,12 +43,19 @@ const KIBBLE_GRID: [number, number, number][] = (() => {
   return out;
 })();
 const KIBBLE_COLOURS = ['#b07a45', '#8c5a2e', '#c7925a', '#a0472e'];
-// Matte mixed kibble: rounds, triangles and crosses.
+// Matte mixed kibble: rounds, triangles, crosses and tiny bones.
 function Kibble({ x, y, r, i }: { x: number; y: number; r: number; i: number }) {
-  const c = KIBBLE_COLOURS[i % 4];
-  const s = i % 3;
+  const c = KIBBLE_COLOURS[(i * 3 + 1) % 4];
+  const s = i % 4;
   if (s === 0) return <Circle cx={x} cy={y} r={4} fill={c} />;
   if (s === 1) return <Polygon transform={`rotate(${r} ${x} ${y})`} points={`${x},${y - 4.6} ${x + 4.3},${y + 3} ${x - 4.3},${y + 3}`} fill={c} stroke={c} strokeWidth={1.5} strokeLinejoin="round" />;
+  if (s === 3)
+    return (
+      <G transform={`rotate(${r} ${x} ${y})`} fill={c}>
+        <Rect x={x - 4.2} y={y - 1.5} width={8.4} height={3} rx={1} />
+        <Circle cx={x - 4.2} cy={y - 1.5} r={1.9} /><Circle cx={x - 4.2} cy={y + 1.5} r={1.9} /><Circle cx={x + 4.2} cy={y - 1.5} r={1.9} /><Circle cx={x + 4.2} cy={y + 1.5} r={1.9} />
+      </G>
+    );
   return (
     <G transform={`rotate(${r} ${x} ${y})`} fill={c}>
       <Rect x={x - 4.5} y={y - 1.6} width={9} height={3.2} rx={1.4} /><Rect x={x - 1.6} y={y - 4.5} width={3.2} height={9} rx={1.4} />
