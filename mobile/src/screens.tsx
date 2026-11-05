@@ -40,12 +40,12 @@ export function TodayScreen({ home, dog, healthName, busy, onDogs, onCelebrate }
     <View style={{ gap: 16 }}>
       <DogCard dog={dog} onPress={onDogs} />
       <View style={S.hero}>
-        <Pressable disabled={!prev} onPress={() => onCelebrate(prev)} accessibilityLabel={`${done} bowls this month`} style={{ alignItems: 'center' }}>
+        <Pressable disabled={!prev} onPress={() => onCelebrate(prev)} accessibilityLabel={`${done} bowls this round`} style={{ alignItems: 'center' }}>
           <Bowl level={fill} width={Math.min(260, inner)} id="today" />
         </Pressable>
         <View style={{ alignItems: 'center', marginTop: -6 }}>
           <Text style={[{ fontFamily: F.display, fontSize: 56, lineHeight: 60, color: C.gold }, textGlow(C.gold)]}>{done}</Text>
-          <Text style={S.eyebrow}>{done === 1 ? 'bowl' : 'bowls'} this month</Text>
+          <Text style={S.eyebrow}>{done === 1 ? 'bowl' : 'bowls'} this round · {home.roundDaysLeft === 1 ? 'last day' : `${home.roundDaysLeft} days left`}</Text>
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 8, width: '100%', paddingHorizontal: 6, marginTop: 6 }}>
           {MILESTONES.map((m) => {
@@ -60,12 +60,12 @@ export function TodayScreen({ home, dog, healthName, busy, onDogs, onCelebrate }
         </View>
         <View style={{ width: '100%', marginTop: 4 }}><Bar pct={Math.round(fill * 100)} /></View>
         <Text style={[S.p, { fontSize: 15, textAlign: 'center' }]}>
-          {next ? <><Text style={S.bold}>{fmt(next - steps)}</Text> steps to fill your next bowl</> : 'Every bowl filled this month. Epic walking!'}
+          {next ? <><Text style={S.bold}>{fmt(next - steps)}</Text> steps to fill your next bowl</> : 'Every bowl filled this round. Epic walking!'}
         </Text>
         <View style={{ flexDirection: 'row', width: '100%', marginTop: 6 }}>
           <View style={{ flex: 1, alignItems: 'center' }}><Text style={[x.num, { color: C.pink, textAlign: 'center' }]}>{fmt(home.todaySteps)}</Text><Text style={S.eyebrow}>today</Text></View>
           <View style={{ width: 1, backgroundColor: C.line }} />
-          <View style={{ flex: 1, alignItems: 'center' }}><Text style={[x.num, { color: C.cyan, textAlign: 'center' }]}>{fmt(steps)}</Text><Text style={S.eyebrow}>this month</Text></View>
+          <View style={{ flex: 1, alignItems: 'center' }}><Text style={[x.num, { color: C.cyan, textAlign: 'center' }]}>{fmt(steps)}</Text><Text style={S.eyebrow}>this round</Text></View>
         </View>
       </View>
     </View>
@@ -418,12 +418,12 @@ export function ImpactScreen({ home, dog, allTime, onDogs, onMeet }: { home: Hom
     <View style={{ gap: 16 }}>
       <Text style={S.h1}>Impact</Text>
       <View style={[S.hero, { alignItems: 'flex-start' }]}>
-        <Text style={S.eyebrow}>FurSteps community this month</Text>
+        <Text style={S.eyebrow}>FurSteps community this round</Text>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}><Text style={{ fontFamily: F.display, fontSize: 64, lineHeight: 72, color: C.fg }}>{kg(home.communityBowls)}</Text><Text style={[S.bold, { fontSize: 20 }]}>kg of food</Text></View>
         <Text style={S.p}>{plural(home.communityBowls, 'bowl')} from {plural(home.communityWalkers, 'walker')}</Text>
       </View>
       <Card style={{ flexDirection: 'row', gap: 12 }}>
-        <Stat label="This month" bowls={home.myBowls} />
+        <Stat label="This round" bowls={home.myBowls} />
         {allTime != null && <Stat label="All time" bowls={allTime} />}
         <Stat label="Your company" bowls={home.companyBowls} />
       </Card>

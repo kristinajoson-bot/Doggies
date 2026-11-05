@@ -113,18 +113,29 @@ export function monthWindow(now = new Date()) {
 
 export type Home = {
   displayName: string; dogId: string | null; onBoard: boolean; todaySteps: number; monthSteps: number; myBowls: number;
+  roundFrom: string; roundTo: string; roundDaysLeft: number;
   companyName: string; companyWalkers: number; companyBowls: number; communityWalkers: number; communityBowls: number;
 };
 
+// Bowls run in 2-week rounds that start on the day the company signed up. Leaderboards stay monthly.
+export async function roundWindow() {
+  const today = monthWindow().today;
+  const { data, error } = await supabase.rpc('my_round', { p_today: today });
+  const r = (data as { round_from: string; round_to: string }[] | null)?.[0];
+  if (error || !r) return { ...monthWindow(), today }; // before the server knows rounds
+  return { from: r.round_from, to: r.round_to, today };
+}
+
 export async function getHome(): Promise<Home | null> {
-  const w = monthWindow();
+  const w = await roundWindow();
   const { data, error } = await supabase.rpc('my_home', { p_from: w.from, p_to: w.to, p_today: w.today });
   fail(error);
   const r = (data as Record<string, any>[] | null)?.[0];
   if (!r) return null;
   return {
     displayName: r.display_name, dogId: r.dog_id, onBoard: r.on_board, todaySteps: r.today_steps, monthSteps: Number(r.month_steps),
-    myBowls: r.my_bowls, companyName: r.company_name, companyWalkers: r.company_walkers, companyBowls: r.company_bowls,
+    myBowls: r.my_bowls, roundFrom: w.from, roundTo: w.to,
+    roundDaysLeft: Math.round((Date.parse(w.to) - Date.parse(w.today)) / 86400000) + 1, companyName: r.company_name, companyWalkers: r.company_walkers, companyBowls: r.company_bowls,
     communityWalkers: r.community_walkers, communityBowls: r.community_bowls,
   };
 }

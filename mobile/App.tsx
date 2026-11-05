@@ -86,7 +86,7 @@ export default function App() {
   // A new bowl since the last time this phone looked shows the celebration.
   async function checkNewBowls(h: Home | null) {
     if (!h) return;
-    const key = `fursteps.bowls.${monthWindow().from}`;
+    const key = `fursteps.bowls.${h.roundFrom}`;
     const seen = Number((await SecureStore.getItemAsync(key)) ?? 0);
     if (h.myBowls > seen) setCelebrate({ bowls: h.myBowls - seen, steps: h.monthSteps });
     await SecureStore.setItemAsync(key, String(h.myBowls));
