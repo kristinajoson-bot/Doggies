@@ -1,5 +1,5 @@
 import { Image, View } from 'react-native';
-import Svg, { Circle, ClipPath, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Stop, Text as SvgText } from 'react-native-svg';
 
 import { C, F, glow } from './theme';
 
@@ -34,46 +34,38 @@ export function PawTile({ state, size }: { state: 'on' | 'next' | 'off'; size: n
   );
 }
 
-// A steel dog bowl that fills with kibble (level 0 to 1). The same bowl is used everywhere.
-const KIBBLE: [number, number, number][] = [
-  [52, 0, 5], [64, -3, 5.5], [77, -5, 5], [90, -7, 5.5], [103, -8, 5], [116, -7, 5.5], [129, -5, 5], [142, -3, 5.5], [154, 0, 5],
-  [60, -9, 5], [73, -13, 5.5], [87, -16, 5], [100, -18, 5.5], [113, -16, 5], [127, -13, 5.5], [140, -9, 5],
-  [70, -20, 5], [84, -25, 5.5], [98, -28, 5], [112, -26, 5.5], [126, -21, 5], [90, -35, 5], [106, -36, 5.5], [120, -31, 5], [98, -44, 5],
-];
+// A cream ceramic dog bowl with a pink paw that fills with kibble (level 0 to 1). The same bowl is used everywhere.
+const KIBBLE: [number, number][] = [[70, 54], [88, 45], [110, 44], [130, 53], [100, 55], [80, 58], [120, 58], [60, 60], [140, 60], [99, 38]];
 export function Bowl({ level, width = 250, id = 'b' }: { level: number; width?: number; id?: string }) {
   const l = Math.max(0, Math.min(1, level));
-  const top = 58 - 40 * l; // how high the kibble mound reaches
+  const top = 60 - 26 * l; // how high the kibble mound reaches
+  const side = 62 - 2 * l;
   return (
     <Svg width={width} height={Math.round(width * 0.7)} viewBox="0 0 200 140">
       <Defs>
-        <LinearGradient id={`${id}steel`} x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor="#4b505c" /><Stop offset="0.22" stopColor="#d9dde5" /><Stop offset="0.45" stopColor="#8c929e" />
-          <Stop offset="0.7" stopColor="#f2f4f8" /><Stop offset="1" stopColor="#5a5f6b" />
+        <LinearGradient id={`${id}cer`} x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor="#c9c3b8" /><Stop offset="0.35" stopColor="#fbf8f2" /><Stop offset="1" stopColor="#b5afa4" />
         </LinearGradient>
-        <LinearGradient id={`${id}rim`} x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor="#9aa0ab" /><Stop offset="0.5" stopColor="#ffffff" /><Stop offset="1" stopColor="#7c828d" />
-        </LinearGradient>
-        <RadialGradient id={`${id}inside`} cx="0.5" cy="0.35" r="0.7">
-          <Stop offset="0" stopColor="#3a3e47" /><Stop offset="1" stopColor="#15161b" />
+        <RadialGradient id={`${id}kib`} cx="0.45" cy="0.3" r="0.8">
+          <Stop offset="0" stopColor="#d9934f" /><Stop offset="1" stopColor="#8a4a1c" />
         </RadialGradient>
-        <RadialGradient id={`${id}kib`} cx="0.4" cy="0.35" r="0.7">
-          <Stop offset="0" stopColor="#d08a4a" /><Stop offset="1" stopColor="#7a3f17" />
-        </RadialGradient>
-        <ClipPath id={`${id}open`}><Path d="M24 0 H176 V60 A76 17 0 0 1 24 60 Z" /></ClipPath>
       </Defs>
-      <Ellipse cx={100} cy={128} rx={78} ry={8} fill="#000" opacity={0.55} />
-      <Path d="M14 60 C18 108 58 124 100 124 C142 124 182 108 186 60 Z" fill={`url(#${id}steel)`} />
-      <Ellipse cx={100} cy={60} rx={86} ry={20} fill={`url(#${id}rim)`} />
-      <Ellipse cx={100} cy={61} rx={76} ry={16} fill={`url(#${id}inside)`} />
+      <Ellipse cx={100} cy={128} rx={74} ry={7} fill="#000" opacity={0.6} />
+      <Path d="M18 58 C22 108 58 124 100 124 C142 124 178 108 182 58 Z" fill={`url(#${id}cer)`} />
+      <Ellipse cx={100} cy={58} rx={82} ry={18} fill="#ffffff" />
+      <Ellipse cx={100} cy={59} rx={72} ry={14} fill="#2a1a14" />
       {l > 0.01 && (
-        <G clipPath={`url(#${id}open)`}>
-          <Path d={`M28 64 Q60 ${top + 18} 100 ${top} Q140 ${top + 18} 172 64 A72 14 0 0 1 28 64 Z`} fill={`url(#${id}kib)`} />
-          {KIBBLE.map(([x, dy, r]) => [x, 62 + dy * l, r]).filter(([x, y]) => y >= top + 5 + Math.abs(x - 100) * 0.3 * l).map(([x, y, r], i) => (
-            <Ellipse key={i} cx={x} cy={y} rx={r} ry={r * 0.78} fill={i % 3 === 0 ? '#a45d26' : i % 3 === 1 ? '#c77b3b' : '#8c4a1c'} stroke="#5c2c0e" strokeWidth={0.8} />
-          ))}
-        </G>
+        <>
+          <Path d={`M30 ${side} Q60 ${top + 8} 100 ${top} Q140 ${top + 8} 170 ${side} A70 12 0 0 1 30 ${side} Z`} fill={`url(#${id}kib)`} />
+          <G fill="#7a3f17">
+            {KIBBLE.filter(([, y]) => y + (1 - l) * 6 > top + 4).map(([x, y], i) => <Circle key={i} cx={x} cy={y + (1 - l) * 6} r={4.3} />)}
+          </G>
+        </>
       )}
-      <Path d="M36 96 C60 112 86 116 100 116" stroke="#ffffff" strokeOpacity={0.35} strokeWidth={3} fill="none" strokeLinecap="round" />
+      <G fill={C.pink}>
+        <Ellipse cx={100} cy={106} rx={8.5} ry={6.5} /><Circle cx={87} cy={96} r={3.6} /><Circle cx={95} cy={90.5} r={3.6} />
+        <Circle cx={105} cy={90.5} r={3.6} /><Circle cx={113} cy={96} r={3.6} />
+      </G>
     </Svg>
   );
 }
