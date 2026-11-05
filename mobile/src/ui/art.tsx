@@ -1,5 +1,5 @@
 import { Image, View } from 'react-native';
-import Svg, { Circle, ClipPath, Defs, Ellipse, G, LinearGradient, Path, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, ClipPath, Defs, Ellipse, G, LinearGradient, Path, Polygon, Rect, Stop, Text as SvgText } from 'react-native-svg';
 
 import { C, F, glow } from './theme';
 
@@ -42,7 +42,19 @@ const KIBBLE_GRID: [number, number, number][] = (() => {
   }
   return out;
 })();
-const KIBBLE_COLOURS = ['#b8692c', '#9a5220', '#cf8240', '#a85d25'];
+const KIBBLE_COLOURS = ['#b07a45', '#8c5a2e', '#c7925a', '#a0472e'];
+// Matte mixed kibble: rounds, triangles and crosses.
+function Kibble({ x, y, r, i }: { x: number; y: number; r: number; i: number }) {
+  const c = KIBBLE_COLOURS[i % 4];
+  const s = i % 3;
+  if (s === 0) return <Circle cx={x} cy={y} r={4} fill={c} />;
+  if (s === 1) return <Polygon transform={`rotate(${r} ${x} ${y})`} points={`${x},${y - 4.6} ${x + 4.3},${y + 3} ${x - 4.3},${y + 3}`} fill={c} stroke={c} strokeWidth={1.5} strokeLinejoin="round" />;
+  return (
+    <G transform={`rotate(${r} ${x} ${y})`} fill={c}>
+      <Rect x={x - 4.5} y={y - 1.6} width={9} height={3.2} rx={1.4} /><Rect x={x - 1.6} y={y - 4.5} width={3.2} height={9} rx={1.4} />
+    </G>
+  );
+}
 export function Bowl({ level, width = 250, id = 'b' }: { level: number; width?: number; id?: string }) {
   const l = Math.max(0, Math.min(1, level));
   const top = 60 - 30 * l; // peak of the kibble mound
@@ -64,13 +76,8 @@ export function Bowl({ level, width = 250, id = 'b' }: { level: number; width?: 
       <Ellipse cx={100} cy={59} rx={72} ry={14} fill="#2a1a14" />
       {l > 0.01 && (
         <G clipPath={`url(#${id}in)`}>
-          <Path d={`M29 ${edge} Q100 ${2 * top - edge} 171 ${edge} L171 59 A71 13 0 0 1 29 59 Z`} fill="#6e3814" />
-          {pieces.map(([x, y, r], i) => (
-            <G key={i} transform={`rotate(${r} ${x} ${y})`}>
-              <Ellipse cx={x} cy={y} rx={5.6} ry={4.2} fill={KIBBLE_COLOURS[i % 4]} stroke="#5a2c0e" strokeWidth={0.7} />
-              <Ellipse cx={x - 1.4} cy={y - 1.3} rx={1.8} ry={1.1} fill="#f1c08a" opacity={0.55} />
-            </G>
-          ))}
+          <Path d={`M29 ${edge} Q100 ${2 * top - edge} 171 ${edge} L171 59 A71 13 0 0 1 29 59 Z`} fill="#6a4220" />
+          {pieces.map(([x, y, r], i) => <Kibble key={i} x={x} y={y} r={r} i={i} />)}
         </G>
       )}
       <G fill={C.pink}>
