@@ -1,5 +1,5 @@
 import { Image, View } from 'react-native';
-import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Defs, Ellipse, G, LinearGradient, Path, Stop, Text as SvgText } from 'react-native-svg';
 
 import { C, F, glow } from './theme';
 
@@ -35,32 +35,45 @@ export function PawTile({ state, size }: { state: 'on' | 'next' | 'off'; size: n
 }
 
 // A cream ceramic dog bowl with a pink paw that fills with kibble (level 0 to 1). The same bowl is used everywhere.
-const KIBBLE: [number, number][] = [[70, 54], [88, 45], [110, 44], [130, 53], [100, 55], [80, 58], [120, 58], [60, 60], [140, 60], [99, 38]];
+// Kibble pieces sit on a fixed grid; only the ones under the mound line show, back rows first.
+const KIBBLE_GRID: [number, number, number][] = (() => {
+  const out: [number, number, number][] = [];
+  let k = 0;
+  for (let y = 22; y <= 70; y += 5.5) {
+    const shift = (Math.round(y) % 2) * 4.5;
+    for (let x = 32 + shift; x <= 168; x += 9) out.push([x + ((k * 37) % 5) - 2, y + ((k * 53) % 3) - 1, (k++ * 47) % 180]);
+  }
+  return out;
+})();
+const KIBBLE_COLOURS = ['#b8692c', '#9a5220', '#cf8240', '#a85d25'];
 export function Bowl({ level, width = 250, id = 'b' }: { level: number; width?: number; id?: string }) {
   const l = Math.max(0, Math.min(1, level));
-  const top = 60 - 26 * l; // how high the kibble mound reaches
-  const side = 62 - 2 * l;
+  const top = 60 - 30 * l; // peak of the kibble mound
+  const edge = 66 - 4 * l; // where the mound meets the bowl wall
+  const mound = (x: number) => top + (edge - top) * Math.pow((x - 100) / 70, 2);
+  const front = (x: number) => 59 + 14 * Math.sqrt(Math.max(0, 1 - Math.pow((x - 100) / 72, 2)));
+  const pieces = KIBBLE_GRID.filter(([x, y]) => Math.abs(x - 100) <= 68 && y >= mound(x) + 1 && y <= front(x) - 3);
   return (
     <Svg width={width} height={Math.round(width * 0.7)} viewBox="0 0 200 140">
       <Defs>
         <LinearGradient id={`${id}cer`} x1="0" y1="0" x2="1" y2="0">
           <Stop offset="0" stopColor="#c9c3b8" /><Stop offset="0.35" stopColor="#fbf8f2" /><Stop offset="1" stopColor="#b5afa4" />
         </LinearGradient>
-        <RadialGradient id={`${id}kib`} cx="0.45" cy="0.3" r="0.8">
-          <Stop offset="0" stopColor="#d9934f" /><Stop offset="1" stopColor="#8a4a1c" />
-        </RadialGradient>
       </Defs>
       <Ellipse cx={100} cy={128} rx={74} ry={7} fill="#000" opacity={0.6} />
       <Path d="M18 58 C22 108 58 124 100 124 C142 124 178 108 182 58 Z" fill={`url(#${id}cer)`} />
       <Ellipse cx={100} cy={58} rx={82} ry={18} fill="#ffffff" />
       <Ellipse cx={100} cy={59} rx={72} ry={14} fill="#2a1a14" />
       {l > 0.01 && (
-        <>
-          <Path d={`M30 ${side} Q60 ${top + 8} 100 ${top} Q140 ${top + 8} 170 ${side} A70 12 0 0 1 30 ${side} Z`} fill={`url(#${id}kib)`} />
-          <G fill="#7a3f17">
-            {KIBBLE.filter(([, y]) => y + (1 - l) * 6 > top + 4).map(([x, y], i) => <Circle key={i} cx={x} cy={y + (1 - l) * 6} r={4.3} />)}
-          </G>
-        </>
+        <G>
+          <Path d={`M30 ${edge} Q100 ${2 * top - edge} 170 ${edge} A70 12 0 0 1 30 ${edge} Z`} fill="#6e3814" />
+          {pieces.map(([x, y, r], i) => (
+            <G key={i} transform={`rotate(${r} ${x} ${y})`}>
+              <Ellipse cx={x} cy={y} rx={5.6} ry={4.2} fill={KIBBLE_COLOURS[i % 4]} stroke="#5a2c0e" strokeWidth={0.7} />
+              <Ellipse cx={x - 1.4} cy={y - 1.3} rx={1.8} ry={1.1} fill="#f1c08a" opacity={0.55} />
+            </G>
+          ))}
+        </G>
       )}
       <G fill={C.pink}>
         <Ellipse cx={100} cy={106} rx={8.5} ry={6.5} /><Circle cx={87} cy={96} r={3.6} /><Circle cx={95} cy={90.5} r={3.6} />

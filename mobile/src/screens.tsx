@@ -3,7 +3,7 @@ import { Alert, Image, Keyboard, Linking, Modal, Pressable, ScrollView, StyleShe
 import appJson from '../app.json';
 
 import type { Colleague, CompanyRow, Dog, Duel, Home, Pack, Walker } from './backend';
-import { Bone, Bowl, DOG_PHOTOS, DogAvatar } from './ui/art';
+import { Bone, Bowl, DOG_PHOTOS, DogAvatar, PawTile } from './ui/art';
 import { Bar, Btn, Card, Pill, fmt } from './ui/kit';
 import { C, F, S, glow } from './ui/theme';
 
@@ -35,6 +35,7 @@ export function TodayScreen({ home, dog, healthName, busy, onDogs, onCelebrate }
   const prev = [...MILESTONES].reverse().find((m) => steps >= m) ?? 0;
   const fill = next ? (steps - prev) / (next - prev) : 1;
   const inner = Math.min(width, 440) - 40 - 44;
+  const paw = Math.floor((inner - 12 - 40) / 5);
   return (
     <View style={{ gap: 16 }}>
       <DogCard dog={dog} onPress={onDogs} />
@@ -45,6 +46,17 @@ export function TodayScreen({ home, dog, healthName, busy, onDogs, onCelebrate }
         <View style={{ alignItems: 'center', marginTop: -6 }}>
           <Text style={[{ fontFamily: F.display, fontSize: 56, lineHeight: 60, color: C.gold }, textGlow(C.gold)]}>{done}</Text>
           <Text style={S.eyebrow}>{done === 1 ? 'bowl' : 'bowls'} this month</Text>
+        </View>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 8, width: '100%', paddingHorizontal: 6, marginTop: 6 }}>
+          {MILESTONES.map((m) => {
+            const state = steps >= m ? 'on' : m === next ? 'next' : 'off';
+            return (
+              <Pressable key={m} disabled={state !== 'on'} onPress={() => onCelebrate(m)} style={{ alignItems: 'center', width: paw }} accessibilityLabel={`${fmt(m)} steps, ${state === 'on' ? 'bowl filled' : state === 'next' ? 'next bowl' : 'locked'}`}>
+                <PawTile state={state} size={paw} />
+                <Text style={[x.pl, state === 'on' && { color: C.green }, state === 'next' && { color: C.pink }]}>{m / 1000}k</Text>
+              </Pressable>
+            );
+          })}
         </View>
         <View style={{ width: '100%', marginTop: 4 }}><Bar pct={Math.round(fill * 100)} /></View>
         <Text style={[S.p, { fontSize: 15, textAlign: 'center' }]}>
