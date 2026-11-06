@@ -1,34 +1,36 @@
 import { StyleSheet } from 'react-native';
 
-// Walkies neon colours on a white background (Kristina, 2026-11-06).
+// Soft plum theme from Kristina's mock-up (2026-11-06): warm off-white, plum, purple and teal.
 export const C = {
-  bg: '#ffffff',
-  surface: '#f7f6fa',
-  surface2: '#efedf4',
-  line: '#e6e3ec',
-  fg: '#14121a',
-  muted: '#6b6679',
-  pink: '#ff2e9a',
-  coral: '#ff2e9a',
-  green: '#3bff8f',
-  cyan: '#23e5ff',
-  yellow: '#f4ff3a',
-  gold: '#ffc21a',
-  mango: '#ffc468',
-  dark: '#050507', // text on filled neon buttons and badges
-  err: '#e11d48',
-  pinkSoft: '#fff0f7',
+  bg: '#faf6f5',
+  card: '#fffdfd',
+  surface: '#f3eaf0',
+  surface2: '#ece0e8',
+  line: '#eadfe6',
+  fg: '#2a1838',
+  muted: '#6e5f78',
+  pink: '#9c3d63', // plum: buttons, links, active tab, the next paw
+  coral: '#e27f8c', // rose: bowls ring
+  purple: '#a77bd8', // lavender: today ring
+  green: '#6b5b9e', // unlocked paws (dusty purple)
+  cyan: '#5aa3a8', // teal: round ring, the other side in a tug of war
+  yellow: '#b07a2a',
+  gold: '#2a1838',
+  mango: '#f2c48d',
+  dark: '#ffffff', // text on filled buttons and badges
+  err: '#b42318',
+  pinkSoft: '#f6e8ef',
 };
 
 // Text versions of the neon colours: same hue, dark enough to read on white (WCAG AA 4.5:1).
 // Neon (C.*) is for shapes, fills, borders and the big Challenges heading; small words use T.*.
 export const T = {
-  pink: '#c8006a',
-  green: '#0f7a3d',
-  cyan: '#0a6a80',
-  yellow: '#7a6400',
-  gold: '#8f5f00',
-  coral: '#c8006a',
+  pink: '#9c3d63',
+  green: '#5a4a8c',
+  cyan: '#2f7480',
+  yellow: '#8a5a12',
+  gold: '#2a1838',
+  coral: '#9c3d63',
 };
 
 export const F = {
@@ -42,7 +44,7 @@ export const F = {
 
 // On a light background neon glows look muddy, so every 'glow' is now one soft neutral shadow.
 const glow = (_color?: string, _radius?: number, _opacity?: number) => ({
-  shadowColor: '#1c1a24', shadowOpacity: 0.07, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 2,
+  shadowColor: '#4a2a5a', shadowOpacity: 0.08, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 2,
 });
 export { glow };
 
@@ -54,8 +56,8 @@ export const S = StyleSheet.create({
   muted: { fontFamily: F.body, fontSize: 14, lineHeight: 20, color: C.muted },
   bold: { fontFamily: F.bodyBold, color: C.fg },
   eyebrow: { fontFamily: F.bodyBold, fontSize: 12, letterSpacing: 1.4, textTransform: 'uppercase', color: T.pink },
-  card: { backgroundColor: C.bg, borderWidth: 1, borderColor: C.line, borderRadius: 22, padding: 16 },
-  hero: { backgroundColor: C.bg, borderWidth: 1, borderColor: C.line, borderRadius: 28, paddingTop: 18, paddingHorizontal: 20, paddingBottom: 20, alignItems: 'center', gap: 6, ...glow(C.pink, 28, 0.35) },
+  card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 22, padding: 16 },
+  hero: { backgroundColor: C.card, borderWidth: 0, borderRadius: 28, paddingTop: 18, paddingHorizontal: 20, paddingBottom: 20, alignItems: 'center', gap: 6, ...glow(C.pink, 28, 0.35) },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   input: { minHeight: 48, borderWidth: 1, borderColor: C.line, borderRadius: 14, paddingHorizontal: 14, backgroundColor: C.surface, color: C.fg, fontSize: 16, fontFamily: F.body },
   label: { fontFamily: F.bodyBold, fontSize: 15, color: C.fg },

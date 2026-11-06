@@ -3,7 +3,7 @@ import { Alert, Image, Keyboard, Linking, Modal, Pressable, ScrollView, StyleShe
 import appJson from '../app.json';
 
 import type { Colleague, CompanyRow, Dog, Duel, Home, Pack, Walker } from './backend';
-import { Bone, Bowl, DOG_PHOTOS, DogAvatar, PawTile } from './ui/art';
+import { Bone, Bowl, DOG_PHOTOS, DogAvatar, Orb, PawTile } from './ui/art';
 import { Bar, Btn, Card, Pill, fmt } from './ui/kit';
 import { C, F, S, T, glow } from './ui/theme';
 
@@ -16,10 +16,10 @@ const plural = (n: number, one: string, many = one + 's') => `${fmt(n)} ${n === 
 
 function DogCard({ dog, onPress }: { dog: Dog | null; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} style={[x.dogcard, glow(C.pink, 18, 0.18)]} accessibilityRole="button">
-      <DogAvatar slug={dog?.slug} size={40} />
+    <Pressable onPress={onPress} style={x.dogcard} accessibilityRole="button">
+      <DogAvatar slug={dog?.slug} size={52} />
       <View style={{ flex: 1 }}>
-        <Text style={[S.bold, { fontSize: 16 }]}>{dog ? `Walking for ${dog.name}` : 'Choose a shelter dog to walk for'}</Text>
+        <Text style={[S.h2, { fontSize: 19 }]}>{dog ? `Walking for ${dog.name}` : 'Choose a shelter dog to walk for'}</Text>
       </View>
       <Text style={[S.muted, { fontSize: 22 }]}>›</Text>
     </Pressable>
@@ -36,37 +36,35 @@ export function TodayScreen({ home, dog, healthName, busy, onDogs, onCelebrate }
   const fill = next ? (steps - prev) / (next - prev) : 1;
   const inner = Math.min(width, 440) - 40 - 44;
   const paw = Math.floor((inner - 12 - 40) / 5);
+  const ring = Math.floor((inner - 16) / 3);
   return (
     <View style={{ gap: 16 }}>
       <DogCard dog={dog} onPress={onDogs} />
       <View style={S.hero}>
-        <Pressable disabled={!prev} onPress={() => onCelebrate(prev)} accessibilityLabel={`${done} bowls this round`} style={{ alignItems: 'center' }}>
-          <Bowl level={fill} width={Math.min(260, inner)} id="today" />
-        </Pressable>
-        <View style={{ alignItems: 'center', marginTop: -6 }}>
-          <Text style={[{ fontFamily: F.display, fontSize: 56, lineHeight: 60, color: T.gold }, textGlow(C.gold)]}>{done}</Text>
-          <Text style={S.eyebrow}>{done === 1 ? 'bowl' : 'bowls'} this round · {home.roundDaysLeft === 1 ? 'last day' : `${home.roundDaysLeft} days left`}</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
+          <Orb size={ring} progress={next ? done / (done + 1) : 1} color={C.coral} value={fmt(done)} label={done === 1 ? 'bowl' : 'bowls'} icon="bowl" />
+          <Orb size={ring} progress={home.todaySteps / 10000} color={C.purple} value={fmt(home.todaySteps)} label="today" icon="shoe" />
+          <Orb size={ring} progress={steps / 150000} color={C.cyan} value={fmt(steps)} label="this round" icon="calendar" />
         </View>
+        <Pressable disabled={!prev} onPress={() => onCelebrate(prev)} accessibilityLabel={`${done} bowls this round`} style={{ alignItems: 'center', marginTop: 4 }}>
+          <Bowl level={fill} width={Math.min(250, inner)} id="today" />
+        </Pressable>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 8, width: '100%', paddingHorizontal: 6, marginTop: 6 }}>
           {MILESTONES.map((m) => {
             const state = steps >= m ? 'on' : m === next ? 'next' : 'off';
             return (
               <Pressable key={m} disabled={state !== 'on'} onPress={() => onCelebrate(m)} style={{ alignItems: 'center', width: paw }} accessibilityLabel={`${fmt(m)} steps, ${state === 'on' ? 'bowl filled' : state === 'next' ? 'next bowl' : 'locked'}`}>
                 <PawTile state={state} size={paw} />
-                <Text style={[x.pl, state === 'on' && { color: T.green }, state === 'next' && { color: T.pink }]}>{m / 1000}k</Text>
+                <Text style={[x.pl, state === 'on' && { color: C.fg }, state === 'next' && { color: T.pink }]}>{m / 1000}k</Text>
               </Pressable>
             );
           })}
         </View>
         <View style={{ width: '100%', marginTop: 4 }}><Bar pct={Math.round(fill * 100)} /></View>
         <Text style={[S.p, { fontSize: 15, textAlign: 'center' }]}>
-          {next ? <><Text style={S.bold}>{fmt(next - steps)}</Text> steps to fill your next bowl</> : 'Every bowl filled this round. Epic walking!'}
+          {next ? <><Text style={S.bold}>{fmt(next - steps)}</Text> steps to your next bowl</> : 'Every bowl filled this round. Epic walking!'}
         </Text>
-        <View style={{ flexDirection: 'row', width: '100%', marginTop: 6 }}>
-          <View style={{ flex: 1, alignItems: 'center' }}><Text style={[x.num, { color: T.pink, textAlign: 'center' }]}>{fmt(home.todaySteps)}</Text><Text style={S.eyebrow}>today</Text></View>
-          <View style={{ width: 1, backgroundColor: C.line }} />
-          <View style={{ flex: 1, alignItems: 'center' }}><Text style={[x.num, { color: T.cyan, textAlign: 'center' }]}>{fmt(steps)}</Text><Text style={S.eyebrow}>this round</Text></View>
-        </View>
+        <Text style={[S.muted, { textAlign: 'center' }]}>{home.roundDaysLeft === 1 ? 'Last day of this round' : `${home.roundDaysLeft} days left in this round`}</Text>
       </View>
     </View>
   );
@@ -583,11 +581,11 @@ export function Celebrate({ visible, bowls, steps, dogName, onDone, onMore }: { 
 }
 
 const x = StyleSheet.create({
-  dogcard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 20, paddingVertical: 12, paddingHorizontal: 14 },
+  dogcard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.surface, borderRadius: 26, paddingVertical: 14, paddingHorizontal: 16 },
   pl: { fontFamily: F.display, fontSize: 12, color: C.muted, marginTop: 1 },
-  chal: { borderWidth: 2, borderStyle: 'dashed', borderRadius: 22, padding: 18, gap: 10, backgroundColor: C.bg },
+  chal: { borderWidth: 1.5, borderStyle: 'dashed', borderRadius: 24, padding: 18, gap: 10, backgroundColor: C.card },
   chalKind: { fontFamily: F.monoBold, fontSize: 13, letterSpacing: 1.6 },
-  chalTitle: { fontFamily: 'Bungee_400Regular', fontSize: 24, lineHeight: 28, color: C.fg },
+  chalTitle: { fontFamily: F.display, fontSize: 24, lineHeight: 29, color: C.fg },
   lb: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 20, paddingVertical: 12, paddingHorizontal: 14 },
   lbFirst: { borderColor: C.cyan, ...glow(C.cyan, 18, 0.25) },
   lbMine: { backgroundColor: C.pinkSoft, borderWidth: 1.5, borderColor: C.pink, ...glow(C.pink, 28, 0.28) },

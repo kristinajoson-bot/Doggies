@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState, type ComponentRef } from 'react';
-import { ActivityIndicator, Alert, AppState, Share, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, Share, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useFonts } from 'expo-font';
 import { BricolageGrotesque_800ExtraBold } from '@expo-google-fonts/bricolage-grotesque';
@@ -17,7 +17,7 @@ import { connect, healthStoreName, readDailySteps } from './src/steps';
 import {
   Celebrate, ChallengesScreen, ChooseDogPopup, type PackActions, type TugActions, DogScreen, DogsScreen, ImpactScreen, LeaderboardScreen, MILESTONES, MeScreen, TodayScreen,
 } from './src/screens';
-import { TabIcon } from './src/ui/art';
+import { TabIcon, Waves } from './src/ui/art';
 import { Btn, Glow, TopBar } from './src/ui/kit';
 import { C, F, S, glow } from './src/ui/theme';
 
@@ -37,6 +37,7 @@ export default function App() {
     BricolageGrotesque_800ExtraBold, DMSans_400Regular, DMSans_500Medium, DMSans_700Bold, GeistMono_500Medium, GeistMono_600SemiBold, Bungee_400Regular,
   });
   const [view, setView] = useState<View_>({ kind: 'loading' });
+  const { width: winW, height: winH } = useWindowDimensions();
   const [tab, setTab] = useState<Tab>('today');
   const [sub, setSub] = useState<{ kind: 'dogs' } | { kind: 'dog'; dog: Dog } | null>(null);
   const [email, setEmail] = useState('');
@@ -291,6 +292,7 @@ export default function App() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <Waves width={winW} height={winH} />
       <ScrollView ref={scroll} contentContainerStyle={[S.page, { paddingTop: 60 }]} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode="interactive"
         refreshControl={<RefreshControl refreshing={false} tintColor={C.pink} onRefresh={() => run(() => syncFromHealth(false))} />}>
         <TopBar />
@@ -301,9 +303,9 @@ export default function App() {
         {TABS.map(([t, label]) => {
           const on = tab === t && !sub;
           return (
-            <Pressable key={t} style={a.tab} onPress={() => goTab(t)} accessibilityRole="tab" accessibilityState={{ selected: on }}>
-              <View style={on ? glow(C.pink, 6, 0.8) : undefined}><TabIcon tab={t} color={on ? C.pink : C.muted} /></View>
-              <Text style={[a.tabText, on && { color: C.fg }]}>{label}</Text>
+            <Pressable key={t} style={[a.tab, on && a.tabOn]} onPress={() => goTab(t)} accessibilityRole="tab" accessibilityState={{ selected: on }}>
+              <TabIcon tab={t} color={on ? C.pink : C.fg} />
+              <Text style={[a.tabText, on && { fontFamily: F.bodyBold }]}>{label}</Text>
             </Pressable>
           );
         })}
@@ -320,7 +322,8 @@ export default function App() {
 
 const a = StyleSheet.create({
   form: { backgroundColor: C.bg, borderWidth: 1, borderColor: C.line, borderRadius: 24, padding: 16, gap: 12, ...glow(C.pink, 28, 0.3) },
-  nav: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', justifyContent: 'space-evenly', backgroundColor: 'rgba(255,255,255,0.97)', borderTopWidth: 1, borderTopColor: C.line, paddingTop: 6, paddingBottom: 28, paddingHorizontal: 10 },
+  nav: { position: 'absolute', left: 0, right: 0, bottom: 0, flexDirection: 'row', justifyContent: 'space-evenly', backgroundColor: '#ffffff', borderTopWidth: 0, paddingTop: 8, paddingBottom: 28, paddingHorizontal: 10 },
   tab: { alignItems: 'center', justifyContent: 'center', gap: 3, minHeight: 52, minWidth: 56 },
-  tabText: { fontFamily: F.bodyBold, fontSize: 12, color: C.muted },
+  tabText: { fontFamily: F.body, fontSize: 12, color: C.fg },
+  tabOn: { backgroundColor: C.pinkSoft, borderRadius: 18, paddingHorizontal: 10 },
 });
