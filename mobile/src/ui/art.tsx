@@ -31,7 +31,7 @@ export function PawTile({ state, size }: { state: 'on' | 'next' | 'off'; size: n
   );
 }
 
-// A coral ceramic dog bowl (logo colour) with a cream paw that fills with kibble (level 0 to 1). The same bowl is used everywhere.
+// A neon-pink ceramic dog bowl with a white paw that fills with kibble (level 0 to 1). The same bowl is used everywhere.
 // Kibble pieces sit on a fixed grid; only the ones under the mound line show, back rows first.
 const KIBBLE_GRID: [number, number, number][] = (() => {
   const out: [number, number, number][] = [];
@@ -73,13 +73,13 @@ export function Bowl({ level, width = 250, id = 'b' }: { level: number; width?: 
     <Svg width={width} height={Math.round(width * 0.7)} viewBox="0 0 200 140">
       <Defs>
         <LinearGradient id={`${id}cer`} x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor="#d24a2f" /><Stop offset="0.35" stopColor="#f27a61" /><Stop offset="1" stopColor="#c4432a" />
+          <Stop offset="0" stopColor="#e0157f" /><Stop offset="0.35" stopColor="#ff5cb0" /><Stop offset="1" stopColor="#d10f74" />
         </LinearGradient>
         <ClipPath id={`${id}in`}><Path d="M29 0 H171 V59 A71 13 0 0 1 29 59 Z" /></ClipPath>
       </Defs>
       <Ellipse cx={100} cy={128} rx={74} ry={7} fill="#1c1a24" opacity={0.1} />
       <Path d="M18 58 C22 108 58 124 100 124 C142 124 178 108 182 58 Z" fill={`url(#${id}cer)`} />
-      <Ellipse cx={100} cy={58} rx={82} ry={18} fill="#f9a58f" />
+      <Ellipse cx={100} cy={58} rx={82} ry={18} fill="#ffb3d9" />
       <Ellipse cx={100} cy={59} rx={72} ry={14} fill="#4a2f22" />
       {l > 0.01 && (
         <G clipPath={`url(#${id}in)`}>
@@ -87,7 +87,7 @@ export function Bowl({ level, width = 250, id = 'b' }: { level: number; width?: 
           {pieces.map(([x, y, r], i) => <Kibble key={i} x={x} y={y} r={r} i={i} />)}
         </G>
       )}
-      <G fill="#fff5ec">
+      <G fill="#ffffff">
         <Ellipse cx={100} cy={106} rx={8.5} ry={6.5} /><Circle cx={87} cy={96} r={3.6} /><Circle cx={95} cy={90.5} r={3.6} />
         <Circle cx={105} cy={90.5} r={3.6} /><Circle cx={113} cy={96} r={3.6} />
       </G>

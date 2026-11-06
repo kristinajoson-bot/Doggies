@@ -28,7 +28,7 @@ export function Btn({ label, onPress, kind = 'default', small, busy, style }: { 
 export function Bar({ pct }: { pct: number }) {
   return (
     <View style={k.bar}>
-      <LinearGradient colors={[C.coral, C.pink]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[k.barFill, { width: `${Math.max(0, Math.min(100, pct))}%` }]} />
+      <LinearGradient colors={[C.pink, C.cyan]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={[k.barFill, { width: `${Math.max(0, Math.min(100, pct))}%` }]} />
     </View>
   );
 }
@@ -36,7 +36,7 @@ export function Bar({ pct }: { pct: number }) {
 export function Pill({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={[k.pill, on && k.pillOn]} accessibilityRole="button" accessibilityState={{ selected: on }}>
-      <Text style={[k.pillText, on && { color: C.dark }]}>{label}</Text>
+      <Text style={[k.pillText, on && { color: '#ffffff' }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -65,7 +65,7 @@ const k = StyleSheet.create({
   btnSmall: { minHeight: 44, borderRadius: 14, alignSelf: 'flex-start' },
   btnCoral: { backgroundColor: C.pink, ...glow(C.pink, 22, 0.45) },
   btnLight: { backgroundColor: 'transparent', borderWidth: 1, borderColor: C.line },
-  btnText: { fontFamily: F.bodyBold, fontSize: 16, color: C.dark },
+  btnText: { fontFamily: F.bodyBold, fontSize: 16, color: '#ffffff' },
   bar: { width: '100%', height: 10, backgroundColor: C.line, borderRadius: 999, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 999 },
   pill: { minHeight: 40, paddingHorizontal: 16, borderRadius: 999, borderWidth: 1, borderColor: C.line, justifyContent: 'center' },

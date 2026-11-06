@@ -5,7 +5,7 @@ import appJson from '../app.json';
 import type { Colleague, CompanyRow, Dog, Duel, Home, Pack, Walker } from './backend';
 import { Bone, Bowl, DOG_PHOTOS, DogAvatar, PawTile } from './ui/art';
 import { Bar, Btn, Card, Pill, fmt } from './ui/kit';
-import { C, F, S, glow } from './ui/theme';
+import { C, F, S, T, glow } from './ui/theme';
 
 export const MILESTONES = [5000, 15000, 30000, 45000, 65000, 85000, 100000, 120000, 135000, 150000];
 export const BOWL_KG = 0.4;
@@ -44,7 +44,7 @@ export function TodayScreen({ home, dog, healthName, busy, onDogs, onCelebrate }
           <Bowl level={fill} width={Math.min(260, inner)} id="today" />
         </Pressable>
         <View style={{ alignItems: 'center', marginTop: -6 }}>
-          <Text style={[{ fontFamily: F.display, fontSize: 56, lineHeight: 60, color: C.gold }, textGlow(C.gold)]}>{done}</Text>
+          <Text style={[{ fontFamily: F.display, fontSize: 56, lineHeight: 60, color: T.gold }, textGlow(C.gold)]}>{done}</Text>
           <Text style={S.eyebrow}>{done === 1 ? 'bowl' : 'bowls'} this round · {home.roundDaysLeft === 1 ? 'last day' : `${home.roundDaysLeft} days left`}</Text>
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 8, width: '100%', paddingHorizontal: 6, marginTop: 6 }}>
@@ -53,7 +53,7 @@ export function TodayScreen({ home, dog, healthName, busy, onDogs, onCelebrate }
             return (
               <Pressable key={m} disabled={state !== 'on'} onPress={() => onCelebrate(m)} style={{ alignItems: 'center', width: paw }} accessibilityLabel={`${fmt(m)} steps, ${state === 'on' ? 'bowl filled' : state === 'next' ? 'next bowl' : 'locked'}`}>
                 <PawTile state={state} size={paw} />
-                <Text style={[x.pl, state === 'on' && { color: C.fg }, state === 'next' && { color: C.pink }]}>{m / 1000}k</Text>
+                <Text style={[x.pl, state === 'on' && { color: T.green }, state === 'next' && { color: T.pink }]}>{m / 1000}k</Text>
               </Pressable>
             );
           })}
@@ -63,9 +63,9 @@ export function TodayScreen({ home, dog, healthName, busy, onDogs, onCelebrate }
           {next ? <><Text style={S.bold}>{fmt(next - steps)}</Text> steps to fill your next bowl</> : 'Every bowl filled this round. Epic walking!'}
         </Text>
         <View style={{ flexDirection: 'row', width: '100%', marginTop: 6 }}>
-          <View style={{ flex: 1, alignItems: 'center' }}><Text style={[x.num, { color: C.pink, textAlign: 'center' }]}>{fmt(home.todaySteps)}</Text><Text style={S.eyebrow}>today</Text></View>
+          <View style={{ flex: 1, alignItems: 'center' }}><Text style={[x.num, { color: T.pink, textAlign: 'center' }]}>{fmt(home.todaySteps)}</Text><Text style={S.eyebrow}>today</Text></View>
           <View style={{ width: 1, backgroundColor: C.line }} />
-          <View style={{ flex: 1, alignItems: 'center' }}><Text style={[x.num, { color: C.cyan, textAlign: 'center' }]}>{fmt(steps)}</Text><Text style={S.eyebrow}>this round</Text></View>
+          <View style={{ flex: 1, alignItems: 'center' }}><Text style={[x.num, { color: T.cyan, textAlign: 'center' }]}>{fmt(steps)}</Text><Text style={S.eyebrow}>this round</Text></View>
         </View>
       </View>
     </View>
@@ -90,9 +90,9 @@ export function ChallengesScreen({ packs, onPacks, onOpenPack, duels, tug, busy,
   const open = duels.find((d) => d.status === 'active') ?? duels.find((d) => d.status === 'pending');
   return (
     <View style={{ gap: 16 }}>
-      <Text style={[S.h1, { fontSize: 34, lineHeight: 40 }]}>Challenges</Text>
+      <Text style={[S.h1, { fontSize: 44, lineHeight: 50, color: C.pink }]}>Challenges</Text>
       <View style={[x.chal, { borderColor: C.pink, borderStyle: 'solid' }, glow(C.pink, 14, 0.25)]}>
-        <Text style={[x.chalKind, { color: C.pink }]}>TUG OF WAR</Text>
+        <Text style={[x.chalKind, { color: T.pink }]}>TUG OF WAR</Text>
         {open ? <DuelCard d={open} slug={slug} tug={tug} busy={busy} /> : (
           <>
             <Text style={x.chalTitle}>PULL THE BONE FROM A COLLEAGUE</Text>
@@ -104,7 +104,7 @@ export function ChallengesScreen({ packs, onPacks, onOpenPack, duels, tug, busy,
       </View>
       <Pressable onPress={() => (mine.length ? onOpenPack(mine[0].k) : onPacks())} accessibilityRole="button"
         style={[x.chal, { borderColor: C.cyan, borderStyle: 'solid' }, glow(C.cyan, 14, 0.25)]}>
-        <Text style={[x.chalKind, { color: C.cyan }]}>PACK WAR</Text>
+        <Text style={[x.chalKind, { color: T.cyan }]}>PACK WAR</Text>
         <Text style={x.chalTitle}>BUILD YOUR CREW. WIN AS A PACK</Text>
         {mine.length
           ? mine.map((r) => <Text key={r.k.id} style={[S.bold, { fontSize: 16 }]}>{r.k.name} · #{r.rank} of {packs.length} ›</Text>)
@@ -152,8 +152,8 @@ function DuelCard({ d, slug, tug, busy }: { d: Duel; slug: (id: string | null) =
       {who}
       <TugBar mine={d.mySteps} theirs={d.theirSteps} />
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <View><Text style={[x.num, { textAlign: 'left', color: C.pink }]}>{fmt(d.mySteps)}</Text><Text style={S.muted}>You</Text></View>
-        <View><Text style={[x.num, { color: C.cyan }]}>{fmt(d.theirSteps)}</Text><Text style={[S.muted, { textAlign: 'right' }]}>{name}</Text></View>
+        <View><Text style={[x.num, { textAlign: 'left', color: T.pink }]}>{fmt(d.mySteps)}</Text><Text style={S.muted}>You</Text></View>
+        <View><Text style={[x.num, { color: T.cyan }]}>{fmt(d.theirSteps)}</Text><Text style={[S.muted, { textAlign: 'right' }]}>{name}</Text></View>
       </View>
       <Text style={[S.bold, { fontSize: 16, color: done && d.mySteps > d.theirSteps ? C.green : C.fg }]}>
         {verdict} · {done ? 'Finished' : left <= 1 ? 'Last day' : `${left} days left`}
@@ -202,7 +202,7 @@ function TugScreen({ duels, tug, busy, dogs, onBack }: { duels: Duel[]; tug: Tug
   return (
     <View style={{ gap: 16 }}>
       <Pressable onPress={onBack} accessibilityRole="button"><Text style={S.linkbtn}>‹ Challenges</Text></Pressable>
-      <Text style={[S.h1, { color: C.pink }, textGlow(C.pink)]}>Tug of War</Text>
+      <Text style={[S.h1, { color: T.pink }, textGlow(C.pink)]}>Tug of War</Text>
       {duels.map((d) => (
         <View key={d.id} style={[S.card, { gap: 10 }, d.status !== 'finished' && { borderColor: C.pink, borderWidth: 2 }]}>
           <DuelCard d={d} slug={slug} tug={tug} busy={busy} />
@@ -220,7 +220,7 @@ function TugScreen({ duels, tug, busy, dogs, onBack }: { duels: Duel[]; tug: Tug
                   style={[x.lb, pick === p.id && x.lbMine]}>
                   <DogAvatar slug={slug(p.dogId)} size={26} />
                   <Text numberOfLines={1} style={[S.bold, { fontSize: 16, flex: 1 }]}>{p.displayName}</Text>
-                  {pick === p.id && <Text style={[S.bold, { color: C.pink }]}>✓</Text>}
+                  {pick === p.id && <Text style={[S.bold, { color: T.pink }]}>✓</Text>}
                 </Pressable>
               ))}
             </View>
@@ -312,7 +312,7 @@ export function LeaderboardScreen({ walkers, packs, companies, onBoard, companyN
                 </View>
                 {c.stepsPerWalker != null
                   ? <Text style={x.num}>{fmt(c.stepsPerWalker)}</Text>
-                  : <Text style={[S.bold, { color: C.gold }]}>{plural(c.bowls, 'bowl')}</Text>}
+                  : <Text style={[S.bold, { color: T.gold }]}>{plural(c.bowls, 'bowl')}</Text>}
               </View>
             );
           })}
@@ -523,7 +523,7 @@ export function DogScreen({ dog, mine, busy, onPick, onBack, onAll }: { dog: Dog
       </View>
       {!!dog.story && <Card><Text style={S.p}>{dog.story}</Text></Card>}
       {mine ? (
-        <Card style={{ borderColor: C.green }}><Text style={[S.bold, { color: C.green, fontSize: 16 }]}>✓ You walk for {dog.name}</Text><Text style={S.muted}>Every bowl you unlock goes to {dog.name}.</Text></Card>
+        <Card style={{ borderColor: C.green }}><Text style={[S.bold, { color: T.green, fontSize: 16 }]}>✓ You walk for {dog.name}</Text><Text style={S.muted}>Every bowl you unlock goes to {dog.name}.</Text></Card>
       ) : <Btn label={`Walk for ${dog.name}`} kind="coral" busy={busy} onPress={onPick} />}
       <Text style={S.h2}>Thank-you notes</Text>
       <Text style={S.muted}>No notes yet. The shelter team will post a thank-you here when food arrives.</Text>
@@ -539,7 +539,7 @@ export function ChooseDogPopup({ visible, dogs, busy, onPick, onLater }: { visib
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onLater}>
       <View style={{ flex: 1, backgroundColor: C.bg }}>
         <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 28, paddingBottom: 48, gap: 16 }}>
-          <Text style={[{ fontFamily: F.mono, fontSize: 13, letterSpacing: 2.4, color: C.pink }]}>WELCOME TO FURSTEPS</Text>
+          <Text style={[{ fontFamily: F.mono, fontSize: 13, letterSpacing: 2.4, color: T.pink }]}>WELCOME TO FURSTEPS</Text>
           <Text style={S.h1}>Choose a shelter dog to walk for</Text>
           <Text style={S.muted}>Every bowl your steps unlock goes to your dog. You can change dogs any time.</Text>
           {dogs.map((d) => {
@@ -564,9 +564,9 @@ export function Celebrate({ visible, bowls, steps, dogName, onDone, onMore }: { 
     <Modal visible={visible} animationType="slide" onRequestClose={onDone}>
       <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: 60, paddingBottom: 30 }}>
         <View style={{ position: 'absolute', top: 40, left: '15%', width: '70%', height: 300, borderRadius: 300, backgroundColor: 'rgba(214,31,105,0.08)' }} />
-        <Pressable onPress={onDone} style={{ alignSelf: 'flex-end', paddingHorizontal: 20, paddingVertical: 8 }}><Text style={{ color: C.cyan, fontFamily: F.bodyMedium, fontSize: 17 }}>Done</Text></Pressable>
+        <Pressable onPress={onDone} style={{ alignSelf: 'flex-end', paddingHorizontal: 20, paddingVertical: 8 }}><Text style={{ color: T.cyan, fontFamily: F.bodyMedium, fontSize: 17 }}>Done</Text></Pressable>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 26, paddingHorizontal: 28 }}>
-          <Text style={[{ fontFamily: F.mono, fontSize: 14, letterSpacing: 2.8, color: C.pink }, textGlow(C.pink)]}>CONGRATULATIONS</Text>
+          <Text style={[{ fontFamily: F.mono, fontSize: 14, letterSpacing: 2.8, color: T.pink }, textGlow(C.pink)]}>CONGRATULATIONS</Text>
           <Text style={{ fontFamily: F.display, fontSize: 36, lineHeight: 40, letterSpacing: -1.2, color: C.fg, textAlign: 'center', marginTop: -12 }}>You helped feed a shelter dog</Text>
           <View style={[x.celCard, glow(C.pink, 40, 0.45)]}>
             <Bowl level={1} width={150} id="cel" />
@@ -576,7 +576,7 @@ export function Celebrate({ visible, bowls, steps, dogName, onDone, onMore }: { 
           <Text style={[S.p, { fontSize: 17, textAlign: 'center', maxWidth: 300 }]}>Thanks to you, a bowl of food is on its way to {dogName ?? 'a rescue near you'}.</Text>
           <Btn label="Find out more" kind="coral" onPress={onMore} style={{ alignSelf: 'stretch' }} />
         </View>
-        <Text style={[S.muted, { textAlign: 'center' }]}>Your steps make the difference <Text style={{ color: C.pink }}>♥</Text></Text>
+        <Text style={[S.muted, { textAlign: 'center' }]}>Your steps make the difference <Text style={{ color: T.pink }}>♥</Text></Text>
       </View>
     </Modal>
   );
