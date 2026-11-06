@@ -33,13 +33,15 @@ export const T = {
   coral: '#9c3d63',
 };
 
+// Type scale: one family (DM Sans: Regular, Medium, Bold).
+// Sizes: 56 hero number · 34 screen title · 22 card title / stat · 18 row title · 16 body · 14 secondary · 12 label (caps, +0.8 spacing).
 export const F = {
-  display: 'BricolageGrotesque_800ExtraBold',
+  display: 'DMSans_700Bold', // headings and big numbers
   body: 'DMSans_400Regular',
   bodyMedium: 'DMSans_500Medium',
   bodyBold: 'DMSans_700Bold',
-  mono: 'GeistMono_500Medium',
-  monoBold: 'GeistMono_600SemiBold',
+  mono: 'DMSans_700Bold', // labels: one body family (DM Sans) everywhere
+  monoBold: 'DMSans_700Bold',
 };
 
 // On a light background neon glows look muddy, so every 'glow' is now one soft neutral shadow.
@@ -50,18 +52,18 @@ export { glow };
 
 export const S = StyleSheet.create({
   page: { paddingHorizontal: 20, paddingBottom: 120, gap: 16 },
-  h1: { fontFamily: F.display, fontSize: 34, letterSpacing: -1, color: C.fg },
-  h2: { fontFamily: F.display, fontSize: 20, color: C.fg },
-  p: { fontFamily: F.body, fontSize: 16, lineHeight: 22, color: C.fg },
+  h1: { fontFamily: F.display, fontSize: 34, lineHeight: 40, letterSpacing: -0.5, color: C.fg },
+  h2: { fontFamily: F.display, fontSize: 22, lineHeight: 28, color: C.fg },
+  p: { fontFamily: F.body, fontSize: 16, lineHeight: 24, color: C.fg },
   muted: { fontFamily: F.body, fontSize: 14, lineHeight: 20, color: C.muted },
   bold: { fontFamily: F.bodyBold, color: C.fg },
-  eyebrow: { fontFamily: F.bodyBold, fontSize: 12, letterSpacing: 1.4, textTransform: 'uppercase', color: T.pink },
+  eyebrow: { fontFamily: F.bodyBold, fontSize: 12, letterSpacing: 0.8, textTransform: 'uppercase', color: T.pink },
   card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 22, padding: 16 },
   hero: { backgroundColor: C.card, borderWidth: 0, borderRadius: 28, paddingTop: 18, paddingHorizontal: 20, paddingBottom: 20, alignItems: 'center', gap: 6, ...glow(C.pink, 28, 0.35) },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   input: { minHeight: 48, borderWidth: 1, borderColor: C.line, borderRadius: 14, paddingHorizontal: 14, backgroundColor: C.surface, color: C.fg, fontSize: 16, fontFamily: F.body },
-  label: { fontFamily: F.bodyBold, fontSize: 15, color: C.fg },
+  label: { fontFamily: F.bodyBold, fontSize: 16, color: C.fg },
   err: { fontFamily: F.bodyBold, fontSize: 14, color: C.err },
-  linkbtn: { fontFamily: F.bodyBold, fontSize: 16, color: T.cyan, paddingVertical: 12 },
-  tag: { fontFamily: F.mono, fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase', color: T.cyan },
+  linkbtn: { fontFamily: F.bodyBold, fontSize: 16, color: T.pink, paddingVertical: 12 },
+  tag: { fontFamily: F.mono, fontSize: 12, letterSpacing: 0.8, textTransform: 'uppercase', color: C.muted },
 });

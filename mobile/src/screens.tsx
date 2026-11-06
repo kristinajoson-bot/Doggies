@@ -19,7 +19,7 @@ function DogCard({ dog, onPress }: { dog: Dog | null; onPress: () => void }) {
     <Pressable onPress={onPress} style={x.dogcard} accessibilityRole="button">
       <DogAvatar slug={dog?.slug} size={52} />
       <View style={{ flex: 1 }}>
-        <Text style={[S.h2, { fontSize: 19 }]}>{dog ? `Walking for ${dog.name}` : 'Choose a shelter dog to walk for'}</Text>
+        <Text style={[S.h2, { fontSize: 18 }]}>{dog ? `Walking for ${dog.name}` : 'Choose a shelter dog to walk for'}</Text>
       </View>
       <Text style={[S.muted, { fontSize: 22 }]}>›</Text>
     </Pressable>
@@ -61,7 +61,7 @@ export function TodayScreen({ home, dog, healthName, busy, onDogs, onCelebrate }
           })}
         </View>
         <View style={{ width: '100%', marginTop: 4 }}><Bar pct={Math.round(fill * 100)} /></View>
-        <Text style={[S.p, { fontSize: 15, textAlign: 'center' }]}>
+        <Text style={[S.p, { fontSize: 16, textAlign: 'center' }]}>
           {next ? <><Text style={S.bold}>{fmt(next - steps)}</Text> steps to your next bowl</> : 'Every bowl filled this round. Epic walking!'}
         </Text>
         <Text style={[S.muted, { textAlign: 'center' }]}>{home.roundDaysLeft === 1 ? 'Last day of this round' : `${home.roundDaysLeft} days left in this round`}</Text>
@@ -78,32 +78,33 @@ export type TugActions = {
   cancel: (d: Duel) => void;
 };
 
-export function ChallengesScreen({ packs, onPacks, onOpenPack, duels, tug, busy, dogs }: {
-  packs: Pack[]; onPacks: () => void; onOpenPack: (p: Pack) => void; duels: Duel[]; tug: TugActions; busy: boolean; dogs: Dog[];
+export function ChallengesScreen({ packs, onPacks, onOpenPack, duels, tug, busy, dogs, myDogId }: {
+  packs: Pack[]; onPacks: () => void; onOpenPack: (p: Pack) => void; duels: Duel[]; tug: TugActions; busy: boolean; dogs: Dog[]; myDogId: string | null;
 }) {
-  const [inTug, setInTug] = useState(false);
+  const [inTug, setInTug] = useState<false | 'live' | 'past'>(false);
   const slug = (id: string | null) => dogs.find((d) => d.id === id)?.slug;
   const mine = packs.map((k, i) => ({ k, rank: i + 1 })).filter((r) => r.k.isMine);
-  if (inTug) return <TugScreen duels={duels} tug={tug} busy={busy} dogs={dogs} onBack={() => setInTug(false)} />;
+  if (inTug === 'past') return <PastTugsScreen duels={duels} dogs={dogs} myDogId={myDogId} onBack={() => setInTug(false)} />;
+  if (inTug) return <TugScreen duels={duels} tug={tug} busy={busy} dogs={dogs} myDogId={myDogId} onBack={() => setInTug(false)} onPast={() => setInTug('past')} />;
   const open = duels.find((d) => d.status === 'active') ?? duels.find((d) => d.status === 'pending');
   return (
     <View style={{ gap: 16 }}>
-      <Text style={[S.h1, { fontSize: 44, lineHeight: 50, color: C.pink }]}>Challenges</Text>
+      <Text style={S.h1}>Challenges</Text>
       <View style={[x.chal, { borderColor: C.pink, borderStyle: 'solid' }, glow(C.pink, 14, 0.25)]}>
         <Text style={[x.chalKind, { color: T.pink }]}>TUG OF WAR</Text>
-        {open ? <DuelCard d={open} slug={slug} tug={tug} busy={busy} /> : (
+        {open ? <DuelCard d={open} slug={slug} mine={slug(myDogId)} tug={tug} busy={busy} /> : (
           <>
-            <Text style={x.chalTitle}>PULL THE BONE FROM A COLLEAGUE</Text>
-            <Text style={[S.p, { fontSize: 15, color: C.muted }]}>Most steps in 3 to 14 days wins the bone.</Text>
-            <Btn label="Challenge a colleague" kind="coral" small onPress={() => setInTug(true)} />
+            <Text style={x.chalTitle}>Pull the bone from a colleague</Text>
+            <Text style={[S.p, { fontSize: 16, color: C.muted }]}>Most steps in 3 to 14 days wins the bone.</Text>
+            <Btn label="Challenge a colleague" kind="coral" small onPress={() => setInTug('live')} />
           </>
         )}
-        {open && <Pressable onPress={() => setInTug(true)} accessibilityRole="button"><Text style={S.linkbtn}>Past tugs of war ›</Text></Pressable>}
+        {open && <Pressable onPress={() => setInTug('past')} accessibilityRole="button"><Text style={S.linkbtn}>Past tugs of war ›</Text></Pressable>}
       </View>
       <Pressable onPress={() => (mine.length ? onOpenPack(mine[0].k) : onPacks())} accessibilityRole="button"
         style={[x.chal, { borderColor: C.cyan, borderStyle: 'solid' }, glow(C.cyan, 14, 0.25)]}>
         <Text style={[x.chalKind, { color: T.cyan }]}>PACK WAR</Text>
-        <Text style={x.chalTitle}>BUILD YOUR CREW. WIN AS A PACK</Text>
+        <Text style={x.chalTitle}>Build your crew. Win as a pack</Text>
         {mine.length
           ? mine.map((r) => <Text key={r.k.id} style={[S.bold, { fontSize: 16 }]}>{r.k.name} · #{r.rank} of {packs.length} ›</Text>)
           : <Btn label="Start or join a pack" kind="coral" small onPress={onPacks} />}
@@ -113,11 +114,10 @@ export function ChallengesScreen({ packs, onPacks, onOpenPack, duels, tug, busy,
 }
 
 // One tug of war: an invite to answer, a challenge waiting, or the live bone.
-function DuelCard({ d, slug, tug, busy }: { d: Duel; slug: (id: string | null) => string | undefined; tug: TugActions; busy: boolean }) {
+function DuelCard({ d, slug, mine, tug, busy }: { d: Duel; slug: (id: string | null) => string | undefined; mine?: string; tug?: TugActions; busy: boolean }) {
   const name = d.opponentName ?? 'your colleague';
   const who = (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-      <DogAvatar slug={slug(d.opponentDog)} size={34} />
       <Text style={[S.bold, { fontSize: 18, flex: 1 }]}>{d.status === 'pending' && !d.isChallenger ? `${name} challenged you` : `You vs ${name}`}</Text>
     </View>
   );
@@ -127,8 +127,8 @@ function DuelCard({ d, slug, tug, busy }: { d: Duel; slug: (id: string | null) =
         {who}
         <Text style={S.muted}>{d.days} days. If you accept, you two see each other's steps for these days only.</Text>
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <Btn label="Accept" small kind="coral" busy={busy} onPress={() => { tug.accept(d); }} />
-          <Btn label="Decline" small kind="light" onPress={() => tug.decline(d)} />
+          <Btn label="Accept" small kind="coral" busy={busy} onPress={() => { tug?.accept(d); }} />
+          <Btn label="Decline" small kind="light" onPress={() => tug?.decline(d)} />
         </View>
       </View>
     );
@@ -138,23 +138,23 @@ function DuelCard({ d, slug, tug, busy }: { d: Duel; slug: (id: string | null) =
       <View style={{ gap: 10 }}>
         {who}
         <Text style={S.muted}>Waiting for {name} to accept · {d.days} days</Text>
-        <Btn label="Cancel challenge" small kind="light" onPress={() => tug.cancel(d)} />
+        <Btn label="Cancel challenge" small kind="light" onPress={() => tug?.cancel(d)} />
       </View>
     );
   }
   const done = d.status === 'finished';
   const left = daysLeft(d.endsOn);
-  const verdict = d.mySteps === d.theirSteps ? "It's a draw" : d.mySteps > d.theirSteps ? (done ? 'You won the bone!' : "You're winning") : (done ? `${name} won the bone` : `${name} is ahead`);
+  const result = d.mySteps === d.theirSteps ? "It's a draw" : d.mySteps > d.theirSteps ? 'You won the bone!' : `${name} won the bone`;
   return (
     <View style={{ gap: 10 }}>
       {who}
-      <TugBar mine={d.mySteps} theirs={d.theirSteps} />
+      <TugBar mine={d.mySteps} theirs={d.theirSteps} myDog={mine} theirDog={slug(d.opponentDog)} />
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         <View><Text style={[x.num, { textAlign: 'left', color: T.pink }]}>{fmt(d.mySteps)}</Text><Text style={S.muted}>You</Text></View>
         <View><Text style={[x.num, { color: T.cyan }]}>{fmt(d.theirSteps)}</Text><Text style={[S.muted, { textAlign: 'right' }]}>{name}</Text></View>
       </View>
-      <Text style={[S.bold, { fontSize: 16, color: done && d.mySteps > d.theirSteps ? C.green : C.fg }]}>
-        {verdict} · {done ? 'Finished' : left <= 1 ? 'Last day' : `${left} days left`}
+      <Text style={[S.bold, { fontSize: 16, color: C.fg }]}>
+        {done ? `${result} · Finished` : left <= 1 ? 'Last day' : `${left} days left`}
       </Text>
     </View>
   );
@@ -168,24 +168,28 @@ function daysLeft(endsOn: string | null) {
 }
 
 // A rope with a bone in the middle. The bone slides toward whoever has more steps.
-function TugBar({ mine, theirs }: { mine: number; theirs: number }) {
+function TugBar({ mine, theirs, myDog, theirDog }: { mine: number; theirs: number; myDog?: string; theirDog?: string }) {
   const [w, setW] = useState(0);
   const total = mine + theirs;
   const lead = total ? (mine - theirs) / total : 0; // -1..1, positive = you lead
   const pos = 0.5 - Math.max(-0.38, Math.min(0.38, lead * 0.6)); // 0 = your end (left)
-  const bone = 84;
+  const bone = 50;
   return (
-    <View style={{ height: 44, justifyContent: 'center' }} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
-      <View style={{ height: 6, borderRadius: 3, flexDirection: 'row', overflow: 'hidden' }}>
-        <View style={{ flex: 1, backgroundColor: C.pink }} /><View style={{ flex: 1, backgroundColor: C.cyan }} />
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <DogAvatar slug={myDog} size={40} />
+      <View style={{ flex: 1, height: 36, justifyContent: 'center' }} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
+        <View style={{ height: 6, borderRadius: 3, flexDirection: 'row', overflow: 'hidden' }}>
+          <View style={{ flex: 1, backgroundColor: C.pink }} /><View style={{ flex: 1, backgroundColor: C.cyan }} />
+        </View>
+        <View style={{ position: 'absolute', left: '50%', top: 8, bottom: 8, width: 2, marginLeft: -1, backgroundColor: C.fg, opacity: 0.4 }} />
+        {w > 0 && <View style={{ position: 'absolute', left: w * pos - bone / 2 }}><Bone width={bone} /></View>}
       </View>
-      <View style={{ position: 'absolute', left: '50%', top: 6, bottom: 6, width: 2, marginLeft: -1, backgroundColor: C.fg, opacity: 0.5 }} />
-      {w > 0 && <View style={{ position: 'absolute', left: w * pos - bone / 2 }}><Bone width={bone} /></View>}
+      <DogAvatar slug={theirDog} size={40} />
     </View>
   );
 }
 
-function TugScreen({ duels, tug, busy, dogs, onBack }: { duels: Duel[]; tug: TugActions; busy: boolean; dogs: Dog[]; onBack: () => void }) {
+function TugScreen({ duels, tug, busy, dogs, myDogId, onBack, onPast }: { duels: Duel[]; tug: TugActions; busy: boolean; dogs: Dog[]; myDogId: string | null; onBack: () => void; onPast: () => void }) {
   const [days, setDays] = useState(7);
   const [people, setPeople] = useState<Colleague[] | null>(null);
   const [pick, setPick] = useState<string | null>(null);
@@ -200,10 +204,10 @@ function TugScreen({ duels, tug, busy, dogs, onBack }: { duels: Duel[]; tug: Tug
   return (
     <View style={{ gap: 16 }}>
       <Pressable onPress={onBack} accessibilityRole="button"><Text style={S.linkbtn}>‹ Challenges</Text></Pressable>
-      <Text style={[S.h1, { color: T.pink }, textGlow(C.pink)]}>Tug of War</Text>
-      {duels.map((d) => (
-        <View key={d.id} style={[S.card, { gap: 10 }, d.status !== 'finished' && { borderColor: C.pink, borderWidth: 2 }]}>
-          <DuelCard d={d} slug={slug} tug={tug} busy={busy} />
+      <Text style={S.h1}>Tug of War</Text>
+      {duels.filter((d) => d.status !== 'finished').map((d) => (
+        <View key={d.id} style={[S.card, { gap: 10, borderColor: C.pink, borderWidth: 1.5 }]}>
+          <DuelCard d={d} slug={slug} mine={slug(myDogId)} tug={tug} busy={busy} />
         </View>
       ))}
       {!busyDuel && (
@@ -230,6 +234,22 @@ function TugScreen({ duels, tug, busy, dogs, onBack }: { duels: Duel[]; tug: Tug
           <Btn label="Send challenge" kind="coral" busy={busy} onPress={send} />
         </Card>
       )}
+      {duels.some((d) => d.status === 'finished') && <Pressable onPress={onPast} accessibilityRole="button"><Text style={S.linkbtn}>Past tugs of war ›</Text></Pressable>}
+    </View>
+  );
+}
+
+// Finished tugs of war, on their own page.
+function PastTugsScreen({ duels, dogs, myDogId, onBack }: { duels: Duel[]; dogs: Dog[]; myDogId: string | null; onBack: () => void }) {
+  const slug = (id: string | null) => dogs.find((d) => d.id === id)?.slug;
+  const past = duels.filter((d) => d.status === 'finished');
+  return (
+    <View style={{ gap: 16 }}>
+      <Pressable onPress={onBack} accessibilityRole="button"><Text style={S.linkbtn}>‹ Challenges</Text></Pressable>
+      <Text style={S.h1}>Past tugs of war</Text>
+      {past.length === 0 ? <Text style={S.muted}>No finished tugs of war yet.</Text> : past.map((d) => (
+        <View key={d.id} style={[S.card, { gap: 10 }]}><DuelCard d={d} slug={slug} mine={slug(myDogId)} busy={false} /></View>
+      ))}
     </View>
   );
 }
@@ -284,7 +304,7 @@ export function LeaderboardScreen({ walkers, packs, companies, onBoard, companyN
         <>
           {!onBoard && (
             <Card style={[{ borderColor: C.cyan, flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
-              <Text style={[S.bold, { flex: 1, fontSize: 15 }]}>Show your name here?</Text>
+              <Text style={[S.bold, { flex: 1, fontSize: 16 }]}>Show your name here?</Text>
               <Btn label="Show me" small onPress={onJoin} busy={busy} />
             </Card>
           )}
@@ -306,7 +326,7 @@ export function LeaderboardScreen({ walkers, packs, companies, onBoard, companyN
                 <Text style={{ fontSize: 22 }}>{c.emoji ?? '🏢'}</Text>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text numberOfLines={1} style={[S.bold, { fontSize: 16 }]}>{c.name}</Text>
-                  <Text style={[S.p, { fontSize: 13 }]}>{plural(c.walkers, 'walker')}</Text>
+                  <Text style={[S.p, { fontSize: 12 }]}>{plural(c.walkers, 'walker')}</Text>
                 </View>
                 {c.stepsPerWalker != null
                   ? <Text style={x.num}>{fmt(c.stepsPerWalker)}</Text>
@@ -341,7 +361,7 @@ function PacksList({ packs, busy, actions, onOpen }: { packs: Pack[]; busy: bool
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text numberOfLines={1} style={[S.bold, { fontSize: 16 }]}>{k.name}</Text>
-              <Text style={[S.p, { fontSize: 13 }]}>{plural(k.walkers, 'walker')}</Text>
+              <Text style={[S.p, { fontSize: 12 }]}>{plural(k.walkers, 'walker')}</Text>
             </View>
             {k.stepsPerWalker != null ? <Text style={x.num}>{fmt(k.stepsPerWalker)}</Text> : k.isMine ? <Text style={[S.muted, { fontSize: 22 }]}>›</Text> : null}
             {!k.isMine && mine.length < 5 && <Btn label="Join" small kind="coral" busy={busy} onPress={() => actions.join(k)} />}
@@ -417,7 +437,7 @@ export function ImpactScreen({ home, dog, allTime, onDogs, onMeet }: { home: Hom
       <Text style={S.h1}>Impact</Text>
       <View style={[S.hero, { alignItems: 'flex-start' }]}>
         <Text style={S.eyebrow}>FurSteps community this round</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}><Text style={{ fontFamily: F.display, fontSize: 64, lineHeight: 72, color: C.fg }}>{kg(home.communityBowls)}</Text><Text style={[S.bold, { fontSize: 20 }]}>kg of food</Text></View>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}><Text style={{ fontFamily: F.display, fontSize: 56, lineHeight: 67, color: C.fg }}>{kg(home.communityBowls)}</Text><Text style={[S.bold, { fontSize: 22 }]}>kg of food</Text></View>
         <Text style={S.p}>{plural(home.communityBowls, 'bowl')} from {plural(home.communityWalkers, 'walker')}</Text>
       </View>
       <Card style={{ flexDirection: 'row', gap: 12 }}>
@@ -458,7 +478,7 @@ export function MeScreen({ home, email, busy, onSaveName, onBoardChange, onWithd
       {open && (
         <Card style={{ gap: 14, marginTop: -8 }}>
           <View style={S.row}>
-            <Text style={[S.p, { flex: 1, fontSize: 15 }]}>Show my name and monthly steps on the walker leaderboard. Only colleagues at {home.companyName} can see it. Off by default.</Text>
+            <Text style={[S.p, { flex: 1, fontSize: 16 }]}>Show my name and monthly steps on the walker leaderboard. Only colleagues at {home.companyName} can see it. Off by default.</Text>
             <Switch value={home.onBoard} onValueChange={onBoardChange} disabled={busy} trackColor={{ true: C.pink, false: C.line }} />
           </View>
           <Text style={S.muted}>Your employer only ever sees team totals, never your own steps.</Text>
@@ -471,7 +491,7 @@ export function MeScreen({ home, email, busy, onSaveName, onBoardChange, onWithd
         <Text style={[S.bold, { fontSize: 16 }]}>Privacy policy</Text><Text style={S.muted}>↗</Text>
       </Pressable>
       <Btn label="Sign out" kind="light" onPress={onSignOut} />
-      <Text style={[S.muted, { fontSize: 13, textAlign: 'center' }]}>{email} · version {appJson.expo.version}</Text>
+      <Text style={[S.muted, { fontSize: 12, textAlign: 'center' }]}>{email} · version {appJson.expo.version}</Text>
     </View>
   );
 }
@@ -537,7 +557,7 @@ export function ChooseDogPopup({ visible, dogs, busy, onPick, onLater }: { visib
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onLater}>
       <View style={{ flex: 1, backgroundColor: C.bg }}>
         <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 28, paddingBottom: 48, gap: 16 }}>
-          <Text style={[{ fontFamily: F.mono, fontSize: 13, letterSpacing: 2.4, color: T.pink }]}>WELCOME TO FURSTEPS</Text>
+          <Text style={[{ fontFamily: F.mono, fontSize: 12, letterSpacing: 0.8, color: T.pink }]}>WELCOME TO FURSTEPS</Text>
           <Text style={S.h1}>Choose a shelter dog to walk for</Text>
           <Text style={S.muted}>Every bowl your steps unlock goes to your dog. You can change dogs any time.</Text>
           {dogs.map((d) => {
@@ -545,7 +565,7 @@ export function ChooseDogPopup({ visible, dogs, busy, onPick, onLater }: { visib
             return (
               <Card key={d.id} style={{ gap: 12 }}>
                 {photo ? <Image source={photo} style={{ width: '100%', height: 220, borderRadius: 18 }} resizeMode="cover" /> : <DogAvatar slug={d.slug} size={64} />}
-                <View><Text style={[S.bold, { fontSize: 20 }]}>{d.name}</Text><Text style={S.muted}>{[d.age, d.breed, d.shelter].filter(Boolean).join(' · ')}</Text></View>
+                <View><Text style={[S.bold, { fontSize: 22 }]}>{d.name}</Text><Text style={S.muted}>{[d.age, d.breed, d.shelter].filter(Boolean).join(' · ')}</Text></View>
                 <Btn label={`Walk for ${d.name}`} kind="coral" busy={busy} onPress={() => onPick(d.id)} />
               </Card>
             );
@@ -562,16 +582,16 @@ export function Celebrate({ visible, bowls, steps, dogName, onDone, onMore }: { 
     <Modal visible={visible} animationType="slide" onRequestClose={onDone}>
       <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: 60, paddingBottom: 30 }}>
         <View style={{ position: 'absolute', top: 40, left: '15%', width: '70%', height: 300, borderRadius: 300, backgroundColor: 'rgba(214,31,105,0.08)' }} />
-        <Pressable onPress={onDone} style={{ alignSelf: 'flex-end', paddingHorizontal: 20, paddingVertical: 8 }}><Text style={{ color: T.cyan, fontFamily: F.bodyMedium, fontSize: 17 }}>Done</Text></Pressable>
+        <Pressable onPress={onDone} style={{ alignSelf: 'flex-end', paddingHorizontal: 20, paddingVertical: 8 }}><Text style={{ color: T.cyan, fontFamily: F.bodyMedium, fontSize: 16 }}>Done</Text></Pressable>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 26, paddingHorizontal: 28 }}>
-          <Text style={[{ fontFamily: F.mono, fontSize: 14, letterSpacing: 2.8, color: T.pink }, textGlow(C.pink)]}>CONGRATULATIONS</Text>
-          <Text style={{ fontFamily: F.display, fontSize: 36, lineHeight: 40, letterSpacing: -1.2, color: C.fg, textAlign: 'center', marginTop: -12 }}>You helped feed a shelter dog</Text>
+          <Text style={[{ fontFamily: F.mono, fontSize: 14, letterSpacing: 0.8, color: T.pink }, textGlow(C.pink)]}>CONGRATULATIONS</Text>
+          <Text style={{ fontFamily: F.display, fontSize: 32, lineHeight: 38, letterSpacing: -1.2, color: C.fg, textAlign: 'center', marginTop: -12 }}>You helped feed a shelter dog</Text>
           <View style={[x.celCard, glow(C.pink, 40, 0.45)]}>
             <Bowl level={1} width={150} id="cel" />
-            <Text style={{ fontFamily: F.display, fontSize: 30, color: C.fg }}>{plural(bowls, 'bowl')}</Text>
-            <Text style={{ fontFamily: F.mono, fontSize: 12, letterSpacing: 1.7, color: C.muted }}>{fmt(steps)} STEPS</Text>
+            <Text style={{ fontFamily: F.display, fontSize: 32, color: C.fg }}>{plural(bowls, 'bowl')}</Text>
+            <Text style={{ fontFamily: F.mono, fontSize: 12, letterSpacing: 0.8, color: C.muted }}>{fmt(steps)} STEPS</Text>
           </View>
-          <Text style={[S.p, { fontSize: 17, textAlign: 'center', maxWidth: 300 }]}>Thanks to you, a bowl of food is on its way to {dogName ?? 'a rescue near you'}.</Text>
+          <Text style={[S.p, { fontSize: 16, textAlign: 'center', maxWidth: 300 }]}>Thanks to you, a bowl of food is on its way to {dogName ?? 'a rescue near you'}.</Text>
           <Btn label="Find out more" kind="coral" onPress={onMore} style={{ alignSelf: 'stretch' }} />
         </View>
         <Text style={[S.muted, { textAlign: 'center' }]}>Your steps make the difference <Text style={{ color: T.pink }}>♥</Text></Text>
@@ -584,14 +604,14 @@ const x = StyleSheet.create({
   dogcard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.surface, borderRadius: 26, paddingVertical: 14, paddingHorizontal: 16 },
   pl: { fontFamily: F.display, fontSize: 12, color: C.muted, marginTop: 1 },
   chal: { borderWidth: 1.5, borderStyle: 'dashed', borderRadius: 24, padding: 18, gap: 10, backgroundColor: C.card },
-  chalKind: { fontFamily: F.monoBold, fontSize: 13, letterSpacing: 1.6 },
-  chalTitle: { fontFamily: F.display, fontSize: 24, lineHeight: 29, color: C.fg },
+  chalKind: { fontFamily: F.monoBold, fontSize: 12, letterSpacing: 0.8 },
+  chalTitle: { fontFamily: F.display, fontSize: 22, lineHeight: 26, color: C.fg },
   lb: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 20, paddingVertical: 12, paddingHorizontal: 14 },
   lbFirst: { borderColor: C.cyan, ...glow(C.cyan, 18, 0.25) },
   lbMine: { backgroundColor: C.pinkSoft, borderWidth: 1.5, borderColor: C.pink, ...glow(C.pink, 28, 0.28) },
   rank: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
   rankText: { fontFamily: F.display, fontSize: 18, color: C.muted },
-  num: { fontFamily: F.display, fontSize: 22, color: C.fg, textAlign: 'right' },
+  num: { fontFamily: F.display, fontSize: 22, color: C.fg, textAlign: 'right', fontVariant: ['tabular-nums'] },
   drop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 20, paddingHorizontal: 16, minHeight: 56 },
   celCard: { width: 280, aspectRatio: 4 / 3, borderRadius: 22, borderWidth: 2, borderColor: C.pink, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', gap: 6, transform: [{ rotate: '-3deg' }] },
 });

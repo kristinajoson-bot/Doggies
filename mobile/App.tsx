@@ -3,10 +3,7 @@ import { useCallback, useEffect, useRef, useState, type ComponentRef } from 'rea
 import { ActivityIndicator, Alert, AppState, Share, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useFonts } from 'expo-font';
-import { BricolageGrotesque_800ExtraBold } from '@expo-google-fonts/bricolage-grotesque';
 import { DMSans_400Regular, DMSans_500Medium, DMSans_700Bold } from '@expo-google-fonts/dm-sans';
-import { GeistMono_500Medium, GeistMono_600SemiBold } from '@expo-google-fonts/geist-mono';
-import { Bungee_400Regular } from '@expo-google-fonts/bungee';
 
 import {
   acceptDuel, cancelDuel, companyBoard, myAllTimeBowls, challengeColleague, chooseDog, declineDuel, tugColleagues, createPack, myDuels, getHome, joinPack, leavePack, packBoard, packPeople, renamePack, getStatus, giveStepConsent, isReviewEmail, joinCompany, listDogs, monthWindow, sendCode, setDisplayName,
@@ -34,7 +31,7 @@ const source = Platform.OS === 'ios' ? 'apple_health' : 'health_connect';
 
 export default function App() {
   const [fontsReady] = useFonts({
-    BricolageGrotesque_800ExtraBold, DMSans_400Regular, DMSans_500Medium, DMSans_700Bold, GeistMono_500Medium, GeistMono_600SemiBold, Bungee_400Regular,
+    DMSans_400Regular, DMSans_500Medium, DMSans_700Bold,
   });
   const [view, setView] = useState<View_>({ kind: 'loading' });
   const { width: winW, height: winH } = useWindowDimensions();
@@ -147,8 +144,8 @@ export default function App() {
             <Text style={S.muted}>Loading your bowl…</Text>
           ) : view.kind === 'email' ? (
             <>
-              <Text style={[S.h1, { fontSize: 44, lineHeight: 45 }]}>Walk. Fill a bowl. Feed a rescue dog.</Text>
-              <Text style={[S.p, { fontSize: 17 }]}>Every scoop you unlock is a bowl of food for a shelter dog. Walk on your own, or take on your colleagues.</Text>
+              <Text style={[S.h1, { fontSize: 32, lineHeight: 38 }]}>Walk. Fill a bowl. Feed a rescue dog.</Text>
+              <Text style={[S.p, { fontSize: 16 }]}>Every scoop you unlock is a bowl of food for a shelter dog. Walk on your own, or take on your colleagues.</Text>
               <View style={a.form}>
                 <Text style={S.label}>Your work email</Text>
                 <TextInput style={S.input} value={email} onChangeText={setEmail} placeholder="you@company.com" placeholderTextColor={C.muted}
@@ -171,14 +168,14 @@ export default function App() {
                   }
                 })} />
               </View>
-              <Text style={[S.p, { fontSize: 13, textAlign: 'center' }]}>Free for staff. We only read your step count.</Text>
+              <Text style={[S.p, { fontSize: 12, textAlign: 'center' }]}>Free for staff. We only read your step count.</Text>
             </>
           ) : view.kind === 'code' ? (
             <>
               <Text style={S.h1}>Check your email</Text>
               <View style={a.form}>
                 <Text style={S.p}>We sent a sign-in code to <Text style={S.bold}>{view.email}</Text>.</Text>
-                <TextInput style={[S.input, { fontFamily: F.monoBold, fontSize: 22, letterSpacing: 6, textAlign: 'center' }]} value={code} onChangeText={(t) => setCode(t.replace(/\D/g, ''))}
+                <TextInput style={[S.input, { fontFamily: F.monoBold, fontSize: 22, letterSpacing: 0.8, textAlign: 'center' }]} value={code} onChangeText={(t) => setCode(t.replace(/\D/g, ''))}
                   placeholder="Code" placeholderTextColor={C.line} keyboardType="number-pad" autoComplete="one-time-code" maxLength={10} />
                 {error && <Text style={S.err}>{error}</Text>}
                 <Btn kind="coral" busy={busy} label="Sign in" onPress={() => run(async () => {
@@ -262,7 +259,7 @@ export default function App() {
         { text: 'Cancel challenge', style: 'destructive', onPress: () => { packRun(async () => { await cancelDuel(d.id); await loadAll(); }); } },
       ]),
     };
-    body = <ChallengesScreen packs={packs} duels={duels} tug={tug} busy={busy} dogs={dogs} onPacks={() => { setLbStart('packs'); setLbPack(null); setTab('packs'); }}
+    body = <ChallengesScreen packs={packs} duels={duels} tug={tug} busy={busy} dogs={dogs} myDogId={home.dogId} onPacks={() => { setLbStart('packs'); setLbPack(null); setTab('packs'); }}
       onOpenPack={(k) => { setLbStart('packs'); setLbPack(k.id); setTab('packs'); }} />;
   } else if (tab === 'packs') {
     const actions: PackActions = {

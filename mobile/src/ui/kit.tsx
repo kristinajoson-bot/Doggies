@@ -64,7 +64,7 @@ export const fmt = (n: number) => Math.round(Number(n) || 0).toLocaleString('en-
 
 const k = StyleSheet.create({
   top: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 8, paddingBottom: 12 },
-  brand: { fontFamily: F.display, fontSize: 30, letterSpacing: -0.6, color: C.fg },
+  brand: { fontFamily: F.display, fontSize: 32, letterSpacing: -0.6, color: C.fg },
   btn: { minHeight: 52, borderRadius: 16, backgroundColor: C.pink, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
   btnSmall: { minHeight: 44, borderRadius: 14, alignSelf: 'flex-start' },
   btnCoral: { backgroundColor: C.pink, ...glow(C.pink, 22, 0.45) },
