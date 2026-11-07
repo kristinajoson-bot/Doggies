@@ -118,11 +118,17 @@ export type Home = {
 };
 
 // Bowls run in 2-week rounds that start on the day the company signed up. Leaderboards stay monthly.
-export async function roundWindow() {
+let roundCache: { at: number; w: Promise<{ from: string; to: string; today: string }> } | null = null;
+export function roundWindow() {
+  // One lookup shared by Today, leaderboards and packs, so every screen counts the same steps.
+  if (!roundCache || Date.now() - roundCache.at > 60000) roundCache = { at: Date.now(), w: fetchRound() };
+  return roundCache.w;
+}
+async function fetchRound() {
   const today = monthWindow().today;
   const { data, error } = await supabase.rpc('my_round', { p_today: today });
   const r = (data as { round_from: string; round_to: string }[] | null)?.[0];
-  if (error || !r) return { ...monthWindow(), today }; // before the server knows rounds
+  if (error || !r) { roundCache = null; return { ...monthWindow(), today }; } // before the server knows rounds
   return { from: r.round_from, to: r.round_to, today };
 }
 
@@ -161,7 +167,7 @@ export async function setDisplayName(name: string) {
 export type Walker = { displayName: string; dogId: string | null; steps: number; bowls: number; isMe: boolean };
 
 export async function walkerBoard(): Promise<Walker[]> {
-  const w = monthWindow();
+  const w = await roundWindow();
   const { data, error } = await supabase.rpc('walker_board', { p_from: w.from, p_to: w.to });
   fail(error);
   return ((data as Record<string, any>[]) ?? []).map((r) => ({ displayName: r.display_name, dogId: r.dog_id, steps: Number(r.steps), bowls: r.bowls, isMe: r.is_me }));
@@ -173,7 +179,7 @@ export type Pack = {
 };
 
 export async function packBoard(): Promise<Pack[]> {
-  const w = monthWindow();
+  const w = await roundWindow();
   const { data, error } = await supabase.rpc('pack_board', { p_from: w.from, p_to: w.to });
   fail(error);
   return ((data as Record<string, any>[]) ?? []).map((r) => ({
@@ -184,7 +190,7 @@ export async function packBoard(): Promise<Pack[]> {
 
 export type PackPerson = Walker;
 export async function packPeople(id: string): Promise<{ people: PackPerson[]; hidden: number }> {
-  const w = monthWindow();
+  const w = await roundWindow();
   const { data, error } = await supabase.rpc('pack_people', { p_id: id, p_from: w.from, p_to: w.to });
   fail(error);
   const rows = (data as Record<string, any>[]) ?? [];
@@ -280,7 +286,7 @@ export type CompanyRow = { name: string; emoji: string | null; walkers: number; 
 
 // Your company against the others: totals only, never another company's people.
 export async function companyBoard(): Promise<CompanyRow[]> {
-  const w = monthWindow();
+  const w = await roundWindow();
   const { data, error } = await supabase.rpc('company_board', { p_from: w.from, p_to: w.to });
   fail(error);
   return ((data as Record<string, any>[]) ?? []).map((r) => ({

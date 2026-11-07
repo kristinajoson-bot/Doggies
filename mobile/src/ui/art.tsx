@@ -1,5 +1,5 @@
 import { Image, View } from 'react-native';
-import Svg, { Circle, ClipPath, Defs, Ellipse, G, LinearGradient, Path, Polygon, Rect, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, ClipPath, Defs, Ellipse, G, LinearGradient, Path, Polygon, RadialGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
 
 import { C, F, glow } from './theme';
 
@@ -89,14 +89,16 @@ export function Bowl({ level, width = 250, id = 'b' }: { level: number; width?: 
 }
 
 // The bone in a tug of war. It slides toward whoever is ahead.
-export function Bone({ width = 90, color = '#e9d6b0' }: { width?: number; color?: string }) {
+export function Bone({ width = 36, color = '#f3e2c4' }: { width?: number; color?: string }) {
+  // A short, chubby cartoon bone: round knobs, soft outline.
   return (
-    <Svg width={width} height={width * 0.42} viewBox="0 0 100 42">
-      <G fill={color}>
-        <Circle cx={11} cy={12} r={10} /><Circle cx={11} cy={30} r={10} /><Circle cx={89} cy={12} r={10} /><Circle cx={89} cy={30} r={10} />
-        <Path d="M10 11 H90 V31 H10 Z" />
+    <Svg width={width} height={width * 0.62} viewBox="0 0 50 31">
+      <G fill={color} stroke="#c9a46e" strokeWidth={1.6}>
+        <Circle cx={10} cy={9} r={7.5} /><Circle cx={10} cy={22} r={7.5} /><Circle cx={40} cy={9} r={7.5} /><Circle cx={40} cy={22} r={7.5} />
       </G>
-      <Path d="M18 16 H82" stroke="#ffffff" strokeOpacity={0.6} strokeWidth={2.5} strokeLinecap="round" />
+      <Rect x={9} y={8} width={32} height={15} rx={5} fill={color} />
+      <Path d="M9 8 H41 M9 23 H41" stroke="#c9a46e" strokeWidth={1.6} />
+      <Path d="M15 12 H30" stroke="#ffffff" strokeOpacity={0.7} strokeWidth={2} strokeLinecap="round" />
     </Svg>
   );
 }
@@ -134,14 +136,19 @@ function RingIcon({ kind, size }: { kind: 'bowl' | 'shoe' | 'calendar'; size: nu
 
 // Soft purple-pink waves behind the app, as in the mock-up.
 export function Waves({ width, height }: { width: number; height: number }) {
+  // Soft glows that fade into the page, no hard edges.
   return (
     <Svg width={width} height={height} style={{ position: 'absolute', top: 0, left: 0 }} pointerEvents="none">
       <Defs>
-        <LinearGradient id="wv1" x1="0" y1="1" x2="1" y2="0"><Stop offset="0" stopColor="#8f7cc4" stopOpacity={0.9} /><Stop offset="1" stopColor="#e4b8cf" stopOpacity={0.8} /></LinearGradient>
-        <LinearGradient id="wv2" x1="0" y1="0" x2="1" y2="0"><Stop offset="0" stopColor="#e3a9c0" stopOpacity={0.75} /><Stop offset="0.6" stopColor="#b49bd8" stopOpacity={0.7} /><Stop offset="1" stopColor="#d9c6ea" stopOpacity={0.6} /></LinearGradient>
+        <RadialGradient id="wv1" cx="50%" cy="50%" r="50%">
+          <Stop offset="0" stopColor="#a98ad8" stopOpacity={0.55} /><Stop offset="0.45" stopColor="#d9a7c7" stopOpacity={0.35} /><Stop offset="1" stopColor="#faf6f5" stopOpacity={0} />
+        </RadialGradient>
+        <RadialGradient id="wv2" cx="50%" cy="50%" r="50%">
+          <Stop offset="0" stopColor="#e3a9c0" stopOpacity={0.35} /><Stop offset="0.5" stopColor="#c7b0e6" stopOpacity={0.2} /><Stop offset="1" stopColor="#faf6f5" stopOpacity={0} />
+        </RadialGradient>
       </Defs>
-      <Path d={`M${width * 0.66} 120 C${width * 0.76} 75 ${width * 0.86} 50 ${width} 36 L${width} 150 C${width * 0.92} 140 ${width * 0.8} 128 ${width * 0.66} 120 Z`} fill="url(#wv1)" />
-      <Path d={`M0 ${height - 70} C${width * 0.25} ${height - 120} ${width * 0.45} ${height - 60} ${width * 0.65} ${height - 85} S${width * 0.9} ${height - 120} ${width} ${height - 100} L${width} ${height} L0 ${height} Z`} fill="url(#wv2)" />
+      <Ellipse cx={width * 1.02} cy={70} rx={width * 0.62} ry={190} fill="url(#wv1)" />
+      <Ellipse cx={width * 0.35} cy={height + 10} rx={width * 0.9} ry={170} fill="url(#wv2)" />
     </Svg>
   );
 }

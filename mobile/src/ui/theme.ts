@@ -33,15 +33,15 @@ export const T = {
   coral: '#9c3d63',
 };
 
-// Type scale: one family (DM Sans: Regular, Medium, Bold).
+// Type: Fredoka (rounded, friendly) for titles and big numbers; Nunito (rounded, very readable) for text.
 // Sizes: 56 hero number · 34 screen title · 22 card title / stat · 18 row title · 16 body · 14 secondary · 12 label (caps, +0.8 spacing).
 export const F = {
-  display: 'DMSans_700Bold', // headings and big numbers
-  body: 'DMSans_400Regular',
-  bodyMedium: 'DMSans_500Medium',
-  bodyBold: 'DMSans_700Bold',
-  mono: 'DMSans_700Bold', // labels: one body family (DM Sans) everywhere
-  monoBold: 'DMSans_700Bold',
+  display: 'Fredoka_600SemiBold', // titles and big numbers
+  body: 'Nunito_500Medium',
+  bodyMedium: 'Nunito_600SemiBold',
+  bodyBold: 'Nunito_700Bold',
+  mono: 'Nunito_700Bold', // labels
+  monoBold: 'Nunito_800ExtraBold',
 };
 
 // On a light background neon glows look muddy, so every 'glow' is now one soft neutral shadow.
@@ -52,7 +52,7 @@ export { glow };
 
 export const S = StyleSheet.create({
   page: { paddingHorizontal: 20, paddingBottom: 120, gap: 16 },
-  h1: { fontFamily: F.display, fontSize: 34, lineHeight: 40, letterSpacing: -0.5, color: C.fg },
+  h1: { fontFamily: F.display, fontSize: 34, lineHeight: 40, letterSpacing: -0.2, color: C.fg },
   h2: { fontFamily: F.display, fontSize: 22, lineHeight: 28, color: C.fg },
   p: { fontFamily: F.body, fontSize: 16, lineHeight: 24, color: C.fg },
   muted: { fontFamily: F.body, fontSize: 14, lineHeight: 20, color: C.muted },

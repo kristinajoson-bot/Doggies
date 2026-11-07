@@ -3,7 +3,8 @@ import { useCallback, useEffect, useRef, useState, type ComponentRef } from 'rea
 import { ActivityIndicator, Alert, AppState, Share, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useFonts } from 'expo-font';
-import { DMSans_400Regular, DMSans_500Medium, DMSans_700Bold } from '@expo-google-fonts/dm-sans';
+import { Fredoka_600SemiBold } from '@expo-google-fonts/fredoka';
+import { Nunito_500Medium, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold } from '@expo-google-fonts/nunito';
 
 import {
   acceptDuel, cancelDuel, companyBoard, myAllTimeBowls, challengeColleague, chooseDog, declineDuel, tugColleagues, createPack, myDuels, getHome, joinPack, leavePack, packBoard, packPeople, renamePack, getStatus, giveStepConsent, isReviewEmail, joinCompany, listDogs, monthWindow, sendCode, setDisplayName,
@@ -31,7 +32,7 @@ const source = Platform.OS === 'ios' ? 'apple_health' : 'health_connect';
 
 export default function App() {
   const [fontsReady] = useFonts({
-    DMSans_400Regular, DMSans_500Medium, DMSans_700Bold,
+    Fredoka_600SemiBold, Nunito_500Medium, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold,
   });
   const [view, setView] = useState<View_>({ kind: 'loading' });
   const { width: winW, height: winH } = useWindowDimensions();
@@ -234,6 +235,17 @@ export default function App() {
     Share.share({ message: `Join my FurSteps pack "${name}"! Every step fills a bowl for a shelter dog. Open FurSteps, go to Leaderboard > Packs and tap Join next to "${name}".` }).catch(() => undefined);
   }
 
+  const packActions: PackActions = {
+    create: (name) => packRun(async () => { await createPack(name); await loadAll(); invitePack(name.trim()); }),
+    join: (k) => packRun(async () => { await joinPack(k.id); await loadAll(); }),
+    rename: (k, name) => packRun(async () => { await renamePack(k.id, name); await loadAll(); }).then(() => undefined),
+    people: (k) => packPeople(k.id),
+    invite: (k) => invitePack(k.name),
+    leave: (k) => Alert.alert(`Leave ${k.name}?`, 'You can join again later.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Leave', style: 'destructive', onPress: () => { packRun(async () => { await leavePack(k.id); await loadAll(); }); } },
+    ]),
+  };
   let body;
   if (sub?.kind === 'dogs') {
     body = <DogsScreen dogs={dogs} current={home.dogId} busy={busy} onPick={pickDog} onMeet={(d) => setSub({ kind: 'dog', dog: d })} onBack={() => setSub(null)} />;
@@ -259,21 +271,10 @@ export default function App() {
         { text: 'Cancel challenge', style: 'destructive', onPress: () => { packRun(async () => { await cancelDuel(d.id); await loadAll(); }); } },
       ]),
     };
-    body = <ChallengesScreen packs={packs} duels={duels} tug={tug} busy={busy} dogs={dogs} myDogId={home.dogId} onPacks={() => { setLbStart('packs'); setLbPack(null); setTab('packs'); }}
+    body = <ChallengesScreen packs={packs} duels={duels} tug={tug} busy={busy} dogs={dogs} myDogId={home.dogId} packActions={packActions} onPacks={() => { setLbStart('packs'); setLbPack(null); setTab('packs'); }}
       onOpenPack={(k) => { setLbStart('packs'); setLbPack(k.id); setTab('packs'); }} />;
   } else if (tab === 'packs') {
-    const actions: PackActions = {
-      create: (name) => packRun(async () => { await createPack(name); await loadAll(); invitePack(name.trim()); }),
-      join: (k) => packRun(async () => { await joinPack(k.id); await loadAll(); }),
-      rename: (k, name) => packRun(async () => { await renamePack(k.id, name); await loadAll(); }).then(() => undefined),
-      people: (k) => packPeople(k.id),
-      invite: (k) => invitePack(k.name),
-      leave: (k) => Alert.alert(`Leave ${k.name}?`, 'You can join again later with the code.', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Leave', style: 'destructive', onPress: () => { packRun(async () => { await leavePack(k.id); await loadAll(); }); } },
-      ]),
-    };
-    body = <LeaderboardScreen key={`${lbStart}-${lbPack}`} startOn={lbStart} startPack={lbPack} walkers={walkers} packs={packs} companies={companies} onBoard={home.onBoard} companyName={home.companyName} busy={busy} dogs={dogs} actions={actions}
+    body = <LeaderboardScreen key={`${lbStart}-${lbPack}`} startOn={lbStart} startPack={lbPack} walkers={walkers} packs={packs} companies={companies} onBoard={home.onBoard} companyName={home.companyName} busy={busy} dogs={dogs} actions={packActions}
       onJoin={() => run(async () => { await setOnBoard(true); await loadAll(); })} />;
   } else if (tab === 'impact') {
     body = <ImpactScreen home={home} dog={myDog} allTime={allTime} onDogs={() => setSub({ kind: 'dogs' })} onMeet={(d) => setSub({ kind: 'dog', dog: d })} />;

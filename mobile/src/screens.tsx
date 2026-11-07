@@ -78,37 +78,80 @@ export type TugActions = {
   cancel: (d: Duel) => void;
 };
 
-export function ChallengesScreen({ packs, onPacks, onOpenPack, duels, tug, busy, dogs, myDogId }: {
-  packs: Pack[]; onPacks: () => void; onOpenPack: (p: Pack) => void; duels: Duel[]; tug: TugActions; busy: boolean; dogs: Dog[]; myDogId: string | null;
+export function ChallengesScreen({ packs, onOpenPack, duels, tug, busy, dogs, myDogId, packActions }: {
+  packs: Pack[]; onPacks: () => void; onOpenPack: (p: Pack) => void; duels: Duel[]; tug: TugActions; busy: boolean; dogs: Dog[]; myDogId: string | null; packActions: PackActions;
 }) {
-  const [inTug, setInTug] = useState<false | 'live' | 'past'>(false);
+  const [page, setPage] = useState<false | 'live' | 'past' | 'packs'>(false);
   const slug = (id: string | null) => dogs.find((d) => d.id === id)?.slug;
   const mine = packs.map((k, i) => ({ k, rank: i + 1 })).filter((r) => r.k.isMine);
-  if (inTug === 'past') return <PastTugsScreen duels={duels} dogs={dogs} myDogId={myDogId} onBack={() => setInTug(false)} />;
-  if (inTug) return <TugScreen duels={duels} tug={tug} busy={busy} dogs={dogs} myDogId={myDogId} onBack={() => setInTug(false)} onPast={() => setInTug('past')} />;
+  const back = () => setPage(false);
+  if (page === 'past') return <PastTugsScreen duels={duels} dogs={dogs} myDogId={myDogId} onBack={back} />;
+  if (page === 'packs') return <PackWarScreen packs={packs} busy={busy} actions={packActions} onBack={back} onOpen={onOpenPack} />;
+  if (page) return <TugScreen duels={duels} tug={tug} busy={busy} dogs={dogs} myDogId={myDogId} onBack={back} />;
   const open = duels.find((d) => d.status === 'active') ?? duels.find((d) => d.status === 'pending');
+  const past = duels.filter((d) => d.status === 'finished');
   return (
     <View style={{ gap: 16 }}>
       <Text style={S.h1}>Challenges</Text>
-      <View style={[x.chal, { borderColor: C.pink, borderStyle: 'solid' }, glow(C.pink, 14, 0.25)]}>
+      <View style={[x.chal, { borderColor: C.pink, borderStyle: 'solid' }]}>
         <Text style={[x.chalKind, { color: T.pink }]}>TUG OF WAR</Text>
         {open ? <DuelCard d={open} slug={slug} mine={slug(myDogId)} tug={tug} busy={busy} /> : (
           <>
             <Text style={x.chalTitle}>Pull the bone from a colleague</Text>
-            <Text style={[S.p, { fontSize: 16, color: C.muted }]}>Most steps in 3 to 14 days wins the bone.</Text>
-            <Btn label="Challenge a colleague" kind="coral" small onPress={() => setInTug('live')} />
+            <Text style={[S.p, { color: C.muted }]}>Most steps in 3 to 14 days wins the bone.</Text>
+            <Btn label="Challenge a colleague" kind="coral" small onPress={() => setPage('live')} />
           </>
         )}
-        {open && <Pressable onPress={() => setInTug('past')} accessibilityRole="button"><Text style={S.linkbtn}>Past tugs of war ›</Text></Pressable>}
       </View>
-      <Pressable onPress={() => (mine.length ? onOpenPack(mine[0].k) : onPacks())} accessibilityRole="button"
-        style={[x.chal, { borderColor: C.cyan, borderStyle: 'solid' }, glow(C.cyan, 14, 0.25)]}>
+      <Pressable onPress={() => setPage('packs')} accessibilityRole="button" style={[x.chal, { borderColor: C.cyan, borderStyle: 'solid' }]}>
         <Text style={[x.chalKind, { color: T.cyan }]}>PACK WAR</Text>
         <Text style={x.chalTitle}>Build your crew. Win as a pack</Text>
         {mine.length
           ? mine.map((r) => <Text key={r.k.id} style={[S.bold, { fontSize: 16 }]}>{r.k.name} · #{r.rank} of {packs.length} ›</Text>)
-          : <Btn label="Start or join a pack" kind="coral" small onPress={onPacks} />}
+          : <Text style={[S.bold, { color: T.pink }]}>Create or join a pack ›</Text>}
       </Pressable>
+      {past.length > 0 && (
+        <View style={{ gap: 10 }}>
+          <Text style={S.h2}>Past tugs of war</Text>
+          {past.slice(0, 3).map((d) => (
+            <View key={d.id} style={[x.lb, { gap: 10 }]}>
+              <DogAvatar slug={slug(d.opponentDog)} size={32} />
+              <Text style={[S.bold, { flex: 1, fontSize: 16 }]} numberOfLines={1}>You vs {d.opponentName ?? 'colleague'}</Text>
+              <Text style={[S.muted, { color: d.mySteps > d.theirSteps ? T.green : C.muted }]}>{d.mySteps === d.theirSteps ? 'Draw' : d.mySteps > d.theirSteps ? 'You won' : 'They won'}</Text>
+            </View>
+          ))}
+          {past.length > 3 && <Pressable onPress={() => setPage('past')} accessibilityRole="button"><Text style={S.linkbtn}>See all ›</Text></Pressable>}
+        </View>
+      )}
+    </View>
+  );
+}
+
+// Pack War: every pack at your workplace, plus one button to create your own.
+function PackWarScreen({ packs, busy, actions, onBack, onOpen }: { packs: Pack[]; busy: boolean; actions: PackActions; onBack: () => void; onOpen: (p: Pack) => void }) {
+  const [naming, setNaming] = useState(false);
+  const [name, setName] = useState('');
+  const [hint, setHint] = useState(false);
+  const mine = packs.filter((k) => k.isMine);
+  const create = () => {
+    Keyboard.dismiss();
+    if (!name.trim()) return setHint(true);
+    actions.create(name).then((ok) => { if (ok) { setName(''); setNaming(false); } });
+  };
+  return (
+    <View style={{ gap: 16 }}>
+      <Pressable onPress={onBack} accessibilityRole="button"><Text style={S.linkbtn}>‹ Challenges</Text></Pressable>
+      <Text style={S.h1}>Pack War</Text>
+      <Text style={S.muted}>Packs rank by average steps per walker this round, so small packs can win too.</Text>
+      <PacksList packs={packs} busy={busy} actions={actions} onOpen={onOpen} />
+      {mine.length < 5 && (naming ? (
+        <Card style={{ gap: 10 }}>
+          <TextInput style={S.input} value={name} onChangeText={(t) => { setName(t); setHint(false); }} placeholder="Pack name" placeholderTextColor={C.muted} maxLength={40}
+            autoFocus accessibilityLabel="Pack name" returnKeyType="done" onSubmitEditing={create} />
+          {hint && <Text style={S.err}>Type a name for your pack first.</Text>}
+          <Btn label="Create pack" kind="coral" busy={busy} onPress={create} />
+        </Card>
+      ) : <Btn label="Create pack" kind="coral" onPress={() => setNaming(true)} />)}
     </View>
   );
 }
@@ -116,9 +159,12 @@ export function ChallengesScreen({ packs, onPacks, onOpenPack, duels, tug, busy,
 // One tug of war: an invite to answer, a challenge waiting, or the live bone.
 function DuelCard({ d, slug, mine, tug, busy }: { d: Duel; slug: (id: string | null) => string | undefined; mine?: string; tug?: TugActions; busy: boolean }) {
   const name = d.opponentName ?? 'your colleague';
+  const live = d.status === 'active';
+  const left = daysLeft(d.endsOn);
   const who = (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
       <Text style={[S.bold, { fontSize: 18, flex: 1 }]}>{d.status === 'pending' && !d.isChallenger ? `${name} challenged you` : `You vs ${name}`}</Text>
+      {live && <Text style={[S.bold, { fontSize: 14, color: T.pink }]}>{left <= 1 ? 'Last day' : `${left} days left`}</Text>}
     </View>
   );
   if (d.status === 'pending' && !d.isChallenger) {
@@ -143,7 +189,6 @@ function DuelCard({ d, slug, mine, tug, busy }: { d: Duel; slug: (id: string | n
     );
   }
   const done = d.status === 'finished';
-  const left = daysLeft(d.endsOn);
   const result = d.mySteps === d.theirSteps ? "It's a draw" : d.mySteps > d.theirSteps ? 'You won the bone!' : `${name} won the bone`;
   return (
     <View style={{ gap: 10 }}>
@@ -153,9 +198,7 @@ function DuelCard({ d, slug, mine, tug, busy }: { d: Duel; slug: (id: string | n
         <View><Text style={[x.num, { textAlign: 'left', color: T.pink }]}>{fmt(d.mySteps)}</Text><Text style={S.muted}>You</Text></View>
         <View><Text style={[x.num, { color: T.cyan }]}>{fmt(d.theirSteps)}</Text><Text style={[S.muted, { textAlign: 'right' }]}>{name}</Text></View>
       </View>
-      <Text style={[S.bold, { fontSize: 16, color: C.fg }]}>
-        {done ? `${result} · Finished` : left <= 1 ? 'Last day' : `${left} days left`}
-      </Text>
+      {done && <Text style={[S.bold, { fontSize: 16, color: C.fg }]}>{result}</Text>}
     </View>
   );
 }
@@ -173,7 +216,7 @@ function TugBar({ mine, theirs, myDog, theirDog }: { mine: number; theirs: numbe
   const total = mine + theirs;
   const lead = total ? (mine - theirs) / total : 0; // -1..1, positive = you lead
   const pos = 0.5 - Math.max(-0.38, Math.min(0.38, lead * 0.6)); // 0 = your end (left)
-  const bone = 50;
+  const bone = 36;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
       <DogAvatar slug={myDog} size={40} />
@@ -181,7 +224,6 @@ function TugBar({ mine, theirs, myDog, theirDog }: { mine: number; theirs: numbe
         <View style={{ height: 6, borderRadius: 3, flexDirection: 'row', overflow: 'hidden' }}>
           <View style={{ flex: 1, backgroundColor: C.pink }} /><View style={{ flex: 1, backgroundColor: C.cyan }} />
         </View>
-        <View style={{ position: 'absolute', left: '50%', top: 8, bottom: 8, width: 2, marginLeft: -1, backgroundColor: C.fg, opacity: 0.4 }} />
         {w > 0 && <View style={{ position: 'absolute', left: w * pos - bone / 2 }}><Bone width={bone} /></View>}
       </View>
       <DogAvatar slug={theirDog} size={40} />
@@ -189,7 +231,7 @@ function TugBar({ mine, theirs, myDog, theirDog }: { mine: number; theirs: numbe
   );
 }
 
-function TugScreen({ duels, tug, busy, dogs, myDogId, onBack, onPast }: { duels: Duel[]; tug: TugActions; busy: boolean; dogs: Dog[]; myDogId: string | null; onBack: () => void; onPast: () => void }) {
+function TugScreen({ duels, tug, busy, dogs, myDogId, onBack }: { duels: Duel[]; tug: TugActions; busy: boolean; dogs: Dog[]; myDogId: string | null; onBack: () => void }) {
   const [days, setDays] = useState(7);
   const [people, setPeople] = useState<Colleague[] | null>(null);
   const [pick, setPick] = useState<string | null>(null);
@@ -234,7 +276,6 @@ function TugScreen({ duels, tug, busy, dogs, myDogId, onBack, onPast }: { duels:
           <Btn label="Send challenge" kind="coral" busy={busy} onPress={send} />
         </Card>
       )}
-      {duels.some((d) => d.status === 'finished') && <Pressable onPress={onPast} accessibilityRole="button"><Text style={S.linkbtn}>Past tugs of war ›</Text></Pressable>}
     </View>
   );
 }
@@ -297,7 +338,7 @@ export function LeaderboardScreen({ walkers, packs, companies, onBoard, companyN
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <Pill label="Walkers" on={tab === 'walkers'} onPress={() => setTab('walkers')} />
         <Pill label="Packs" on={tab === 'packs'} onPress={() => setTab('packs')} />
-        <Pill label="Companies" on={tab === 'companies'} onPress={() => setTab('companies')} />
+        {companies.length >= 2 && <Pill label="Companies" on={tab === 'companies'} onPress={() => setTab('companies')} />}
       </View>
       {tab !== 'companies' && <Text style={S.eyebrow}>{emoji ? `${emoji} ` : ''}{companyName}</Text>}
       {tab === 'walkers' ? (
@@ -341,14 +382,7 @@ export function LeaderboardScreen({ walkers, packs, companies, onBoard, companyN
 }
 
 function PacksList({ packs, busy, actions, onOpen }: { packs: Pack[]; busy: boolean; actions: PackActions; onOpen: (p: Pack) => void }) {
-  const [name, setName] = useState('');
-  const [hint, setHint] = useState<'name' | null>(null);
   const mine = packs.filter((k) => k.isMine);
-  const create = () => {
-    Keyboard.dismiss();
-    if (!name.trim()) return setHint('name');
-    actions.create(name).then((ok) => { if (ok) setName(''); });
-  };
   return (
     <View style={{ gap: 12 }}>
       {packs.length ? packs.map((k, i) => {
@@ -363,22 +397,12 @@ function PacksList({ packs, busy, actions, onOpen }: { packs: Pack[]; busy: bool
               <Text numberOfLines={1} style={[S.bold, { fontSize: 16 }]}>{k.name}</Text>
               <Text style={[S.p, { fontSize: 12 }]}>{plural(k.walkers, 'walker')}</Text>
             </View>
-            {k.stepsPerWalker != null ? <Text style={x.num}>{fmt(k.stepsPerWalker)}</Text> : k.isMine ? <Text style={[S.muted, { fontSize: 22 }]}>›</Text> : null}
+            {k.stepsPerWalker != null ? <View><Text style={x.num}>{fmt(k.stepsPerWalker)}</Text><Text style={[S.muted, { fontSize: 12, textAlign: 'right' }]}>avg per walker</Text></View> : k.isMine ? <Text style={[S.muted, { fontSize: 22 }]}>›</Text> : null}
             {!k.isMine && mine.length < 5 && <Btn label="Join" small kind="coral" busy={busy} onPress={() => actions.join(k)} />}
           </Pressable>
         );
       }) : (
-        <Card><Text style={[S.bold, { fontSize: 16 }]}>No packs yet. Start one below.</Text></Card>
-      )}
-      {mine.length < 5 && (
-        <>
-          <Card style={{ gap: 10 }}>
-            <Text style={S.h2}>Start a pack</Text>
-            <TextInput style={S.input} value={name} onChangeText={(t) => { setName(t); setHint(null); }} placeholder="Pack name, e.g. Level 3 Legends" placeholderTextColor={C.muted} maxLength={40} accessibilityLabel="Pack name" returnKeyType="done" onSubmitEditing={create} />
-            {hint === 'name' && <Text style={S.err}>Type a name for your pack first.</Text>}
-            <Btn label="Create pack" kind="coral" busy={busy} onPress={create} />
-          </Card>
-        </>
+        <Card><Text style={[S.bold, { fontSize: 16 }]}>No packs yet. Create one in Challenges › Pack War.</Text></Card>
       )}
     </View>
   );
@@ -394,10 +418,10 @@ function PackScreen({ pack, slug, busy, actions, onBack }: { pack: Pack; slug: (
       <Pressable onPress={onBack} accessibilityRole="button"><Text style={S.linkbtn}>‹ Leaderboard</Text></Pressable>
       <Text style={S.h1}>{pack.name}</Text>
       <View style={[S.hero, { alignItems: 'flex-start' }]}>
-        <Text style={S.eyebrow}>This month</Text>
+        <Text style={S.eyebrow}>This round</Text>
         <Text style={[S.bold, { fontSize: 22 }]}>{plural(pack.walkers, 'walker')} · {plural(pack.bowls, 'bowl')}</Text>
         {pack.stepsPerWalker != null
-          ? <Text style={S.p}>{fmt(pack.stepsPerWalker)} steps per walker</Text>
+          ? <Text style={S.p}>{fmt(pack.stepsPerWalker)} steps per walker (average)</Text>
           : null}
         <Btn label="Invite colleagues" kind="coral" small onPress={() => actions.invite(pack)} style={{ marginTop: 6 }} />
       </View>
@@ -416,7 +440,6 @@ function PackScreen({ pack, slug, busy, actions, onBack }: { pack: Pack; slug: (
         </Card>
       )}
       <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
-        <Btn label="Start another pack" small onPress={onBack} />
         <Btn label="Leave pack" kind="light" small onPress={() => actions.leave(pack)} />
       </View>
     </View>
