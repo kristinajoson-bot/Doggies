@@ -104,17 +104,17 @@ export function Bone({ width = 90, color = '#e9d6b0' }: { width?: number; color?
 // One of the three rings at the top of Today: icon, number and label inside a soft coloured ring.
 export function Orb({ size, progress, color, value, label, icon }: { size: number; progress: number; color: string; value: string; label: string; icon: 'bowl' | 'shoe' | 'calendar' }) {
   const p = Math.max(0.04, Math.min(1, progress));
-  const r = 44, circ = 2 * Math.PI * r;
+  const r = 45, circ = 2 * Math.PI * r;
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size} viewBox="0 0 100 100" style={{ position: 'absolute', top: 0, left: 0, transform: [{ rotate: '-90deg' }] }}>
-        <Circle cx={50} cy={50} r={r} fill="none" stroke={color} strokeOpacity={0.2} strokeWidth={8} />
-        <Circle cx={50} cy={50} r={r} fill="none" stroke={color} strokeWidth={8} strokeLinecap="round" strokeDasharray={`${circ}`} strokeDashoffset={circ * (1 - p)} />
+        <Circle cx={50} cy={50} r={r} fill="none" stroke={color} strokeOpacity={0.2} strokeWidth={7} />
+        <Circle cx={50} cy={50} r={r} fill="none" stroke={color} strokeWidth={7} strokeLinecap="round" strokeDasharray={`${circ}`} strokeDashoffset={circ * (1 - p)} />
       </Svg>
       <View style={{ alignItems: 'center', zIndex: 1 }}>
         <RingIcon kind={icon} size={size * 0.2} />
         <Svg width={size * 0.8} height={size * 0.26} viewBox="0 0 80 26">
-          <SvgText x={40} y={22} fontFamily={F.display} fontSize={value.length > 6 ? 17 : value.length > 4 ? 20 : 26} fill={C.fg} textAnchor="middle">{value}</SvgText>
+          <SvgText x={40} y={22} fontFamily={F.display} fontSize={value.length > 6 ? 14 : value.length > 5 ? 16 : value.length > 4 ? 18 : 24} fill={C.fg} textAnchor="middle">{value}</SvgText>
         </Svg>
         <SvgLabel text={label} />
       </View>

@@ -44,7 +44,7 @@ export function TodayScreen({ home, dog, healthName, busy, onDogs, onCelebrate }
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
           <Orb size={ring} progress={next ? done / (done + 1) : 1} color={C.coral} value={fmt(done)} label={done === 1 ? 'bowl' : 'bowls'} icon="bowl" />
           <Orb size={ring} progress={home.todaySteps / 10000} color={C.purple} value={fmt(home.todaySteps)} label="today" icon="shoe" />
-          <Orb size={ring} progress={steps / 150000} color={C.cyan} value={fmt(steps)} label="this round" icon="calendar" />
+          <Orb size={ring} progress={steps / 150000} color={C.cyan} value={fmt(steps)} label="total" icon="calendar" />
         </View>
         <Pressable disabled={!prev} onPress={() => onCelebrate(prev)} accessibilityLabel={`${done} bowls this round`} style={{ alignItems: 'center', marginTop: 4 }}>
           <Bowl level={fill} width={Math.min(250, inner)} id="today" />
