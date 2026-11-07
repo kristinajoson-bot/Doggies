@@ -149,7 +149,6 @@ function PackWarScreen({ packs, busy, actions, onBack, onOpen }: { packs: Pack[]
     <View style={{ gap: 16 }}>
       <Pressable onPress={onBack} accessibilityRole="button"><Text style={S.linkbtn}>‹ Challenges</Text></Pressable>
       <Text style={S.h1}>Pack War</Text>
-      <Text style={S.muted}>Packs rank by average steps per walker this round, so small packs can win too.</Text>
       <PacksList packs={packs} busy={busy} actions={actions} onOpen={onOpen} />
       {mine.length < 5 && (naming ? (
         <Card style={{ gap: 10 }}>
@@ -404,12 +403,12 @@ function PacksList({ packs, busy, actions, onOpen }: { packs: Pack[]; busy: bool
               <Text numberOfLines={1} style={[S.bold, { fontSize: 16 }]}>{k.name}</Text>
               <Text style={[S.p, { fontSize: 12 }]}>{plural(k.walkers, 'walker')}</Text>
             </View>
-            {k.stepsPerWalker != null ? <View><Text style={x.num}>{fmt(k.stepsPerWalker)}</Text><Text style={[S.muted, { fontSize: 12, textAlign: 'right' }]}>avg per walker</Text></View> : k.isMine ? <Text style={[S.muted, { fontSize: 22 }]}>›</Text> : null}
+            {k.stepsPerWalker != null ? <View><Text style={x.num}>{fmt(k.stepsPerWalker)}</Text><Text style={[S.muted, { fontSize: 12, textAlign: 'right' }]}>per walker</Text></View> : k.isMine ? <Text style={[S.muted, { fontSize: 22 }]}>›</Text> : null}
             {!k.isMine && mine.length < 5 && <Btn label="Join" small kind="coral" busy={busy} onPress={() => actions.join(k)} />}
           </Pressable>
         );
       }) : (
-        <Card><Text style={[S.bold, { fontSize: 16 }]}>No packs yet. Create one in Challenges › Pack War.</Text></Card>
+        <Card><Text style={[S.bold, { fontSize: 16 }]}>No packs yet. Be the first to create one.</Text></Card>
       )}
     </View>
   );
@@ -611,7 +610,6 @@ export function Celebrate({ visible, bowls, steps, dogName, onDone, onMore }: { 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onDone}>
       <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: 60, paddingBottom: 30 }}>
-        <View style={{ position: 'absolute', top: 40, left: '15%', width: '70%', height: 300, borderRadius: 300, backgroundColor: 'rgba(214,31,105,0.08)' }} />
         <Pressable onPress={onDone} style={{ alignSelf: 'flex-end', paddingHorizontal: 20, paddingVertical: 8 }}><Text style={{ color: T.cyan, fontFamily: F.bodyMedium, fontSize: 16 }}>Done</Text></Pressable>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 26, paddingHorizontal: 28 }}>
           <Text style={[{ fontFamily: F.mono, fontSize: 14, letterSpacing: 0.8, color: T.pink }, textGlow(C.pink)]}>CONGRATULATIONS</Text>
