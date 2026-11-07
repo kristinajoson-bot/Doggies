@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Image, Keyboard, Linking, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { Alert, Image, Keyboard, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import appJson from '../app.json';
 
 import type { Colleague, CompanyRow, Dog, Duel, Home, Pack, Walker } from './backend';
@@ -105,10 +105,8 @@ export function ChallengesScreen({ packs, onOpenPack, duels, tug, busy, dogs, my
       </View>
       <Pressable onPress={() => setPage('packs')} accessibilityRole="button" style={[x.chal, { borderColor: C.cyan, borderStyle: 'solid' }]}>
         <Text style={[x.chalKind, { color: T.cyan }]}>PACK WAR</Text>
-        <Text style={x.chalTitle}>Build your crew. Win as a pack</Text>
-        {mine.length
-          ? mine.map((r) => <Text key={r.k.id} style={[S.bold, { fontSize: 16 }]}>{r.k.name} · #{r.rank} of {packs.length} ›</Text>)
-          : <Text style={[S.bold, { color: T.pink }]}>Create or join a pack ›</Text>}
+        <Text style={x.chalTitle}>{'Build your crew.\nWin as a pack.'}</Text>
+        <Text style={[S.bold, { color: T.pink }]}>{mine.length ? 'See your pack ›' : 'Create or join a pack ›'}</Text>
       </Pressable>
       {past.length > 0 && (
         <View style={{ gap: 10 }}>
@@ -138,6 +136,15 @@ function PackWarScreen({ packs, busy, actions, onBack, onOpen }: { packs: Pack[]
     if (!name.trim()) return setHint(true);
     actions.create(name).then((ok) => { if (ok) { setName(''); setNaming(false); } });
   };
+  // iPhone: one tap on Create pack opens a small pop-up asking for the name.
+  const start = () => {
+    if (Platform.OS === 'ios') {
+      Alert.prompt('Name your pack', 'Your colleagues will see this name.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Create', onPress: (v?: string) => { if (v?.trim()) actions.create(v); } },
+      ], 'plain-text');
+    } else setNaming(true);
+  };
   return (
     <View style={{ gap: 16 }}>
       <Pressable onPress={onBack} accessibilityRole="button"><Text style={S.linkbtn}>‹ Challenges</Text></Pressable>
@@ -151,7 +158,7 @@ function PackWarScreen({ packs, busy, actions, onBack, onOpen }: { packs: Pack[]
           {hint && <Text style={S.err}>Type a name for your pack first.</Text>}
           <Btn label="Create pack" kind="coral" busy={busy} onPress={create} />
         </Card>
-      ) : <Btn label="Create pack" kind="coral" onPress={() => setNaming(true)} />)}
+      ) : <Btn label="Create pack" kind="coral" busy={busy} onPress={start} />)}
     </View>
   );
 }
@@ -338,7 +345,7 @@ export function LeaderboardScreen({ walkers, packs, companies, onBoard, companyN
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <Pill label="Walkers" on={tab === 'walkers'} onPress={() => setTab('walkers')} />
         <Pill label="Packs" on={tab === 'packs'} onPress={() => setTab('packs')} />
-        {companies.length >= 2 && <Pill label="Companies" on={tab === 'companies'} onPress={() => setTab('companies')} />}
+        {companies.length >= 5 && <Pill label="Companies" on={tab === 'companies'} onPress={() => setTab('companies')} />}
       </View>
       {tab !== 'companies' && <Text style={S.eyebrow}>{emoji ? `${emoji} ` : ''}{companyName}</Text>}
       {tab === 'walkers' ? (

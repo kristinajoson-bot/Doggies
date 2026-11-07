@@ -135,8 +135,20 @@ function RingIcon({ kind, size }: { kind: 'bowl' | 'shoe' | 'calendar'; size: nu
 }
 
 // Soft purple-pink waves behind the app, as in the mock-up.
+// Background art: soft glows plus faint paw prints, bones, hearts and dots scattered down the page.
+const DECOR: [number, number, 'paw' | 'bone' | 'heart' | 'dot', number, number][] = (() => {
+  const kinds = ['paw', 'dot', 'bone', 'dot', 'heart', 'paw', 'dot'] as const;
+  const out: [number, number, 'paw' | 'bone' | 'heart' | 'dot', number, number][] = [];
+  for (let i = 0; i < 34; i++) {
+    const x = ((i * 0.618034) % 1) * 0.92 + 0.04; // spread evenly across the width
+    const y = i / 34 + ((i * 37) % 7) / 200;
+    out.push([x, y, kinds[i % kinds.length], ((i * 53) % 70) - 35, 0.75 + ((i * 29) % 5) / 10]);
+  }
+  return out;
+})();
+const DECOR_COLOURS = ['#9c3d63', '#a77bd8', '#5aa3a8', '#e27f8c'];
+
 export function Waves({ width, height }: { width: number; height: number }) {
-  // Soft glows that fade into the page, no hard edges.
   return (
     <Svg width={width} height={height} style={{ position: 'absolute', top: 0, left: 0 }} pointerEvents="none">
       <Defs>
@@ -144,11 +156,26 @@ export function Waves({ width, height }: { width: number; height: number }) {
           <Stop offset="0" stopColor="#a98ad8" stopOpacity={0.55} /><Stop offset="0.45" stopColor="#d9a7c7" stopOpacity={0.35} /><Stop offset="1" stopColor="#faf6f5" stopOpacity={0} />
         </RadialGradient>
         <RadialGradient id="wv2" cx="50%" cy="50%" r="50%">
-          <Stop offset="0" stopColor="#e3a9c0" stopOpacity={0.35} /><Stop offset="0.5" stopColor="#c7b0e6" stopOpacity={0.2} /><Stop offset="1" stopColor="#faf6f5" stopOpacity={0} />
+          <Stop offset="0" stopColor="#e3a9c0" stopOpacity={0.4} /><Stop offset="0.5" stopColor="#c7b0e6" stopOpacity={0.22} /><Stop offset="1" stopColor="#faf6f5" stopOpacity={0} />
+        </RadialGradient>
+        <RadialGradient id="wv3" cx="50%" cy="50%" r="50%">
+          <Stop offset="0" stopColor="#9fd3d0" stopOpacity={0.3} /><Stop offset="1" stopColor="#faf6f5" stopOpacity={0} />
         </RadialGradient>
       </Defs>
       <Ellipse cx={width * 1.02} cy={70} rx={width * 0.62} ry={190} fill="url(#wv1)" />
+      <Ellipse cx={-width * 0.05} cy={height * 0.45} rx={width * 0.45} ry={170} fill="url(#wv3)" />
       <Ellipse cx={width * 0.35} cy={height + 10} rx={width * 0.9} ry={170} fill="url(#wv2)" />
+      {DECOR.map(([fx, fy, kind, rot, sc], i) => {
+        const x = fx * width, y = 40 + fy * (height - 60), c = DECOR_COLOURS[i % 4];
+        return (
+          <G key={i} transform={`translate(${x} ${y}) rotate(${rot}) scale(${sc})`} opacity={kind === 'dot' ? 0.28 : 0.17} fill={c}>
+            {kind === 'paw' ? <><Ellipse cx={0} cy={4} rx={6} ry={5} /><Circle cx={-6} cy={-3} r={2.4} /><Circle cx={-2} cy={-7} r={2.4} /><Circle cx={2} cy={-7} r={2.4} /><Circle cx={6} cy={-3} r={2.4} /></>
+              : kind === 'bone' ? <><Circle cx={-7} cy={-2.5} r={3} /><Circle cx={-7} cy={2.5} r={3} /><Circle cx={7} cy={-2.5} r={3} /><Circle cx={7} cy={2.5} r={3} /><Rect x={-7} y={-2.5} width={14} height={5} /></>
+              : kind === 'heart' ? <Path d="M0 6 C-8 0 -5 -7 0 -3 C5 -7 8 0 0 6 Z" />
+              : <Circle cx={0} cy={0} r={3} />}
+          </G>
+        );
+      })}
     </Svg>
   );
 }
