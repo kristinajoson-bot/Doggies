@@ -65,7 +65,6 @@ export function TodayScreen({ home, dog, healthName, busy, onDogs, onCelebrate }
         <Text style={[S.p, { fontSize: 16, textAlign: 'center' }]}>
           {next ? <><Text style={S.bold}>{fmt(next - steps)}</Text> steps to your next bowl</> : 'Every bowl filled this round. Epic walking!'}
         </Text>
-        <Text style={[S.muted, { textAlign: 'center' }]}>{home.roundDaysLeft === 1 ? 'Last day of this round' : `${home.roundDaysLeft} days left in this round`}</Text>
       </View>
     </View>
   );
@@ -114,7 +113,7 @@ export function ChallengesScreen({ packs, onOpenPack, duels, tug, busy, dogs, my
             <View style={[x.rank, { backgroundColor: C.cyan, borderColor: C.cyan }]}><Text style={[x.rankText, { color: C.dark }]}>{r.rank}</Text></View>
             <View style={{ flex: 1 }}>
               <Text style={x.chalTitle} numberOfLines={1}>{r.k.name}</Text>
-              <Text style={S.muted}>{ordinal(r.rank)} of {packs.length} {packs.length === 1 ? 'pack' : 'packs'} this round ›</Text>
+              <Text style={S.muted}>{ordinal(r.rank)} of {packs.length} {packs.length === 1 ? 'pack' : 'packs'} ›</Text>
             </View>
           </View>
         )) : (
@@ -234,7 +233,7 @@ function TugBar({ mine, theirs, myDog, theirDog }: { mine: number; theirs: numbe
   const total = mine + theirs;
   const lead = total ? (mine - theirs) / total : 0; // -1..1, positive = you lead
   const pos = 0.5 - Math.max(-0.38, Math.min(0.38, lead * 0.6)); // 0 = your end (left)
-  const bone = 40;
+  const bone = 30;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
       <DogAvatar slug={myDog} size={40} />

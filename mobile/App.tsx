@@ -291,7 +291,7 @@ export default function App() {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <Waves width={winW} height={winH} />
-      <ScrollView ref={scroll} contentContainerStyle={[S.page, { paddingTop: 60 }]} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode="interactive"
+      <ScrollView ref={scroll} contentContainerStyle={[S.page, { paddingTop: 60, paddingBottom: 100 }]} contentInsetAdjustmentBehavior="never" alwaysBounceVertical={false} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode="interactive"
         refreshControl={<RefreshControl refreshing={false} tintColor={C.pink} onRefresh={() => run(() => syncFromHealth(false))} />}>
         <TopBar />
         {error && <Text style={S.err}>{error}</Text>}

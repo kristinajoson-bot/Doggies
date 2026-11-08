@@ -89,17 +89,17 @@ export function Bowl({ level, width = 250, id = 'b' }: { level: number; width?: 
 }
 
 // The bone in a tug of war. It slides toward whoever is ahead.
-export function Bone({ width = 40, color = '#f3e2c4' }: { width?: number; color?: string }) {
+export function Bone({ width = 30, color = '#f3e2c4' }: { width?: number; color?: string }) {
   // Classic dog bone: a slim shaft with two round lobes at each end.
   const edge = '#c9a46e';
   return (
-    <Svg width={width} height={width * 0.4} viewBox="0 0 64 26">
+    <Svg width={width} height={width * 0.54} viewBox="0 0 48 26">
       <G fill={color} stroke={edge} strokeWidth={1.6}>
-        <Circle cx={8} cy={7.5} r={6} /><Circle cx={8} cy={18.5} r={6} /><Circle cx={56} cy={7.5} r={6} /><Circle cx={56} cy={18.5} r={6} />
+        <Circle cx={8} cy={7.5} r={6} /><Circle cx={8} cy={18.5} r={6} /><Circle cx={40} cy={7.5} r={6} /><Circle cx={40} cy={18.5} r={6} />
       </G>
-      <Rect x={8} y={9} width={48} height={8} fill={color} />
-      <Path d="M12 9 H52 M12 17 H52" stroke={edge} strokeWidth={1.6} />
-      <Path d="M16 12 H40" stroke="#ffffff" strokeOpacity={0.75} strokeWidth={1.8} strokeLinecap="round" />
+      <Rect x={8} y={9} width={32} height={8} fill={color} />
+      <Path d="M12 9 H36 M12 17 H36" stroke={edge} strokeWidth={1.6} />
+      <Path d="M15 12 H28" stroke="#ffffff" strokeOpacity={0.75} strokeWidth={1.8} strokeLinecap="round" />
     </Svg>
   );
 }
