@@ -482,7 +482,7 @@ export function ImpactScreen({ home, dog, allTime, onDogs, onMeet }: { home: Hom
       </View>
       <Card style={{ paddingVertical: 6 }}>
         <Stat label="This round" bowls={home.myBowls} />
-        {allTime != null && <Stat label="All time" bowls={allTime} />}
+        {allTime != null && allTime > home.myBowls && <Stat label="Since you joined" bowls={allTime} />}
         <Stat label="Your company" bowls={home.companyBowls} />
       </Card>
       <Pressable onPress={() => (dog ? onMeet(dog) : onDogs())} accessibilityRole="button" style={[S.card, S.row]}>
