@@ -60,8 +60,14 @@ export async function verifyCode(email: string, token: string) {
 // Apple's reviewers can't receive our email codes, so this one account signs in with a password instead.
 export const REVIEW_EMAIL = 'appreview@fursteps.com';
 
+// Reviewers often mistype the address (apreview@fursteps.comp, eview@fursteps.coma), which used to send
+// codes to nowhere. Anything that looks like the review address at a fur… domain gets the password box.
 export function isReviewEmail(email: string) {
-  return email.trim().toLowerCase() === REVIEW_EMAIL;
+  const e = email.trim().toLowerCase();
+  const at = e.lastIndexOf('@');
+  if (at < 1) return false;
+  const local = e.slice(0, at), domain = e.slice(at + 1);
+  return domain.startsWith('fur') && /(view|app)/.test(local);
 }
 
 export async function signInForReview(password: string) {
