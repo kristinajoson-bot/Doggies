@@ -89,16 +89,17 @@ export function Bowl({ level, width = 250, id = 'b' }: { level: number; width?: 
 }
 
 // The bone in a tug of war. It slides toward whoever is ahead.
-export function Bone({ width = 36, color = '#f3e2c4' }: { width?: number; color?: string }) {
-  // A short, chubby cartoon bone: round knobs, soft outline.
+export function Bone({ width = 40, color = '#f3e2c4' }: { width?: number; color?: string }) {
+  // Classic dog bone: a slim shaft with two round lobes at each end.
+  const edge = '#c9a46e';
   return (
-    <Svg width={width} height={width * 0.62} viewBox="0 0 50 31">
-      <G fill={color} stroke="#c9a46e" strokeWidth={1.6}>
-        <Circle cx={10} cy={9} r={7.5} /><Circle cx={10} cy={22} r={7.5} /><Circle cx={40} cy={9} r={7.5} /><Circle cx={40} cy={22} r={7.5} />
+    <Svg width={width} height={width * 0.4} viewBox="0 0 64 26">
+      <G fill={color} stroke={edge} strokeWidth={1.6}>
+        <Circle cx={8} cy={7.5} r={6} /><Circle cx={8} cy={18.5} r={6} /><Circle cx={56} cy={7.5} r={6} /><Circle cx={56} cy={18.5} r={6} />
       </G>
-      <Rect x={9} y={8} width={32} height={15} rx={5} fill={color} />
-      <Path d="M9 8 H41 M9 23 H41" stroke="#c9a46e" strokeWidth={1.6} />
-      <Path d="M15 12 H30" stroke="#ffffff" strokeOpacity={0.7} strokeWidth={2} strokeLinecap="round" />
+      <Rect x={8} y={9} width={48} height={8} fill={color} />
+      <Path d="M12 9 H52 M12 17 H52" stroke={edge} strokeWidth={1.6} />
+      <Path d="M16 12 H40" stroke="#ffffff" strokeOpacity={0.75} strokeWidth={1.8} strokeLinecap="round" />
     </Svg>
   );
 }
@@ -139,9 +140,9 @@ function RingIcon({ kind, size }: { kind: 'bowl' | 'shoe' | 'calendar'; size: nu
 const DECOR: [number, number, 'paw' | 'bone' | 'heart' | 'dot', number, number][] = (() => {
   const kinds = ['paw', 'dot', 'bone', 'dot', 'heart', 'paw', 'dot'] as const;
   const out: [number, number, 'paw' | 'bone' | 'heart' | 'dot', number, number][] = [];
-  for (let i = 0; i < 34; i++) {
+  for (let i = 0; i < 40; i++) {
     const x = ((i * 0.618034) % 1) * 0.92 + 0.04; // spread evenly across the width
-    const y = i / 34 + ((i * 37) % 7) / 200;
+    const y = i / 40 + ((i * 37) % 7) / 200;
     out.push([x, y, kinds[i % kinds.length], ((i * 53) % 70) - 35, 0.75 + ((i * 29) % 5) / 10]);
   }
   return out;
@@ -153,7 +154,7 @@ export function Waves({ width, height }: { width: number; height: number }) {
     <Svg width={width} height={height} style={{ position: 'absolute', top: 0, left: 0 }} pointerEvents="none">
       <Defs>
         <RadialGradient id="wv1" cx="50%" cy="50%" r="50%">
-          <Stop offset="0" stopColor="#a98ad8" stopOpacity={0.55} /><Stop offset="0.45" stopColor="#d9a7c7" stopOpacity={0.35} /><Stop offset="1" stopColor="#faf6f5" stopOpacity={0} />
+          <Stop offset="0" stopColor="#a98ad8" stopOpacity={0.42} /><Stop offset="0.45" stopColor="#d9a7c7" stopOpacity={0.25} /><Stop offset="1" stopColor="#faf6f5" stopOpacity={0} />
         </RadialGradient>
         <RadialGradient id="wv2" cx="50%" cy="50%" r="50%">
           <Stop offset="0" stopColor="#e3a9c0" stopOpacity={0.4} /><Stop offset="0.5" stopColor="#c7b0e6" stopOpacity={0.22} /><Stop offset="1" stopColor="#faf6f5" stopOpacity={0} />
@@ -168,7 +169,7 @@ export function Waves({ width, height }: { width: number; height: number }) {
       {DECOR.map(([fx, fy, kind, rot, sc], i) => {
         const x = fx * width, y = 40 + fy * (height - 60), c = DECOR_COLOURS[i % 4];
         return (
-          <G key={i} transform={`translate(${x} ${y}) rotate(${rot}) scale(${sc})`} opacity={kind === 'dot' ? 0.28 : 0.17} fill={c}>
+          <G key={i} transform={`translate(${x} ${y}) rotate(${rot}) scale(${sc})`} opacity={kind === 'dot' ? 0.32 : 0.22} fill={c}>
             {kind === 'paw' ? <><Ellipse cx={0} cy={4} rx={6} ry={5} /><Circle cx={-6} cy={-3} r={2.4} /><Circle cx={-2} cy={-7} r={2.4} /><Circle cx={2} cy={-7} r={2.4} /><Circle cx={6} cy={-3} r={2.4} /></>
               : kind === 'bone' ? <><Circle cx={-7} cy={-2.5} r={3} /><Circle cx={-7} cy={2.5} r={3} /><Circle cx={7} cy={-2.5} r={3} /><Circle cx={7} cy={2.5} r={3} /><Rect x={-7} y={-2.5} width={14} height={5} /></>
               : kind === 'heart' ? <Path d="M0 6 C-8 0 -5 -7 0 -3 C5 -7 8 0 0 6 Z" />

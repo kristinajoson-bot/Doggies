@@ -12,6 +12,7 @@ export const BOWL_KG = 0.4;
 export const PRIVACY_URL = 'https://fursteps-site-kj-2567.vercel.app/privacy';
 
 const textGlow = (_color: string) => ({}); // no text glows on the light theme
+const ordinal = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
 const plural = (n: number, one: string, many = one + 's') => `${fmt(n)} ${n === 1 ? one : many}`;
 
 function DogCard({ dog, onPress }: { dog: Dog | null; onPress: () => void }) {
@@ -35,7 +36,7 @@ export function TodayScreen({ home, dog, healthName, busy, onDogs, onCelebrate }
   const prev = [...MILESTONES].reverse().find((m) => steps >= m) ?? 0;
   const fill = next ? (steps - prev) / (next - prev) : 1;
   const inner = Math.min(width, 440) - 40 - 44;
-  const paw = Math.floor((inner - 12 - 40) / 5);
+  const paw = Math.min(44, Math.floor((inner - 12 - 40) / 5));
   const ring = Math.floor((inner - 16) / 3);
   return (
     <View style={{ gap: 16 }}>
@@ -47,7 +48,7 @@ export function TodayScreen({ home, dog, healthName, busy, onDogs, onCelebrate }
           <Orb size={ring} progress={steps / 150000} color={C.cyan} value={fmt(steps)} label="total" icon="calendar" />
         </View>
         <Pressable disabled={!prev} onPress={() => onCelebrate(prev)} accessibilityLabel={`${done} bowls this round`} style={{ alignItems: 'center', marginTop: 4 }}>
-          <Bowl level={fill} width={Math.min(250, inner)} id="today" />
+          <Bowl level={fill} width={Math.min(210, inner)} id="today" />
         </Pressable>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 8, width: '100%', paddingHorizontal: 6, marginTop: 6 }}>
           {MILESTONES.map((m) => {
@@ -90,6 +91,9 @@ export function ChallengesScreen({ packs, onOpenPack, duels, tug, busy, dogs, my
   if (page) return <TugScreen duels={duels} tug={tug} busy={busy} dogs={dogs} myDogId={myDogId} onBack={back} />;
   const open = duels.find((d) => d.status === 'active') ?? duels.find((d) => d.status === 'pending');
   const past = duels.filter((d) => d.status === 'finished');
+  const won = past.filter((d) => d.mySteps > d.theirSteps).length;
+  const lost = past.filter((d) => d.mySteps < d.theirSteps).length;
+  const drawn = past.length - won - lost;
   return (
     <View style={{ gap: 16 }}>
       <Text style={S.h1}>Challenges</Text>
@@ -105,21 +109,29 @@ export function ChallengesScreen({ packs, onOpenPack, duels, tug, busy, dogs, my
       </View>
       <Pressable onPress={() => setPage('packs')} accessibilityRole="button" style={[x.chal, { borderColor: C.cyan, borderStyle: 'solid' }]}>
         <Text style={[x.chalKind, { color: T.cyan }]}>PACK WAR</Text>
-        <Text style={x.chalTitle}>{'Build your crew.\nWin as a pack.'}</Text>
-        <Text style={[S.bold, { color: T.pink }]}>{mine.length ? 'See your pack ›' : 'Create or join a pack ›'}</Text>
+        {mine.length ? mine.map((r) => (
+          <View key={r.k.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={[x.rank, { backgroundColor: C.cyan, borderColor: C.cyan }]}><Text style={[x.rankText, { color: C.dark }]}>{r.rank}</Text></View>
+            <View style={{ flex: 1 }}>
+              <Text style={x.chalTitle} numberOfLines={1}>{r.k.name}</Text>
+              <Text style={S.muted}>{ordinal(r.rank)} of {packs.length} {packs.length === 1 ? 'pack' : 'packs'} this round ›</Text>
+            </View>
+          </View>
+        )) : (
+          <>
+            <Text style={x.chalTitle}>{'Build your crew.\nWin as a pack.'}</Text>
+            <Text style={[S.bold, { color: T.pink }]}>Create or join a pack ›</Text>
+          </>
+        )}
       </Pressable>
       {past.length > 0 && (
-        <View style={{ gap: 10 }}>
-          <Text style={S.h2}>Past tugs of war</Text>
-          {past.slice(0, 3).map((d) => (
-            <View key={d.id} style={[x.lb, { gap: 10 }]}>
-              <DogAvatar slug={slug(d.opponentDog)} size={32} />
-              <Text style={[S.bold, { flex: 1, fontSize: 16 }]} numberOfLines={1}>You vs {d.opponentName ?? 'colleague'}</Text>
-              <Text style={[S.muted, { color: d.mySteps > d.theirSteps ? T.green : C.muted }]}>{d.mySteps === d.theirSteps ? 'Draw' : d.mySteps > d.theirSteps ? 'You won' : 'They won'}</Text>
-            </View>
-          ))}
-          {past.length > 3 && <Pressable onPress={() => setPage('past')} accessibilityRole="button"><Text style={S.linkbtn}>See all ›</Text></Pressable>}
-        </View>
+        <Pressable onPress={() => setPage('past')} accessibilityRole="button" style={[S.card, S.row]}>
+          <View style={{ flex: 1 }}>
+            <Text style={S.h2}>Past challenges</Text>
+            <Text style={S.muted}>{won} won · {lost} lost{drawn ? ` · ${drawn} drawn` : ''}</Text>
+          </View>
+          <Text style={[S.muted, { fontSize: 22 }]}>›</Text>
+        </Pressable>
       )}
     </View>
   );
@@ -222,7 +234,7 @@ function TugBar({ mine, theirs, myDog, theirDog }: { mine: number; theirs: numbe
   const total = mine + theirs;
   const lead = total ? (mine - theirs) / total : 0; // -1..1, positive = you lead
   const pos = 0.5 - Math.max(-0.38, Math.min(0.38, lead * 0.6)); // 0 = your end (left)
-  const bone = 36;
+  const bone = 40;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
       <DogAvatar slug={myDog} size={40} />
@@ -293,7 +305,7 @@ function PastTugsScreen({ duels, dogs, myDogId, onBack }: { duels: Duel[]; dogs:
   return (
     <View style={{ gap: 16 }}>
       <Pressable onPress={onBack} accessibilityRole="button"><Text style={S.linkbtn}>‹ Challenges</Text></Pressable>
-      <Text style={S.h1}>Past tugs of war</Text>
+      <Text style={S.h1}>Past challenges</Text>
       {past.length === 0 ? <Text style={S.muted}>No finished tugs of war yet.</Text> : past.map((d) => (
         <View key={d.id} style={[S.card, { gap: 10 }]}><DuelCard d={d} slug={slug} mine={slug(myDogId)} busy={false} /></View>
       ))}
@@ -455,10 +467,10 @@ function PackScreen({ pack, slug, busy, actions, onBack }: { pack: Pack; slug: (
 export function ImpactScreen({ home, dog, allTime, onDogs, onMeet }: { home: Home; dog: Dog | null; allTime: number | null; onDogs: () => void; onMeet: (d: Dog) => void }) {
   const kg = (b: number) => Math.round(b * BOWL_KG * 10) / 10;
   const Stat = ({ label, bowls }: { label: string; bowls: number }) => (
-    <View style={{ flex: 1 }}>
-      <Text style={S.eyebrow}>{label}</Text>
-      <Text style={[S.bold, { fontSize: 22, marginTop: 2 }]}>{plural(bowls, 'bowl')}</Text>
-      <Text style={S.muted}>{kg(bowls)} kg</Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: C.line }}>
+      <Text style={[S.eyebrow, { flex: 1 }]}>{label}</Text>
+      <Text style={[S.bold, { fontSize: 20 }]}>{plural(bowls, 'bowl')}</Text>
+      <Text style={[S.muted, { width: 64, textAlign: 'right' }]}>{kg(bowls)} kg</Text>
     </View>
   );
   return (
@@ -469,7 +481,7 @@ export function ImpactScreen({ home, dog, allTime, onDogs, onMeet }: { home: Hom
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}><Text style={{ fontFamily: F.display, fontSize: 56, lineHeight: 67, color: C.fg }}>{kg(home.communityBowls)}</Text><Text style={[S.bold, { fontSize: 22 }]}>kg of food</Text></View>
         <Text style={S.p}>{plural(home.communityBowls, 'bowl')} from {plural(home.communityWalkers, 'walker')}</Text>
       </View>
-      <Card style={{ flexDirection: 'row', gap: 12 }}>
+      <Card style={{ paddingVertical: 6 }}>
         <Stat label="This round" bowls={home.myBowls} />
         {allTime != null && <Stat label="All time" bowls={allTime} />}
         <Stat label="Your company" bowls={home.companyBowls} />
