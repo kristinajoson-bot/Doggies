@@ -315,7 +315,7 @@ function PastTugsScreen({ duels, dogs, myDogId, onBack }: { duels: Duel[]; dogs:
 function WalkerRow({ w, rank, slug }: { w: Walker; rank: number; slug?: string }) {
   const first = rank === 1 && !w.isMe;
   return (
-    <View style={[x.lb, first && x.lbFirst, w.isMe && x.lbMine]}>
+    <View style={[x.lb, { gap: 10 }, first && x.lbFirst, w.isMe && x.lbMine]}>
       <View style={[x.rank, first && { backgroundColor: C.cyan, borderColor: C.cyan }, w.isMe && { backgroundColor: C.pink, borderColor: C.pink }]}>
         <Text style={[x.rankText, (first || w.isMe) && { color: C.dark }]}>{rank}</Text>
       </View>
@@ -323,7 +323,20 @@ function WalkerRow({ w, rank, slug }: { w: Walker; rank: number; slug?: string }
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text numberOfLines={1} style={[S.bold, { fontFamily: F.bodyBold, fontSize: 16 }]}>{w.displayName}</Text>
       </View>
-      <Text style={x.num}>{fmt(w.steps)}</Text>
+      <Text style={[x.num, x.colSteps]}>{fmt(w.steps)}</Text>
+      <Text style={[x.num, x.colBowls]}>{fmt(w.bowls ?? 0)}</Text>
+    </View>
+  );
+}
+
+// Column labels above a walker list, lined up with WalkerRow.
+function WalkerHead() {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 15, marginBottom: -6 }}>
+      <Text style={[x.head, { width: 36, textAlign: 'center' }]}>Rank</Text>
+      <Text style={[x.head, { flex: 1, textAlign: 'left', paddingLeft: 36 }]}>Name</Text>
+      <Text style={[x.head, { width: 68 }]}>Steps</Text>
+      <Text style={[x.head, { width: 44 }]}>Bowls</Text>
     </View>
   );
 }
@@ -353,9 +366,9 @@ export function LeaderboardScreen({ walkers, packs, companies, onBoard, companyN
     <View style={{ gap: 16 }}>
       <Text style={S.h1}>Leaderboard</Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
-        <Pill label="Walkers" on={tab === 'walkers'} onPress={() => setTab('walkers')} />
-        <Pill label="Packs" on={tab === 'packs'} onPress={() => setTab('packs')} />
-        {companies.length >= 5 && <Pill label="Companies" on={tab === 'companies'} onPress={() => setTab('companies')} />}
+        <Pill grow label="Walkers" on={tab === 'walkers'} onPress={() => setTab('walkers')} />
+        <Pill grow label="Packs" on={tab === 'packs'} onPress={() => setTab('packs')} />
+        {companies.length >= 5 && <Pill grow label="Companies" on={tab === 'companies'} onPress={() => setTab('companies')} />}
       </View>
       {tab !== 'companies' && <Text style={S.eyebrow}>{emoji ? `${emoji} ` : ''}{companyName}</Text>}
       {tab === 'walkers' ? (
@@ -366,6 +379,7 @@ export function LeaderboardScreen({ walkers, packs, companies, onBoard, companyN
               <Btn label="Show me" small onPress={onJoin} busy={busy} />
             </Card>
           )}
+          {walkers.length > 0 && <WalkerHead />}
           {walkers.length ? walkers.map((w, i) => <WalkerRow key={`${w.displayName}-${i}`} w={w} rank={i + 1} slug={slug(w.dogId)} />) : (
             <Card><Text style={[S.bold, { fontSize: 16 }]}>No walkers here yet.</Text></Card>
           )}
@@ -445,6 +459,7 @@ function PackScreen({ pack, slug, busy, actions, onBack }: { pack: Pack; slug: (
       {err && <Text style={S.err}>{err}</Text>}
       {!rows ? <Text style={S.muted}>Loading…</Text> : (
         <>
+          {rows.people.length > 0 && <WalkerHead />}
           {rows.people.map((w, i) => <WalkerRow key={`${w.displayName}-${i}`} w={w} rank={i + 1} slug={slug(w.dogId)} />)}
           {rows.hidden > 0 && <Text style={S.muted}>{plural(rows.hidden, 'member')} {rows.hidden === 1 ? 'keeps' : 'keep'} their name private.</Text>}
         </>
@@ -650,6 +665,9 @@ const x = StyleSheet.create({
   lbMine: { backgroundColor: C.pinkSoft, borderWidth: 1.5, borderColor: C.pink, ...glow(C.pink, 28, 0.28) },
   rank: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
   rankText: { fontFamily: F.display, fontSize: 18, color: C.muted },
+  colSteps: { width: 68, fontSize: 18, textAlign: 'right' },
+  colBowls: { width: 44, fontSize: 18, textAlign: 'right' },
+  head: { fontFamily: F.bodyBold, fontSize: 11, letterSpacing: 0.4, textTransform: 'uppercase', color: C.muted, textAlign: 'right' },
   num: { fontFamily: F.display, fontSize: 22, color: C.fg, textAlign: 'right', fontVariant: ['tabular-nums'] },
   drop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 20, paddingHorizontal: 16, minHeight: 56 },
   celCard: { width: 280, aspectRatio: 4 / 3, borderRadius: 22, borderWidth: 2, borderColor: C.pink, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center', gap: 6, transform: [{ rotate: '-3deg' }] },

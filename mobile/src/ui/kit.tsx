@@ -37,9 +37,9 @@ export function Bar({ pct }: { pct: number }) {
   );
 }
 
-export function Pill({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+export function Pill({ label, on, onPress, grow }: { label: string; on: boolean; onPress: () => void; grow?: boolean }) {
   return (
-    <Pressable onPress={onPress} style={[k.pill, on && k.pillOn]} accessibilityRole="button" accessibilityState={{ selected: on }}>
+    <Pressable onPress={onPress} style={[k.pill, grow && { flex: 1, alignItems: 'center' }, on && k.pillOn]} accessibilityRole="button" accessibilityState={{ selected: on }}>
       <Text style={[k.pillText, on && { color: '#ffffff' }]}>{label}</Text>
     </Pressable>
   );
