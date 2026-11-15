@@ -6,8 +6,8 @@
   window.confirm = function () { return true; }; // the demo viewer blocks pop-ups
   function fresh() {
     return {
-      role: 'shelter', signedIn: false, perm: null, n: 10,
-      shelters: [{ id: 's1', name: 'Demo Paws Rescue', photo_permission_at: null, staff: ['you@demopawsrescue.org.au'] }],
+      role: 'shelter', signedIn: true, perm: null, n: 10,
+      shelters: [{ id: 's1', name: 'Demo Paws Rescue', photo_permission_at: '2026-11-15T00:00:00Z', staff: ['you@demopawsrescue.org.au'] }],
       files: { 'p-lima': '/shelter-demo/img/lima-1.jpg', 'p-lima2': '/shelter-demo/img/lima-2.jpg', 'p-cusco': '/shelter-demo/img/cusco-1.jpg', 'p-pepper': '/shelter-demo/img/pepper-1.jpg' },
       dogs: [
         { id: 'd1', slug: 'lima', name: 'Lima', age: '5 years', breed: 'Maltese cross', story: 'Lima loves sunny spots, squeaky toys and a slow sniffy walk. She came to us after her owner moved into care.', shelter: 'Demo Paws Rescue', shelter_id: 's1', review_status: 'approved', active: true,

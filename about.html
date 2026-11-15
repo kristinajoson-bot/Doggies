@@ -20,7 +20,8 @@
 :root{--berry:#9b3a63;--berry-d:#7c2b4e;--berry-l:#f5e8ee;--teal:#4b9fa1;--purple:#6e5aa8;--lav:#d9cdf0;--bg:#faf6f5;--ink:#2a1830;--ink2:#6a5a6e;--line:#ecdde4}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:90px}
-body{margin:0;font-family:'Nunito',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:17px;line-height:1.55;position:relative;overflow-x:hidden}
+body{margin:0;font-family:'Nunito',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:17px;line-height:1.55;position:relative;overflow-x:hidden;overflow-x:clip}
+html{overflow-x:clip}
 body:before,body:after{content:"";position:absolute;z-index:-1;border-radius:50%;filter:blur(80px);pointer-events:none}
 body:before{width:620px;height:620px;right:-180px;top:-200px;background:#e2d3f3}
 body:after{width:520px;height:520px;left:-220px;top:900px;background:#f6dbe5}
@@ -143,6 +144,59 @@ footer a{color:var(--ink2)}
 .pup img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block}
 .pup .tx{padding:18px 20px 22px}.pup h3{margin:0 0 2px}.pup .role{color:var(--berry);font-weight:700;font-size:14px;letter-spacing:.6px;text-transform:uppercase;margin:0 0 8px}.pup p{color:var(--ink2);font-size:15px;margin:0}
 @media(max-width:860px){.pack{grid-template-columns:1fr}}
+@media(max-width:860px){body:before{width:min(420px,100vw);height:420px;right:0;top:-160px}body:after{width:340px;height:340px}}
+/* mobile pass 15 Nov */
+@media(max-width:600px){
+body{font-size:16px}
+nav{padding:10px 16px}
+.logo{font-size:22px;gap:8px}.logo svg:first-child{width:28px;height:28px}.logo svg:last-child{width:22px;height:20px}
+nav .btn.ghost{font-size:13px;padding:6px 12px;border-width:1.5px}
+.burger{font-size:24px;padding:4px 2px 4px 10px}
+section{padding:28px 18px}
+h1{font-size:38px!important;margin-bottom:14px}h2{font-size:27px}h3{font-size:19px}
+.lead{font-size:17px;margin-bottom:20px}
+.eyebrow{font-size:12px;letter-spacing:1.2px}
+.btn{padding:14px 22px;font-size:16px}
+.hero .btn,section>.btn{display:block;text-align:center}
+.hero{gap:8px;padding-top:8px}
+.phones{height:350px;max-width:330px}.phone{width:165px;border-width:6px;border-radius:28px}.phone.p1{right:auto;left:8px;top:24px}.phone.p2{right:8px}
+.card,.pinkcard{border-radius:22px;padding:20px}
+.big15{display:block;padding:24px 20px;text-align:center}.big15 .ring,.big15>svg{display:none}
+.big15 .num{font-size:76px;line-height:1;margin:6px 0 4px}.big15 .num small{display:block;font-size:22px!important;line-height:1.2}
+.big15 h3{font-size:17px;margin:0!important;color:var(--ink2);font-family:'Nunito';font-weight:700}
+.flow{gap:6px;margin-top:16px}
+.step{display:grid;grid-template-columns:52px 1fr;column-gap:14px;text-align:left;padding:14px 16px;align-items:center}
+.step .ic{width:52px;height:52px;margin:0;grid-row:span 2}.step .ic svg{width:30px;height:30px}
+.step h3{font-size:18px;margin:0}.step p{font-size:14.5px}
+.arrow{font-size:20px;line-height:1;margin:0 auto}
+.example{gap:18px}.example .n{font-size:46px}
+.bigbowl{padding:16px 18px 18px}.bigbowl svg{max-width:220px}.bowlnum{font-size:30px}
+.mini b{font-size:19px}.mini span{font-size:12.5px}
+.dogs{gap:12px;margin-top:16px}
+.dog{display:grid;grid-template-columns:72px 1fr;column-gap:14px;text-align:left;align-items:center;padding:14px 16px}
+.dog>svg{width:72px;height:72px;grid-row:span 3}
+.dog h3{font-size:17px;margin:0}.dog p{font-size:14px}
+.soon{position:static;justify-self:start;font-size:10.5px;padding:2px 8px;margin-top:4px}
+.shots{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;margin:18px -18px 0;padding:6px 18px 18px;-webkit-overflow-scrolling:touch}
+.shots figure{flex:0 0 68%;scroll-snap-align:center}.shots img{border-radius:24px;border-width:5px}
+.feat{gap:12px}.feat .card{padding:18px}
+.promise{gap:10px}
+.join{padding:22px 18px;border-radius:24px;gap:18px}form{padding:18px}
+details{padding:14px 16px}summary{font-size:17px}
+.pack{gap:14px}
+.founder{padding:22px;gap:14px}.quote{font-size:21px}.ava{width:84px;height:84px}
+footer{flex-direction:column;gap:10px;padding:22px 18px 40px;font-size:13px}
+}
+@media(max-width:600px){
+.step .ic{grid-row:1/3}.step h3{align-self:end}.step p{align-self:start}.step h3:last-child{grid-row:1/3;align-self:center}
+.feat .card:has(.ic){display:grid;grid-template-columns:44px 1fr;column-gap:14px;align-items:center}
+.feat .card .ic{width:44px;height:44px;border-radius:13px;margin:0;grid-row:1/3}.feat .card .ic svg{width:22px;height:22px}
+.feat .card h3{align-self:end;margin:0 0 2px;font-size:17px}.feat .card p{align-self:start;font-size:14.5px}.feat .card h3:last-child{grid-row:1/3;align-self:center}
+.ic3{width:44px;height:44px;border-radius:13px;margin-bottom:10px}.ic3 svg{width:24px;height:24px}
+.two{gap:12px}.two p{font-size:15px;margin:4px 0 14px}
+form .btn,.join form button{width:100%}
+}
+@media(max-width:600px){.pup{display:grid;grid-template-columns:120px 1fr;text-align:left;align-items:center}.pup img{aspect-ratio:1/1;height:100%;min-height:120px}.pup .tx{padding:12px 14px}.pup h3{font-size:18px}.pup .role{font-size:11.5px;margin-bottom:4px}.pup p{font-size:14px}}
 </style>
 </head>
 <body>
