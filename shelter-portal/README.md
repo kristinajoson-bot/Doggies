@@ -6,3 +6,6 @@ Phone-friendly page where partner shelter staff add dogs, stories and photos, an
 - Deploy: copy `shelter.html` to the website root and `shelter-portal.js` + `supabase-2.119.0.js` (vendored, no CDN) to `/js/`. Fonts come from the website's `/fonts/`.
 - Sign-in: emailed code. Only emails in `portal_users` get in (admin: kristina@fursteps.com; shelter staff added on the Shelters tab).
 - Privacy: photos are re-drawn on a canvas (max 1600 px JPEG), which drops EXIF/GPS. Uploader confirms no identifiable people. Shelter records written photo permission once. Rejected photos are deleted. Nothing shows in the app until approved.
+
+## Demo
+`demo/` is a click-through copy with a sample shelter and dogs (in-browser only, nothing sent). Published privately: https://claude.ai/artifact/8zNPbsTE3x3mmyknheckzk. Uses `../shelter-portal.js` + `demo/demo-backend.js` + `demo/demo-bar.js`; copy dog images from mobile/assets/dogs into `img/` when bundling.
