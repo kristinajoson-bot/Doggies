@@ -3,7 +3,7 @@ import { Alert, Image, Keyboard, Linking, Modal, Platform, Pressable, ScrollView
 import appJson from '../app.json';
 
 import type { Colleague, CompanyRow, Dog, Duel, Home, Pack, Walker } from './backend';
-import { Bone, Bowl, DOG_PHOTOS, DogAvatar, Orb, PawTile } from './ui/art';
+import { Bone, Bowl, DogAvatar, dogPhotos, Orb, PawTile } from './ui/art';
 import { Bar, Btn, Card, Pill, fmt } from './ui/kit';
 import { C, F, S, T, glow } from './ui/theme';
 
@@ -578,7 +578,7 @@ export function DogsScreen({ dogs, current, busy, onPick, onMeet, onBack }: { do
 
 export function DogScreen({ dog, mine, busy, onPick, onBack, onAll }: { dog: Dog; mine: boolean; busy: boolean; onPick: () => void; onBack: () => void; onAll: () => void }) {
   const { width } = useWindowDimensions();
-  const photos = DOG_PHOTOS[dog.slug]?.photos ?? [];
+  const photos = dogPhotos(dog.slug)?.photos ?? [];
   const w = Math.min(width, 440) - 40;
   return (
     <View style={{ gap: 16 }}>
@@ -616,7 +616,7 @@ export function ChooseDogPopup({ visible, dogs, busy, onPick, onLater }: { visib
           <Text style={S.h1}>Choose a shelter dog to walk for</Text>
           <Text style={S.muted}>Every bowl your steps unlock goes to your dog. You can change dogs any time.</Text>
           {dogs.map((d) => {
-            const photo = DOG_PHOTOS[d.slug]?.photos?.[0];
+            const photo = dogPhotos(d.slug)?.photos?.[0];
             return (
               <Card key={d.id} style={{ gap: 12 }}>
                 {photo ? <Image source={photo} style={{ width: '100%', height: 220, borderRadius: 18 }} resizeMode="cover" /> : <DogAvatar slug={d.slug} size={64} />}

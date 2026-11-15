@@ -1,4 +1,4 @@
-import { Image, View } from 'react-native';
+import { Image, ImageSourcePropType, View } from 'react-native';
 import Svg, { Circle, ClipPath, Defs, Ellipse, G, LinearGradient, Path, Polygon, RadialGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
 
 import { C, F, glow } from './theme';
@@ -195,9 +195,19 @@ export const DOG_PHOTOS: Record<string, { thumb: number; photos: number[] }> = {
   pepper: { thumb: require('../../assets/dogs/pepper-thumb.jpg'), photos: [require('../../assets/dogs/pepper-1.jpg'), require('../../assets/dogs/pepper-2.jpg')] },
 };
 
+// Photos uploaded by shelters (approved on fursteps.com/shelter) override the bundled ones.
+let REMOTE_PHOTOS: Record<string, string[]> = {};
+export function setRemoteDogPhotos(bySlug: Record<string, string[]>) { REMOTE_PHOTOS = bySlug; }
+export function dogPhotos(slug?: string | null): { thumb: ImageSourcePropType; photos: ImageSourcePropType[] } | undefined {
+  if (!slug) return undefined;
+  const remote = REMOTE_PHOTOS[slug];
+  if (remote?.length) return { thumb: { uri: remote[0] }, photos: remote.map((uri) => ({ uri })) };
+  return DOG_PHOTOS[slug];
+}
+
 // A round dog photo in a glowing pink ring; a pink paw when no dog is chosen.
 export function DogAvatar({ slug, size }: { slug?: string | null; size: number }) {
-  const ring = Math.round(size * 1.25), pic = slug ? DOG_PHOTOS[slug] : undefined;
+  const ring = Math.round(size * 1.25), pic = dogPhotos(slug);
   return (
     <View style={[{ width: ring, height: ring, borderRadius: ring / 2, borderWidth: 2, borderColor: 'rgba(214,31,105,0.35)', backgroundColor: C.surface2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, glow(C.pink, 11, 0.3)]}>
       {pic ? <Image source={pic.thumb} style={{ width: '100%', height: '100%' }} /> : <Paw size={size} />}

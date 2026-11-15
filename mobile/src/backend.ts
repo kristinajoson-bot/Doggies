@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import { AppState } from 'react-native';
 
 import type { DaySteps } from './steps';
+import { setRemoteDogPhotos } from './ui/art';
 
 // Public by design: the publishable key only reaches the functions granted to signed-in users.
 const SUPABASE_URL = 'https://eadynnzljcijueshxsgg.supabase.co';
@@ -157,7 +158,24 @@ export type Dog = { id: string; slug: string; name: string; age: string | null; 
 export async function listDogs(): Promise<Dog[]> {
   const { data, error } = await supabase.rpc('list_dogs');
   fail(error);
-  return (data as Dog[]) ?? [];
+  const dogs = (data as Dog[]) ?? [];
+  await loadDogPhotos(dogs).catch(() => {}); // photos are a nice-to-have; bundled ones stay as fallback
+  return dogs;
+}
+
+// Approved shelter photos live in the private "dog-photos" bucket; the app gets 1-day signed links.
+async function loadDogPhotos(dogs: Dog[]) {
+  const { data, error } = await supabase.rpc('dog_photo_paths');
+  if (error || !data?.length) return;
+  const rows = data as { dog_id: string; path: string }[];
+  const signed = await supabase.storage.from('dog-photos').createSignedUrls(rows.map((r) => r.path), 86400);
+  const url: Record<string, string> = {};
+  (signed.data ?? []).forEach((s) => { if (s.path && s.signedUrl) url[s.path] = s.signedUrl; });
+  const slugOf: Record<string, string> = {};
+  dogs.forEach((d) => { slugOf[d.id] = d.slug; });
+  const bySlug: Record<string, string[]> = {};
+  rows.forEach((r) => { const s = slugOf[r.dog_id]; if (s && url[r.path]) (bySlug[s] ??= []).push(url[r.path]); });
+  setRemoteDogPhotos(bySlug);
 }
 
 export async function chooseDog(id: string | null) {
