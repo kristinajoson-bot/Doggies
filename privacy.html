@@ -16,7 +16,7 @@
 @font-face{font-family:'Nunito';font-weight:700;font-display:swap;src:url(/fonts/nunito-700.woff2) format('woff2')}
 :root{--berry:#9b3a63;--berry-d:#7c2b4e;--berry-l:#f5e8ee;--teal:#4b9fa1;--purple:#6e5aa8;--lav:#d9cdf0;--bg:#faf6f5;--ink:#2a1830;--ink2:#6a5a6e;--line:#ecdde4}
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;scroll-padding-top:90px}
 body{margin:0;font-family:'Nunito',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:17px;line-height:1.55;position:relative;overflow-x:hidden}
 body:before,body:after{content:"";position:absolute;z-index:-1;border-radius:50%;filter:blur(80px);pointer-events:none}
 body:before{width:620px;height:620px;right:-180px;top:-200px;background:#e2d3f3}
@@ -26,7 +26,7 @@ a{color:var(--berry)}
 .confetti{position:absolute;inset:0;z-index:-1;pointer-events:none;background-image:
  radial-gradient(circle,#c9b4e8 3px,transparent 4px),radial-gradient(circle,#f1b9cb 3px,transparent 4px),radial-gradient(circle,#a9d6d4 3px,transparent 4px);
  background-size:310px 290px,370px 330px,430px 410px;background-position:40px 60px,190px 170px,90px 260px;opacity:.8}
-nav{display:flex;justify-content:space-between;align-items:center;max-width:1080px;margin:0 auto;padding:22px 24px}
+nav{display:flex;justify-content:space-between;align-items:center;max-width:1080px;margin:0 auto;padding:14px 24px;position:sticky;top:0;z-index:50;background:var(--bg);box-shadow:0 0 0 100vmax var(--bg),0 8px 16px -12px rgba(60,40,80,.25);clip-path:inset(0 -100vmax -20px)}
 .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-family:'Fredoka';font-weight:600;font-size:30px}
 .btn{display:inline-block;background:var(--berry);color:#fff;border-radius:999px;padding:13px 26px;font-size:17px;text-decoration:none;border:0;cursor:pointer;box-shadow:0 6px 18px rgba(155,58,99,.25)}
 .btn:hover{background:var(--berry-d)}
@@ -144,7 +144,7 @@ footer a{color:var(--ink2)}
     FurSteps<svg width="28" height="24" viewBox="0 0 28 24" aria-hidden="true" style="margin-left:-6px;margin-top:-18px"><g stroke="#9b3a63" stroke-width="2.6" stroke-linecap="round"><path d="M6 14 10 3"/><path d="M13 17 24 9"/></g></svg>
   </a>
   <div class="menu">
-    <a href="/#how">How it works</a><a href="/#app">The app</a><a href="/#dogs">Meet the dogs</a><a href="/#partners">Partners</a><a href="/#faq">FAQ</a><a href="/shelters">For shelters</a><a href="/about">About us</a>
+    <a href="/#how">How it works</a><a href="/dogs">Meet the dogs</a><a href="/shelters">For shelters</a><a href="/about">About us</a>
   </div>
   <a class="btn ghost" href="/#join">Get early access</a>
 </nav>
@@ -234,7 +234,7 @@ footer a{color:var(--ink2)}
 
 <footer>
   <div>© 2026 Puppy Trails (ABN 27 621 176 143)</div>
-  <div><a href="/about">About us</a> · <a href="/shelters">Shelters</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="mailto:hey@fursteps.com">hey@fursteps.com</a></div>
+  <div><a href="/about">About us</a> · <a href="/dogs">Meet the dogs</a> · <a href="/shelters">Shelters</a> · <a href="/#faq">FAQ</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="mailto:hey@fursteps.com">hey@fursteps.com</a></div>
 </footer>
 </body>
 </html>
