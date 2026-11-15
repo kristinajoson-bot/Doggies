@@ -10,10 +10,13 @@
 <meta property="og:title" content="FurSteps: teams walk, shelter dogs win">
 <meta property="og:description" content="A workplace walking challenge with shelter bowls included. Launching in Australia in 2027.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='%239b3a63'%3E%3Cellipse cx='12' cy='16' rx='5' ry='4'/%3E%3Ccircle cx='6' cy='10' r='2.2'/%3E%3Ccircle cx='10' cy='6.5' r='2.2'/%3E%3Ccircle cx='14' cy='6.5' r='2.2'/%3E%3Ccircle cx='18' cy='10' r='2.2'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preload" href="/fonts/fredoka-600.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/nunito-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/nunito-700.woff2" as="font" type="font/woff2" crossorigin>
 <style>
-@font-face{font-family:'Fredoka';font-weight:600;font-display:swap;src:url(/fonts/fredoka-600.woff2) format('woff2')}
-@font-face{font-family:'Nunito';font-weight:400;font-display:swap;src:url(/fonts/nunito-400.woff2) format('woff2')}
-@font-face{font-family:'Nunito';font-weight:700;font-display:swap;src:url(/fonts/nunito-700.woff2) format('woff2')}
+@font-face{font-family:'Fredoka';font-weight:600;font-display:block;src:url(/fonts/fredoka-600.woff2) format('woff2')}
+@font-face{font-family:'Nunito';font-weight:400;font-display:block;src:url(/fonts/nunito-400.woff2) format('woff2')}
+@font-face{font-family:'Nunito';font-weight:700;font-display:block;src:url(/fonts/nunito-700.woff2) format('woff2')}
 :root{--berry:#9b3a63;--berry-d:#7c2b4e;--berry-l:#f5e8ee;--teal:#4b9fa1;--purple:#6e5aa8;--lav:#d9cdf0;--bg:#faf6f5;--ink:#2a1830;--ink2:#6a5a6e;--line:#ecdde4}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:90px}
@@ -26,7 +29,8 @@ a{color:var(--berry)}
 .confetti{position:absolute;inset:0;z-index:-1;pointer-events:none;background-image:
  radial-gradient(circle,#c9b4e8 3px,transparent 4px),radial-gradient(circle,#f1b9cb 3px,transparent 4px),radial-gradient(circle,#a9d6d4 3px,transparent 4px);
  background-size:310px 290px,370px 330px,430px 410px;background-position:40px 60px,190px 170px,90px 260px;opacity:.8}
-nav{display:flex;justify-content:space-between;align-items:center;max-width:1080px;margin:0 auto;padding:14px 24px;position:sticky;top:0;z-index:50;background:var(--bg);box-shadow:0 0 0 100vmax var(--bg),0 8px 16px -12px rgba(60,40,80,.25);clip-path:inset(0 -100vmax -20px)}
+nav{display:flex;justify-content:space-between;align-items:center;max-width:1080px;margin:0 auto;padding:14px 24px;position:sticky;top:0;z-index:50}
+nav::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:100vw;transform:translateX(-50%);z-index:-1;background:rgba(250,246,245,.72);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);-webkit-mask-image:linear-gradient(#000 75%,transparent);mask-image:linear-gradient(#000 75%,transparent)}
 .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);font-family:'Fredoka';font-weight:600;font-size:30px}
 .btn{display:inline-block;background:var(--berry);color:#fff;border-radius:999px;padding:13px 26px;font-size:17px;text-decoration:none;border:0;cursor:pointer;box-shadow:0 6px 18px rgba(155,58,99,.25)}
 .btn:hover{background:var(--berry-d)}
@@ -132,6 +136,8 @@ footer a{color:var(--ink2)}
 .sig{font-family:'Fredoka';font-weight:600;color:var(--berry)!important}
 @media(max-width:860px){.menu{display:none}nav .btn.ghost{font-size:14px;padding:7px 14px;white-space:nowrap}.logo{font-size:24px}.logo svg:first-child{width:32px;height:32px}.dogs,.two,.founder{grid-template-columns:1fr}.founder{text-align:center}.ava{margin:0 auto}}
 .legal h3{margin-top:18px}.legal p{color:var(--ink2);margin:4px 0 0}
+.burger{display:none;background:none;border:0;font-size:26px;line-height:1;color:var(--berry);cursor:pointer;padding:4px 8px;margin-left:6px}
+@media(max-width:860px){.burger{display:block}nav{flex-wrap:nowrap}nav.open .menu{display:flex;flex-direction:column;gap:14px;position:absolute;top:100%;left:12px;right:12px;background:#fff;padding:18px 22px;border-radius:18px;box-shadow:0 12px 30px rgba(60,40,80,.18)}nav.open .menu a{font-size:17px}}
 </style>
 </head>
 <body>
@@ -142,10 +148,11 @@ footer a{color:var(--ink2)}
     <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true"><g fill="none" stroke="#9b3a63" stroke-width="3.2"><path d="M20 19c-6 0-10 5-10 9 0 3 2 5 5 5 2 0 3-1 5-1s3 1 5 1c3 0 5-2 5-5 0-4-4-9-10-9z"/><ellipse cx="9" cy="16" rx="3.4" ry="4.2"/><ellipse cx="15.5" cy="9.5" rx="3.4" ry="4.2"/><ellipse cx="24.5" cy="9.5" rx="3.4" ry="4.2"/><ellipse cx="31" cy="16" rx="3.4" ry="4.2"/></g></svg>
     FurSteps<svg width="28" height="24" viewBox="0 0 28 24" aria-hidden="true" style="margin-left:-6px;margin-top:-18px"><g stroke="#9b3a63" stroke-width="2.6" stroke-linecap="round"><path d="M6 14 10 3"/><path d="M13 17 24 9"/></g></svg>
   </a>
-  <div class="menu">
+  <div class="menu" onclick="if(event.target.tagName==='A')this.parentNode.classList.remove('open')">
     <a href="/#how">How it works</a><a href="/dogs">Meet the dogs</a><a href="/shelters">For shelters</a><a href="/about">About us</a>
   </div>
   <a class="btn ghost" href="/#join">Get early access</a>
+  <button class="burger" type="button" aria-label="Open menu" aria-expanded="false" onclick="var n=this.closest('nav');n.classList.toggle('open');this.setAttribute('aria-expanded',n.classList.contains('open'))">&#9776;</button>
 </nav>
 
 <main>
