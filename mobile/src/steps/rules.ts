@@ -5,12 +5,7 @@ export type DaySteps = { day: string; steps: number; flagged: boolean };
 
 export type SourceReport = { counted: string[]; ignored: string[] };
 
-// Matches the check on public.step_days in supabase/schema.sql.
-export const DAILY_CAP = 60000;
-
-// Above this a day still counts but is flagged for review.
-export const FLAG_ABOVE = 40000;
-
+// No daily cap or flag (FURSB-79, 2026-11-15). Hand-typed steps are still ignored.
 export const DAYS_BACK = 7;
 
 // Apple's own iPhone and Watch sources use bundle ids starting with this.
@@ -59,6 +54,5 @@ export function dayWindows(now: Date, daysBack = DAYS_BACK): { start: Date; end:
 }
 
 export function finaliseDay(day: string, rawSteps: number): DaySteps {
-  const steps = Math.min(Math.max(0, Math.round(rawSteps)), DAILY_CAP);
-  return { day, steps, flagged: rawSteps > FLAG_ABOVE };
+  return { day, steps: Math.max(0, Math.round(rawSteps)), flagged: false };
 }
