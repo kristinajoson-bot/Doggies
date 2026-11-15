@@ -16,7 +16,8 @@ h1,h2,h3,.btn,.logo{font-family:'Fredoka','Nunito',sans-serif;font-weight:600}
 h1{font-size:28px;margin:0 0 4px}h2{font-size:21px;margin:0 0 8px}h3{font-size:18px;margin:0}
 .wrap{max-width:760px;margin:0 auto;padding:20px 16px 80px}
 header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
-.logo{font-size:24px;color:var(--ink);text-decoration:none}.logo span{color:var(--berry)}
+.logo{font-size:24px;color:var(--ink);text-decoration:none;white-space:nowrap}.logo span{color:var(--berry)}
+#signout{white-space:nowrap}
 .muted{color:var(--ink2);font-size:14px}
 .card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px;margin:14px 0;box-shadow:0 4px 16px rgba(42,24,48,.04)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--berry);color:#fff;border-radius:999px;padding:11px 20px;font-size:16px;border:0;cursor:pointer}
@@ -29,7 +30,7 @@ textarea{min-height:110px;resize:vertical}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .badge{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px}
 .b-pending{background:var(--amber-l);color:var(--amber)}.b-approved{background:var(--green-l);color:var(--green)}.b-hidden{background:#eee;color:#666}
-.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:12px 0}
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin:12px 0}
 .ph{position:relative;border-radius:14px;overflow:hidden;background:var(--berry-l);aspect-ratio:1}
 .ph img{width:100%;height:100%;object-fit:cover;display:block}
 .ph .badge{position:absolute;left:6px;top:6px}
@@ -40,14 +41,26 @@ textarea{min-height:110px;resize:vertical}
 .tabs{display:flex;gap:8px;margin:6px 0 4px}.tabs button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 16px;font:700 14px 'Nunito';cursor:pointer;color:var(--ink2)}.tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 .perm{background:var(--berry-l);border-radius:16px;padding:14px;font-size:15px}
 .preview{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.preview img{width:84px;height:84px;object-fit:cover;border-radius:12px}
-.demobar{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;background:var(--purple);color:#fff;padding:8px 14px;font-size:13px}
-.demobar button{border:1px solid rgba(255,255,255,.5);background:none;color:#fff;border-radius:999px;padding:5px 12px;font:700 13px 'Nunito';cursor:pointer}.demobar button.on{background:#fff;color:var(--purple)}
+@media (max-width:480px){
+  .wrap{padding:14px 12px 72px}
+  .logo{font-size:20px}
+  h1{font-size:24px}
+  .card{padding:14px;border-radius:18px;margin:10px 0}
+  .btn{padding:10px 16px}
+  #add-dog{width:100%}
+  .tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}
+  .tabs button{flex:0 0 auto;padding:8px 13px}
+  .ph .acts button{padding:7px 0}
+}
+.demobar{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:space-between;background:var(--purple);color:#fff;padding:7px 12px;font-size:13px}
+.demobar button{border:1px solid rgba(255,255,255,.5);background:none;color:#fff;border-radius:999px;padding:4px 11px;font:700 13px 'Nunito';cursor:pointer}.demobar button.on{background:#fff;color:var(--purple)}
+@media (max-width:480px){.demobar{font-size:12px}.demobar .row{width:100%;flex-wrap:nowrap}.demobar button{flex:1;padding:5px 4px;font-size:12px}}
 </style>
 </head>
 <body>
 <div class="demobar">
-  <span><b>Demo</b> · sample shelter and dogs · nothing is saved or sent</span>
-  <span class="row" style="gap:6px"><button type="button" data-view="shelter">Shelter view</button><button type="button" data-view="admin">FurSteps view</button><button type="button" data-reset>Start over</button></span>
+  <span><b>Demo</b> · sample dogs · nothing is saved</span>
+  <span class="row" style="gap:6px"><button type="button" data-view="shelter">Shelter view</button><button type="button" data-view="admin">FurSteps view</button><button type="button" data-reset>Reset</button></span>
 </div>
 <div class="wrap">
   <header>
